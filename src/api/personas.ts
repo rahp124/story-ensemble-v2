@@ -53,13 +53,13 @@ export async function generatePersonas(context: string) {
   return generateStructured(personaListSchema, [
     {
       role: 'user',
-      content: `Generate a list of personas relevant to the following context: ${context}`
+      content: `Generate a 3 personas relevant to the following context: ${context}`
     }
   ]);
 }
 
 export async function editPersonas(personas: Persona[], directions: string) {
-  const content = `Edit the following personas based on the directions.
+  const content = `Edit the following personas based on the directions. Feel free to add additional personas if needed.
 
 PERSONAS: """
 ${JSON.stringify(personas, null, 2)}

@@ -10,6 +10,8 @@ export async function generateStructured<
   zodSchema: T,
   messages: OpenAI.ChatCompletionMessageParam[]
 ): Promise<z.infer<T>> {
+  // TODO retry on failure
+  // TODO handle max token length error
   const jsonSchema = JSON.stringify(zodToJsonSchema(zodSchema, 'schema'));
 
   const systemContent = `Output a JSON object or array that fits the schema based on the user message.
@@ -21,7 +23,7 @@ export async function generateStructured<
 
   const message = await openai.chat.completions
     .create({
-      model: 'gpt-4-turbo-preview',
+      model: 'gpt-3.5-turbo-0125',
       response_format: {
         type: 'json_object'
       },
