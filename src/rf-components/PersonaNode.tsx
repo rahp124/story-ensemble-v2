@@ -6,11 +6,8 @@ import { User } from 'lucide-react';
 
 import { NodeProps } from 'reactflow';
 import { sentenceCase } from 'change-case';
+import SourceHandle from '@/components/SourceHandle';
 
-export const PersonaNodeDimensions = {
-  width: 400,
-  height: 600
-};
 export interface PersonaNodeData {
   persona: Persona;
   avatar?: string;
@@ -19,10 +16,8 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
   const { persona, avatar } = props.data;
 
   return (
-    <Card
-      className={`w-[${PersonaNodeDimensions.width}px] h-[${PersonaNodeDimensions.height}px] nowheel flex flex-col`}
-    >
-      <CardHeader>
+    <Card className="nowheel flex flex-col w-full h-full bg-slate-50">
+      <CardHeader className="flex-none">
         <CardTitle>
           <div className="flex items-center gap-4">
             <Avatar>
@@ -35,9 +30,8 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="h-full flex-grow">
-        {/* TODO fix hardcoding here */}
-        <ScrollArea className="prose h-[486px]">
+      <CardContent className="flex-auto overflow-auto">
+        <ScrollArea className="prose h-full">
           {Object.entries(persona).map(([key, value]) => (
             <div key={key}>
               <h3>{sentenceCase(key)}</h3>
@@ -51,6 +45,7 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
           ))}
         </ScrollArea>
       </CardContent>
+      <SourceHandle />
     </Card>
   );
 }

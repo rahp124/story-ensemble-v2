@@ -76,3 +76,162 @@ ${directions}
     }
   ]);
 }
+
+export const mockPersonas: Persona[] = [
+  {
+    Persona: {
+      Name: 'Maria Rodriguez',
+      Age: 35,
+      Gender: 'Female',
+      Occupation: 'Retail Associate',
+      Education: 'High School Diploma',
+      IncomeLevel: 'Low Income',
+      Location: 'Urban Area',
+      FamilyStatus: 'Single Mother'
+    },
+    Psychographics: {
+      PersonalityTraits: ['Hardworking', 'Resilient', 'Caring'],
+      Values: ['Family', 'Health', 'Convenience'],
+      Interests: ['Cooking', 'Savings', 'Childcare']
+    },
+    Environment: {
+      Physical: 'Small apartment with basic kitchen facilities',
+      Social: 'Limited social support system'
+    },
+    BehavioralPatterns: {
+      DailyRoutines: [
+        'Work long hours',
+        'Pick up child from daycare',
+        'Cook quick meals'
+      ],
+      TechInteraction: [
+        'Uses smartphone for recipes',
+        'Limited access to computers'
+      ]
+    },
+    NeedsAndChallenges: {
+      Needs: ['Affordable meal options', 'Convenient cooking solutions'],
+      Challenges: ['Limited time for meal preparation', 'Budget constraints']
+    },
+    UsageContext: {
+      ProductUse: 'Meal kits as a convenient and affordable dinner option',
+      UseInfluencers: ['Online reviews', 'Recommendations from friends']
+    },
+    TechnologyProficiency: {
+      ComfortLevel: 'Medium',
+      PreferredDevices: ['Smartphone']
+    },
+    InformationConsumption: {
+      PreferredSources: ['Social media', 'Recipe websites'],
+      MediaConsumption: ['Occasional TV cooking shows']
+    },
+    AdditionalMetadata: {}
+  },
+  {
+    Persona: {
+      Name: 'John Thompson',
+      Age: 42,
+      Gender: 'Male',
+      Occupation: 'Delivery Driver',
+      Education: 'Some College',
+      IncomeLevel: 'Low Income',
+      Location: 'Suburban Area',
+      FamilyStatus: 'Married with 3 children'
+    },
+    Psychographics: {
+      PersonalityTraits: ['Practical', 'Resourceful', 'Loyal'],
+      Values: ['Family', 'Financial stability', 'Efficiency'],
+      Interests: ['Outdoor activities', 'DIY projects', 'Budgeting']
+    },
+    Environment: {
+      Physical: 'Single-family home with a small backyard',
+      Social: 'Active community involvement'
+    },
+    BehavioralPatterns: {
+      DailyRoutines: [
+        'Early morning deliveries',
+        'Family dinner time',
+        'DIY projects on weekends'
+      ],
+      TechInteraction: [
+        'Basic smartphone usage for work',
+        'Limited social media presence'
+      ]
+    },
+    NeedsAndChallenges: {
+      Needs: [
+        'Affordable and nutritious meals for family',
+        'Time-saving cooking solutions'
+      ],
+      Challenges: ['Limited cooking skills', 'Long work hours']
+    },
+    UsageContext: {
+      ProductUse: 'Meal kits as a convenient solution for family meals',
+      UseInfluencers: [
+        'Advertisements on delivery routes',
+        'Recommendations from coworkers'
+      ]
+    },
+    TechnologyProficiency: {
+      ComfortLevel: 'Low',
+      PreferredDevices: ['Basic cellphone']
+    },
+    InformationConsumption: {
+      PreferredSources: ['Company newsletters', 'Local newspapers'],
+      MediaConsumption: ['News radio during driving']
+    },
+    AdditionalMetadata: {}
+  },
+  {
+    Persona: {
+      Name: 'Linda Chen',
+      Age: 28,
+      Gender: 'Female',
+      Occupation: 'Freelance Graphic Designer',
+      Education: "Bachelor's Degree in Design",
+      IncomeLevel: 'Low Income',
+      Location: 'Urban Area',
+      FamilyStatus: 'Single'
+    },
+    Psychographics: {
+      PersonalityTraits: ['Creative', 'Adventurous', 'Independent'],
+      Values: ['Creativity', 'Health', 'Financial independence'],
+      Interests: ['Art and design', 'Healthy living', 'Budget travel']
+    },
+    Environment: {
+      Physical: 'Studio apartment with a small kitchenette',
+      Social: 'Active in creative community'
+    },
+    BehavioralPatterns: {
+      DailyRoutines: [
+        'Flexible work hours',
+        'Attends art events',
+        'Experimental cooking'
+      ],
+      TechInteraction: [
+        'Uses multiple devices for work and leisure',
+        'Active on social media'
+      ]
+    },
+    NeedsAndChallenges: {
+      Needs: [
+        'Healthy and inspiring meal options',
+        'Convenient cooking solutions'
+      ],
+      Challenges: ['Irregular income', 'Limited kitchen space']
+    },
+    UsageContext: {
+      ProductUse: 'Meal kits for creative and healthy cooking options',
+      UseInfluencers: ['Food blogs', 'Online reviews']
+    },
+    TechnologyProficiency: {
+      ComfortLevel: 'High',
+      PreferredDevices: ['Laptop', 'Tablet', 'Smartphone']
+    },
+    InformationConsumption: {
+      PreferredSources: ['Blogs', 'Online magazines'],
+      MediaConsumption: ['Documentaries on food and travel']
+    },
+    AdditionalMetadata: {}
+  }
+];

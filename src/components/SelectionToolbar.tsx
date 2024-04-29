@@ -1,16 +1,17 @@
-import { NodeType } from '@/nodes';
+import { NodeType } from '@/rf-components';
 import { Node, NodeToolbar } from 'reactflow';
 import { Button } from './ui/button';
 
 export interface SelectionToolbarProps {
   selectedNodes: Node[];
   onEditPersonas: () => void;
-  // right: number;
-  // bottom: number;
+  onGenerateProblems: () => void;
 }
 export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
-  const { selectedNodes, onEditPersonas } = props;
-  const showEditPersona = props.selectedNodes.some(
+  // const showEditPersona = props.selectedNodes.some(
+  //   (node) => node.type === NodeType.Persona
+  // );
+  const showGenerateProblems = props.selectedNodes.some(
     (node) => node.type === NodeType.Persona
   );
 
@@ -18,16 +19,24 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
     <NodeToolbar
       isVisible={true}
       // position="top"
-      nodeId={selectedNodes.map((node) => node.id)}
+      nodeId={props.selectedNodes.map((node) => node.id)}
     >
-      {showEditPersona && (
-        <Button variant="outline" size="sm" onClick={onEditPersonas}>
-          Edit personas
-        </Button>
-      )}
-      <Button variant="outline" size="sm">
-        Generate problem statements
-      </Button>
+      <div className="flex gap-2">
+        {/* {showEditPersona && (
+          <Button variant="outline" size="sm" onClick={props.onEditPersonas}>
+            Edit personas
+          </Button>
+        )} */}
+        {showGenerateProblems && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={props.onGenerateProblems}
+          >
+            Generate problem statements
+          </Button>
+        )}
+      </div>
     </NodeToolbar>
   );
 }

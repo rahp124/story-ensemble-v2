@@ -5,17 +5,19 @@ import ReactFlow, {
   Controls,
   Edge,
   Node,
-  MiniMap,
+  // MiniMap,
   SelectionMode,
   useEdgesState,
   useNodesState,
   Panel,
   useReactFlow,
-  getNodesBounds
+  getNodesBounds,
+  Connection,
+  addEdge
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { NodeType, nodeTypes } from './nodes';
-import { editPersonas, generatePersonas } from './api/personas';
+import { EdgeType, NodeType, edgeTypes, nodeTypes } from './rf-components';
+import { editPersonas, generatePersonas, mockPersonas } from './api/personas';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -27,23 +29,33 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
-import { PersonaNodeDimensions } from './nodes/PersonaNode';
+import { Toggle } from '@/components/ui/toggle';
 import SelectionToolbar from './components/SelectionToolbar';
 import { useSelectedNodes } from './lib/useSelectedNodes';
+import { generateProblems, mockProblems } from './api/problems';
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
+
+const PersonaNodeDimensions = {
+  width: 400,
+  height: 500
+};
 
 export default function App() {
   const rf = useReactFlow();
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // const onConnect = (connection: Connection) => {
-  //   setEdges((eds) => addEdge(connection, eds));
-  // };
+  const onConnect = (connection: Connection) => {
+    const edge = { ...connection, type: EdgeType.Context };
+    setEdges((eds) => addEdge(edge, eds));
+  };
 
+  const [mockGeneration, setMockGeneration] = useState(true);
+
+  // Persona Dialog
   const [showPersonaDialog, setShowPersonaDialog] = useState(false);
   const [generatingPersonas, setGeneratingPersonas] = useState(false);
   const [personaContext, setPersonaContext] = useState('');
@@ -56,147 +68,9 @@ export default function App() {
 
     setGeneratingPersonas(true);
 
-    const { personas } = await generatePersonas(personaContext);
-    // const personas = [
-    //   {
-    //     Persona: {
-    //       Name: 'Linda Martinez',
-    //       Age: 32,
-    //       Gender: 'Female',
-    //       Occupation: 'Part-time Customer Service Representative',
-    //       Education: 'Some College',
-    //       IncomeLevel: 'Low',
-    //       Location: 'Urban',
-    //       FamilyStatus: 'Single Parent'
-    //     },
-    //     Psychographics: {
-    //       PersonalityTraits: ['Resourceful', 'Optimistic', 'Frugal'],
-    //       Values: ['Family', 'Health', 'Economy'],
-    //       Interests: ['Cooking', 'Nutrition', 'Budgeting']
-    //     },
-    //     Environment: {
-    //       Physical: 'Small apartment in a densely populated area',
-    //       Social: 'Close-knit community, supports each other'
-    //     },
-    //     BehavioralPatterns: {
-    //       DailyRoutines: [
-    //         'Prepares meals for her children',
-    //         'Works part-time from home',
-    //         'Homework assistance in the evening'
-    //       ],
-    //       TechInteraction: [
-    //         'Uses smartphone for social media',
-    //         'Searches for recipes online',
-    //         'Online grocery shopping'
-    //       ]
-    //     },
-    //     NeedsAndChallenges: {
-    //       Needs: [
-    //         'Affordable healthy meal options',
-    //         'Quick and easy recipes',
-    //         'Meal plans that cater to children’s tastes'
-    //       ],
-    //       Challenges: [
-    //         'Limited budget',
-    //         'Lack of time due to work and parenting',
-    //         'Limited access to fresh produce in urban area'
-    //       ]
-    //     },
-    //     UsageContext: {
-    //       ProductUse:
-    //         'Interested in meal kits as a way to save time and introduce variety into family meals at an affordable price',
-    //       UseInfluencers: [
-    //         'Social Media',
-    //         'Friends and family recommendations',
-    //         'Online reviews'
-    //       ]
-    //     },
-    //     TechnologyProficiency: {
-    //       ComfortLevel: 'Medium',
-    //       PreferredDevices: ['Smartphone', 'Laptop']
-    //     },
-    //     InformationConsumption: {
-    //       PreferredSources: [
-    //         'Social Media',
-    //         'Food Blogs',
-    //         'Parenting Websites'
-    //       ],
-    //       MediaConsumption: [
-    //         'Video recipes',
-    //         'Budgeting podcasts',
-    //         'Nutrition articles'
-    //       ]
-    //     },
-    //     AdditionalMetadata: {
-    //       Note: 'Values family time and prefers to cook meals at home to save money and ensure the healthiness of meals.'
-    //     }
-    //   },
-    //   {
-    //     Persona: {
-    //       Name: 'John Thompson',
-    //       Age: 45,
-    //       Gender: 'Male',
-    //       Occupation: 'Warehouse Worker',
-    //       Education: 'High School',
-    //       IncomeLevel: 'Low',
-    //       Location: 'Rural',
-    //       FamilyStatus: 'Married with three children'
-    //     },
-    //     Psychographics: {
-    //       PersonalityTraits: ['Hardworking', 'Practical', 'Family-oriented'],
-    //       Values: ['Simplicity', 'Sustainability', 'Self-sufficiency'],
-    //       Interests: ['Gardening', 'DIY Projects', 'Outdoors']
-    //     },
-    //     Environment: {
-    //       Physical: 'Family home with a small garden',
-    //       Social: 'Rural community, limited access to services'
-    //     },
-    //     BehavioralPatterns: {
-    //       DailyRoutines: [
-    //         'Works early shifts',
-    //         'Family time in the evening',
-    //         'Weekend gardening with the family'
-    //       ],
-    //       TechInteraction: ['Basic internet use', 'Email', 'Navigation apps']
-    //     },
-    //     NeedsAndChallenges: {
-    //       Needs: [
-    //         'Cost-effective meal solutions',
-    //         'Meal kits that can accommodate a large family',
-    //         'Simple recipes with minimal preparation time'
-    //       ],
-    //       Challenges: [
-    //         'Fixed income with little flexibility for additional expenses',
-    //         'Rural location limits access to varied grocery items',
-    //         'Balancing work and family time'
-    //       ]
-    //     },
-    //     UsageContext: {
-    //       ProductUse:
-    //         'Seeks meal kits to reduce meal planning time and introduce new foods to family within a tight budget',
-    //       UseInfluencers: [
-    //         'Community forums',
-    //         'Local newspaper',
-    //         'Co-worker recommendations'
-    //       ]
-    //     },
-    //     TechnologyProficiency: {
-    //       ComfortLevel: 'Low',
-    //       PreferredDevices: ['Smartphone']
-    //     },
-    //     InformationConsumption: {
-    //       PreferredSources: [
-    //         'Local news',
-    //         'Mail flyers',
-    //         'Community center bulletin boards'
-    //       ],
-    //       MediaConsumption: ['Radio', 'Printed newspapers', 'TV news']
-    //     },
-    //     AdditionalMetadata: {
-    //       Note: 'Enjoys family activities and is looking for convenient ways to provide nutritious meals within a tight budget.'
-    //     }
-    //   }
-    // ];
+    const personas = !mockGeneration
+      ? (await generatePersonas(personaContext)).personas
+      : mockPersonas;
 
     const center = rf.screenToFlowPosition({
       x: window.innerWidth / 2,
@@ -209,10 +83,16 @@ export default function App() {
       personas.length * PersonaNodeDimensions.width +
       padding * (personas.length - 1);
     const xStart = center.x - totalWidth / 2;
+    // const totalHeight =
+    //   personas.length * PersonaNodeDimensions.height +
+    //   padding * (personas.length - 1);
+    // const yStart = center.y - totalHeight / 2;
 
     const newPersonaNodes: Node[] = personas.map((persona, idx) => {
       const id = `persona-${nanoid()}`;
       const position = {
+        // x: center.x - PersonaNodeDimensions.width / 2,
+        // y: yStart + idx * (PersonaNodeDimensions.height + padding)
         x: xStart + idx * (PersonaNodeDimensions.width + padding),
         y: center.y - PersonaNodeDimensions.height / 2
       };
@@ -221,7 +101,8 @@ export default function App() {
         id,
         type: NodeType.Persona,
         position,
-        data: { persona }
+        data: { persona },
+        style: PersonaNodeDimensions
       };
     });
     setNodes((nodes) => [...nodes, ...newPersonaNodes]);
@@ -233,20 +114,96 @@ export default function App() {
   };
 
   const { selectedNodes } = useSelectedNodes();
+  const selectedPersonaNodes = selectedNodes.filter(
+    (node) => node.type === NodeType.Persona
+  );
+
+  // Problem Dialog
+  const [showProblemDialog, setShowProblemDialog] = useState(false);
+  const [generatingProblems, setGeneratingProblems] = useState(false);
+  const [problemContext, setProblemContext] = useState('');
+
+  const ProblemNodeDimensions = {
+    width: 400,
+    height: 250
+  };
+  const handleGenerateProblems = async () => {
+    if (generatingProblems) return;
+    setGeneratingProblems(true);
+    //
+    const problems = !mockGeneration
+      ? await generateProblems(
+          'Problems for that necessitate meal kits for low income rural families',
+          mockPersonas
+        )
+      : mockProblems;
+
+    const padding = 20;
+
+    const center = rf.screenToFlowPosition({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2
+    });
+    const selectedPersonaBounds = getNodesBounds(selectedPersonaNodes);
+
+    const totalWidth =
+      problems.length * ProblemNodeDimensions.width +
+      padding * (problems.length - 1);
+    const xStart = selectedPersonaNodes.length
+      ? selectedPersonaBounds.x +
+        selectedPersonaBounds.width / 2 -
+        totalWidth / 2
+      : center.x - totalWidth / 2;
+    const y = selectedPersonaNodes.length
+      ? selectedPersonaBounds.y + selectedPersonaBounds.height + 200
+      : center.y - ProblemNodeDimensions.height / 2;
+
+    const newProblemNodes: Node[] = problems.map((problem, idx) => {
+      const id = `problem-${nanoid()}`;
+      const position = {
+        x: xStart + idx * (ProblemNodeDimensions.width + padding),
+        y
+      };
+
+      return {
+        id,
+        type: NodeType.Problem,
+        position,
+        data: { problem },
+        style: ProblemNodeDimensions
+      };
+    });
+
+    // create nodes
+    setNodes((nodes) => [...nodes, ...newProblemNodes]);
+
+    // create edges
+    const newEdges: Edge[] = [];
+    for (const persona of selectedPersonaNodes) {
+      for (const problem of newProblemNodes) {
+        newEdges.push({
+          id: `edge-${nanoid()}`,
+          source: persona.id,
+          target: problem.id,
+          type: EdgeType.Context
+        });
+      }
+    }
+    setEdges((edges) => [...edges, ...newEdges]);
+
+    setGeneratingProblems(false);
+    setProblemContext('');
+  };
+
   const handleOnSelectEnd = (event: React.MouseEvent) => {
     event.preventDefault();
 
     setShowSelectionTooltip(selectedNodes.length > 0);
   };
-  const handleEditPersonas = async () => {
-    const personasToEdit = selectedNodes
-      .filter((node) => node.type === NodeType.Persona)
-      .map((node) => node.data.persona);
-    console.log(personasToEdit);
 
-    // api call
+  const handleEditPersonas = async () => {
     const { personas: updatedPersonas } = await editPersonas(
-      personasToEdit,
+      selectedPersonaNodes.map((node) => node.data.persona),
       'Give the personas full names; all personas should have medium technology proficiency'
     );
 
@@ -281,22 +238,29 @@ export default function App() {
     <div className="h-[100vh] w-[100vw]">
       <ReactFlow
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onSelectionEnd={handleOnSelectEnd}
-        // onConnect={onConnect}
+        onConnect={onConnect}
         // Figma viewport controls
         panOnScroll
         selectionOnDrag
         panOnDrag={[1, 2]}
         selectionMode={SelectionMode.Partial}
         snapToGrid={true}
+        defaultViewport={{
+          x: 0,
+          y: 0,
+          zoom: 0.7
+        }}
+        proOptions={{ hideAttribution: true }}
       >
-        <Panel position="top-center">
+        <Panel position="top-left">
           <h2 className="text-center font-bold">Generate</h2>
-          <div className="flex items-center gap-2 p-1">
+          <div className="flex flex-col gap-2 p-1">
             <Button
               variant="outline"
               disabled={generatingPersonas}
@@ -307,19 +271,35 @@ export default function App() {
                 <Loader2 className="ml-2 h-4 w-4 animate-spin" />
               )}
             </Button>
-
-            <Button variant="outline">Problems</Button>
+            <Button
+              variant="outline"
+              disabled={generatingProblems}
+              onClick={() => setShowProblemDialog(true)}
+            >
+              Problems
+              {generatingProblems && (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              )}
+            </Button>
             <Button variant="outline">Solutions</Button>
             <Button variant="outline">Storyboards</Button>
+            <Toggle
+              variant="outline"
+              className="whitespace-nowrap"
+              pressed={mockGeneration}
+              onPressedChange={(pressed) => setMockGeneration(pressed)}
+            >
+              Mock generation
+            </Toggle>
           </div>
         </Panel>
         <Controls />
-        <MiniMap />
+        {/* <MiniMap /> */}
         <Background variant={BackgroundVariant.Dots} />
         <Dialog open={showPersonaDialog} onOpenChange={setShowPersonaDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Generate Personas</DialogTitle>
+              <DialogTitle>Generate personas</DialogTitle>
               <DialogDescription>
                 Please specify a context to generate personas
               </DialogDescription>
@@ -342,10 +322,40 @@ export default function App() {
             </form>
           </DialogContent>
         </Dialog>
+        <Dialog open={showProblemDialog} onOpenChange={setShowProblemDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Generate problem statements</DialogTitle>
+            </DialogHeader>
+            {selectedPersonaNodes.length > 0 && (
+              <p>
+                Generating problem statements for{' '}
+                <b>{selectedPersonaNodes.length}</b> selected personas.
+              </p>
+            )}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setShowProblemDialog(false);
+                handleGenerateProblems();
+              }}
+            >
+              <Textarea
+                placeholder="Please enter context..."
+                value={problemContext}
+                onChange={(e) => setProblemContext(e.target.value)}
+              />
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-4">
+                <Button type="submit">Generate problem statements</Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
         {showSelectionTooltip && (
           <SelectionToolbar
             selectedNodes={selectedNodes}
             onEditPersonas={handleEditPersonas}
+            onGenerateProblems={() => setShowProblemDialog(true)}
           />
         )}
       </ReactFlow>
