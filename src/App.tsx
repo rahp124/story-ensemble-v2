@@ -33,6 +33,7 @@ import { Toggle } from '@/components/ui/toggle';
 import SelectionToolbar from './components/SelectionToolbar';
 import { useSelectedNodes } from './lib/useSelectedNodes';
 import { generateProblems, mockProblems } from './api/problems';
+import { generateSolutions, mockSolutions } from './api/solutions';
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -117,6 +118,9 @@ export default function App() {
   const selectedPersonaNodes = selectedNodes.filter(
     (node) => node.type === NodeType.Persona
   );
+  const selectedProblemNodes = selectedNodes.filter(
+    (node) => node.type === NodeType.Problem
+  );
 
   // Problem Dialog
   const [showProblemDialog, setShowProblemDialog] = useState(false);
@@ -133,8 +137,8 @@ export default function App() {
     //
     const problems = !mockGeneration
       ? await generateProblems(
-          'Problems for that necessitate meal kits for low income rural families',
-          mockPersonas
+          problemContext,
+          selectedPersonaNodes.map((node) => node.data.persona)
         )
       : mockProblems;
 
@@ -193,6 +197,83 @@ export default function App() {
 
     setGeneratingProblems(false);
     setProblemContext('');
+  };
+
+  // Solution Dialog
+  const [showSolutionDialog, setShowSolutionDialog] = useState(false);
+  const [generatingSolutions, setGeneratingSolutions] = useState(false);
+  const [solutionContext, setSolutionContext] = useState('');
+
+  const SolutionNodeDimensions = {
+    width: 400,
+    height: 250
+  };
+  const handleGenerateSolutions = async () => {
+    if (generatingSolutions) return;
+    setGeneratingSolutions(true);
+    //
+    const solutions = !mockGeneration
+      ? await generateSolutions(
+          solutionContext,
+          selectedProblemNodes.map((node) => node.data.problem)
+        )
+      : mockSolutions;
+
+    const padding = 20;
+
+    const center = rf.screenToFlowPosition({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2
+    });
+    const selectedProblemBounds = getNodesBounds(selectedProblemNodes);
+
+    const totalWidth =
+      solutions.length * SolutionNodeDimensions.width +
+      padding * (solutions.length - 1);
+    const xStart = selectedProblemNodes.length
+      ? selectedProblemBounds.x +
+        selectedProblemBounds.width / 2 -
+        totalWidth / 2
+      : center.x - totalWidth / 2;
+    const y = selectedProblemNodes.length
+      ? selectedProblemBounds.y + selectedProblemBounds.height + 200
+      : center.y - SolutionNodeDimensions.height / 2;
+
+    const newSolutionNodes: Node[] = solutions.map((solution, idx) => {
+      const id = `solution-${nanoid()}`;
+      const position = {
+        x: xStart + idx * (SolutionNodeDimensions.width + padding),
+        y
+      };
+
+      return {
+        id,
+        type: NodeType.Solution,
+        position,
+        data: { solution },
+        style: SolutionNodeDimensions
+      };
+    });
+
+    // create nodes
+    setNodes((nodes) => [...nodes, ...newSolutionNodes]);
+
+    // create edges
+    const newEdges: Edge[] = [];
+    for (const problem of selectedProblemNodes) {
+      for (const solution of newSolutionNodes) {
+        newEdges.push({
+          id: `edge-${nanoid()}`,
+          source: problem.id,
+          target: solution.id,
+          type: EdgeType.Context
+        });
+      }
+    }
+    setEdges((edges) => [...edges, ...newEdges]);
+
+    setGeneratingSolutions(false);
+    setSolutionContext('');
   };
 
   const handleOnSelectEnd = (event: React.MouseEvent) => {
@@ -281,7 +362,16 @@ export default function App() {
                 <Loader2 className="ml-2 h-4 w-4 animate-spin" />
               )}
             </Button>
-            <Button variant="outline">Solutions</Button>
+            <Button
+              variant="outline"
+              disabled={generatingSolutions}
+              onClick={() => setShowSolutionDialog(true)}
+            >
+              Solutions
+              {generatingSolutions && (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              )}
+            </Button>
             <Button variant="outline">Storyboards</Button>
             <Toggle
               variant="outline"
@@ -351,11 +441,41 @@ export default function App() {
             </form>
           </DialogContent>
         </Dialog>
+        <Dialog open={showSolutionDialog} onOpenChange={setShowSolutionDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Generate solutions</DialogTitle>
+            </DialogHeader>
+            {selectedProblemNodes.length > 0 && (
+              <p>
+                Generating solutions for <b>{selectedProblemNodes.length}</b>{' '}
+                selected problems.
+              </p>
+            )}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setShowSolutionDialog(false);
+                handleGenerateSolutions();
+              }}
+            >
+              <Textarea
+                placeholder="Please enter context..."
+                value={solutionContext}
+                onChange={(e) => setSolutionContext(e.target.value)}
+              />
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-4">
+                <Button type="submit">Generate solutions</Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
         {showSelectionTooltip && (
           <SelectionToolbar
             selectedNodes={selectedNodes}
             onEditPersonas={handleEditPersonas}
             onGenerateProblems={() => setShowProblemDialog(true)}
+            onGenerateSolutions={() => setShowSolutionDialog(true)}
           />
         )}
       </ReactFlow>

@@ -14,7 +14,7 @@ export async function generateProblems(context: string, personas: Persona[]) {
   } as const;
   const personaContextMessage = {
     role: 'user',
-    content: `The problems should apply to the following personas:
+    content: `The problem statements should apply to people that match following personas. However, phrase problems in a general way that doesn't mention the personas directly.
     
 PERSONAS: """
 ${JSON.stringify(personas, null, 2)}

@@ -1,14 +1,17 @@
 import ContextEdge from './ContextEdge';
 import PersonaNode from './PersonaNode';
 import ProblemNode from './ProblemNode';
+import SolutionNode from './SolutionNode';
 
 export const NodeType = {
   Persona: 'Persona',
-  Problem: 'Problem'
+  Problem: 'Problem',
+  Solution: 'Solution'
 } as const;
 export const nodeTypes = {
   [NodeType.Persona]: PersonaNode,
-  [NodeType.Problem]: ProblemNode
+  [NodeType.Problem]: ProblemNode,
+  [NodeType.Solution]: SolutionNode
 };
 
 export const EdgeType = {
