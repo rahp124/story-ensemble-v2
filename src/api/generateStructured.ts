@@ -23,7 +23,8 @@ export async function generateStructured<
 
   const message = await openai.chat.completions
     .create({
-      model: 'gpt-3.5-turbo-0125',
+      // model: 'gpt-3.5-turbo-0125',
+      model: 'gpt-4-turbo-2024-04-09',
       response_format: {
         type: 'json_object'
       },
@@ -42,3 +43,7 @@ export async function generateStructured<
 
   return validatedResult;
 }
+
+// openai.images.createVariation({
+//   model: 'dall-e-2'
+// });

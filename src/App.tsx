@@ -34,6 +34,11 @@ import SelectionToolbar from './components/SelectionToolbar';
 import { useSelectedNodes } from './lib/useSelectedNodes';
 import { generateProblems, mockProblems } from './api/problems';
 import { generateSolutions, mockSolutions } from './api/solutions';
+import {
+  generateStoryboardCaptions,
+  generateStoryboardContinuitySpecification,
+  generateStoryboardFrame
+} from './api/storyboards';
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -317,6 +322,25 @@ export default function App() {
     setNodes((nodes) => [...nodes, ...newPersonaNodes]);
   };
 
+  const experiment = async () => {
+    const captions = await generateStoryboardCaptions({
+      numFrames: 6,
+      context: 'A family of four in a rural area receives a meal kit delivery'
+    });
+    console.log(captions);
+
+    const continuitySpecification =
+      await generateStoryboardContinuitySpecification(captions);
+
+    for (const caption of captions) {
+      const image = await generateStoryboardFrame(
+        caption,
+        continuitySpecification
+      );
+      console.log(image);
+    }
+  };
+
   return (
     <div className="h-[100vh] w-[100vw]">
       <ReactFlow
@@ -374,7 +398,9 @@ export default function App() {
                 <Loader2 className="ml-2 h-4 w-4 animate-spin" />
               )}
             </Button>
-            <Button variant="outline">Storyboards</Button>
+            <Button variant="outline" onClick={() => experiment()}>
+              Storyboards
+            </Button>
             <Toggle
               variant="outline"
               className="whitespace-nowrap"
