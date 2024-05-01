@@ -10,7 +10,7 @@ const problemsSchema = z.object({
 export async function generateProblems(context: string, personas: Persona[]) {
   const baseMessage = {
     role: 'user',
-    content: `Generate 3 problems statements relevant to the following context: ${context}`
+    content: `Generate 3 problems statements in the format: as a ______, I am trying to _________, but _____________ because _________ which makes me feel _________. These problems statements should be relevant to the following context: ${context}`
   } as const;
   const personaContextMessage = {
     role: 'user',

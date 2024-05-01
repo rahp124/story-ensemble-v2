@@ -2,6 +2,9 @@ import { z } from 'zod';
 import { generateStructured } from './generateStructured';
 
 const personaSchema = z.object({
+  // PersonaSummary: z.object({
+  //   Summary: z.string()
+  // }),
   Persona: z.object({
     Name: z.string(),
     Age: z.number().min(0),
@@ -53,7 +56,7 @@ export async function generatePersonas(context: string) {
   return generateStructured(personaListSchema, [
     {
       role: 'user',
-      content: `Generate a 3 personas relevant to the following context: ${context}`
+      content: `Generate a 3 distinct, representative personas that have different challenges relevant to the following context: ${context}`
     }
   ]);
 }

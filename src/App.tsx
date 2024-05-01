@@ -54,12 +54,14 @@ export default function App() {
     setEdges((eds) => addEdge(edge, eds));
   };
 
-  const [mockGeneration, setMockGeneration] = useState(true);
+  const [mockGeneration, setMockGeneration] = useState(false);
 
   // Persona Dialog
   const [showPersonaDialog, setShowPersonaDialog] = useState(false);
   const [generatingPersonas, setGeneratingPersonas] = useState(false);
-  const [personaContext, setPersonaContext] = useState('');
+  const [personaContext, setPersonaContext] = useState(
+    'Meal kits for low income rural families'
+  );
 
   // Select Menu
   const [showSelectionTooltip, setShowSelectionTooltip] = useState(false);
