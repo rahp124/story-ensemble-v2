@@ -332,6 +332,8 @@ export default function App() {
     const continuitySpecification =
       await generateStoryboardContinuitySpecification(captions);
 
+    console.log(continuitySpecification);
+
     for (const caption of captions) {
       const image = await generateStoryboardFrame(
         caption,
@@ -343,6 +345,7 @@ export default function App() {
 
   return (
     <div className="h-[100vh] w-[100vw]">
+      <img src="/box.svg" />
       <ReactFlow
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
