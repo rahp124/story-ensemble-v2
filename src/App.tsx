@@ -39,6 +39,7 @@ import {
   generateStoryboardContinuitySpecification,
   generateStoryboardFrame
 } from './api/storyboards';
+import { PersonaNodeData } from './rf-components/PersonaNode';
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -69,7 +70,6 @@ export default function App() {
   );
 
   // Select Menu
-  const [showSelectionTooltip, setShowSelectionTooltip] = useState(false);
 
   const handleGeneratePersonas = async () => {
     if (generatingPersonas) return;
@@ -283,12 +283,6 @@ export default function App() {
     setSolutionContext('');
   };
 
-  const handleOnSelectEnd = (event: React.MouseEvent) => {
-    event.preventDefault();
-
-    setShowSelectionTooltip(selectedNodes.length > 0);
-  };
-
   const handleEditPersonas = async () => {
     const { personas: updatedPersonas } = await editPersonas(
       selectedPersonaNodes.map((node) => node.data.persona),
@@ -343,9 +337,13 @@ export default function App() {
     }
   };
 
+  const [cursorNode, setCursorNode] = useState<Node | null>(null);
+
+  const [currentlySelecting, setCurrentlySelecting] = useState(false);
+  const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
+
   return (
     <div className="h-[100vh] w-[100vw]">
-      <img src="/box.svg" />
       <ReactFlow
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -353,12 +351,11 @@ export default function App() {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onSelectionEnd={handleOnSelectEnd}
         onConnect={onConnect}
-        // Figma viewport controls
+        // Viewport
         panOnScroll
-        selectionOnDrag
-        panOnDrag={[1, 2]}
+        selectionOnDrag={!cursorNode}
+        panOnDrag={false}
         selectionMode={SelectionMode.Partial}
         snapToGrid={true}
         defaultViewport={{
@@ -367,10 +364,67 @@ export default function App() {
           zoom: 0.7
         }}
         proOptions={{ hideAttribution: true }}
+        // Click and drop nodes
+        onPaneClick={() => {
+          if (!cursorNode) return;
+          setCursorNode(null);
+        }}
+        onMouseMove={(event) => {
+          if (!cursorNode) return;
+
+          const position = rf.screenToFlowPosition({
+            x: event.clientX + 1,
+            y: event.clientY + 1
+          });
+          setNodes((nodes) => {
+            const updatedNodes = nodes.map((node) => {
+              if (node.id === cursorNode.id) {
+                return {
+                  ...node,
+                  position
+                };
+              }
+              return node;
+            });
+            return updatedNodes;
+          });
+        }}
+        onSelectionStart={() => {
+          setCurrentlySelecting(true);
+        }}
+        onSelectionEnd={() => {
+          setCurrentlySelecting(false);
+        }}
       >
         <Panel position="top-left">
-          <h2 className="text-center font-bold">Generate</h2>
           <div className="flex flex-col gap-2 p-1">
+            <Button
+              variant="outline"
+              onClick={(event) => {
+                if (cursorNode !== null) {
+                  setNodes((nodes) =>
+                    nodes.filter((node) => node.id !== cursorNode.id)
+                  );
+                  setCursorNode(null);
+                }
+
+                const position = rf.screenToFlowPosition({
+                  x: event.clientX + 1,
+                  y: event.clientY + 1
+                });
+
+                const newCursorNode: Node<PersonaNodeData> = {
+                  id: `persona-${nanoid()}`,
+                  type: NodeType.Persona,
+                  position,
+                  data: {}
+                };
+                setNodes((nodes) => [...nodes, newCursorNode]);
+                setCursorNode(newCursorNode);
+              }}
+            >
+              Persona
+            </Button>
             <Button
               variant="outline"
               disabled={generatingPersonas}
