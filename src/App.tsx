@@ -361,13 +361,19 @@ export default function App() {
         defaultViewport={{
           x: 0,
           y: 0,
-          zoom: 0.7
+          zoom: 1
         }}
         proOptions={{ hideAttribution: true }}
         // Click and drop nodes
         onPaneClick={() => {
-          if (!cursorNode) return;
-          setCursorNode(null);
+          if (cursorNode) {
+            setCursorNode(null);
+          }
+        }}
+        onNodeClick={(_, node) => {
+          if (cursorNode && node.id === cursorNode.id) {
+            setCursorNode(null);
+          }
         }}
         onMouseMove={(event) => {
           if (!cursorNode) return;
@@ -424,6 +430,35 @@ export default function App() {
               }}
             >
               Persona
+            </Button>
+            <Button
+              variant="outline"
+              onClick={(event) => {
+                if (cursorNode !== null) {
+                  setNodes((nodes) =>
+                    nodes.filter((node) => node.id !== cursorNode.id)
+                  );
+                  setCursorNode(null);
+                }
+
+                const position = rf.screenToFlowPosition({
+                  x: event.clientX + 1,
+                  y: event.clientY + 1
+                });
+
+                const newCursorNode: Node<{ text: string }> = {
+                  id: `text-${nanoid()}`,
+                  type: NodeType.Text,
+                  position,
+                  data: {
+                    text: '<p>Placeholder</p>'
+                  }
+                };
+                setNodes((nodes) => [...nodes, newCursorNode]);
+                setCursorNode(newCursorNode);
+              }}
+            >
+              Text
             </Button>
             <Button
               variant="outline"
