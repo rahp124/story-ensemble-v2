@@ -7,6 +7,7 @@ export interface SelectionToolbarProps {
   onEditPersonas: () => void;
   onGenerateProblems: () => void;
   onGenerateSolutions: () => void;
+  onCreativeUpscale: () => void;
 }
 export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
   // const showEditPersona = props.selectedNodes.some(
@@ -57,6 +58,9 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
             Generate storyboards
           </Button>
         )}
+        <Button variant="outline" size="sm" onClick={props.onCreativeUpscale}>
+          Creative upscale
+        </Button>
       </div>
     </NodeToolbar>
   );

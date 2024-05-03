@@ -13,14 +13,17 @@ import ReactFlow, {
   useReactFlow,
   getNodesBounds,
   Connection,
-  addEdge
+  addEdge,
+  XYPosition,
+  getViewportForBounds
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import { toPng } from 'html-to-image';
 import { EdgeType, NodeType, edgeTypes, nodeTypes } from './rf-components';
 import { editPersonas, generatePersonas, mockPersonas } from './api/personas';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import {
   Dialog,
@@ -342,6 +345,78 @@ export default function App() {
   const [currentlySelecting, setCurrentlySelecting] = useState(false);
   const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
 
+  const [cursorPosition, setCursorPosition] = useState<XYPosition>({
+    x: 0,
+    y: 0
+  });
+  const updateCursorPosition = (
+    event: React.MouseEvent<HTMLDivElement, MouseEvent>
+  ) => {
+    const position = rf.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY
+    });
+    setCursorPosition(position);
+    return position;
+  };
+
+  const handleCreativeUpscale = async () => {
+    const nodesBounds = getNodesBounds(selectedNodes);
+    const { width, height } = nodesBounds;
+    const viewport = getViewportForBounds(nodesBounds, width, height, 0.5, 2);
+
+    const viewportElement = document.querySelector(
+      '.react-flow__viewport'
+    ) as HTMLElement;
+    const dataUrl = await toPng(viewportElement, {
+      width,
+      height,
+      style: {
+        width: String(width),
+        height: String(height),
+        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
+      },
+      filter: (node) => {
+        if (
+          node.classList &&
+          node.classList.contains('react-flow__resize-control')
+        ) {
+          return false;
+        }
+        return true;
+      }
+    });
+
+    console.log(dataUrl);
+    // .then((dataUrl) => {
+    //   const link = document.createElement('a');
+    //   link.download = 'creative-upscale.png';
+    //   link.href = dataUrl;
+    //   link.click();
+    // });
+  };
+
+  const createCursorImageNode = (src: string) => {
+    if (cursorNode !== null) {
+      setNodes((nodes) => nodes.filter((node) => node.id !== cursorNode.id));
+      setCursorNode(null);
+    }
+
+    const newCursorNode: Node<{ src: string }> = {
+      id: `text-${nanoid()}`,
+      type: NodeType.Image,
+      position: cursorPosition,
+      data: {
+        src
+      },
+      style: {
+        width: 100
+      }
+    };
+    setNodes((nodes) => [...nodes, newCursorNode]);
+    setCursorNode(newCursorNode);
+  };
+
   return (
     <div className="h-[100vh] w-[100vw]">
       <ReactFlow
@@ -376,12 +451,11 @@ export default function App() {
           }
         }}
         onMouseMove={(event) => {
+          // Get cursor position directly for performance
+          const position = updateCursorPosition(event);
+
           if (!cursorNode) return;
 
-          const position = rf.screenToFlowPosition({
-            x: event.clientX + 1,
-            y: event.clientY + 1
-          });
           setNodes((nodes) => {
             const updatedNodes = nodes.map((node) => {
               if (node.id === cursorNode.id) {
@@ -395,6 +469,7 @@ export default function App() {
             return updatedNodes;
           });
         }}
+        // Selection menu logic
         onSelectionStart={() => {
           setCurrentlySelecting(true);
         }}
@@ -406,7 +481,7 @@ export default function App() {
           <div className="flex flex-col gap-2 p-1">
             <Button
               variant="outline"
-              onClick={(event) => {
+              onClick={() => {
                 if (cursorNode !== null) {
                   setNodes((nodes) =>
                     nodes.filter((node) => node.id !== cursorNode.id)
@@ -414,15 +489,10 @@ export default function App() {
                   setCursorNode(null);
                 }
 
-                const position = rf.screenToFlowPosition({
-                  x: event.clientX + 1,
-                  y: event.clientY + 1
-                });
-
                 const newCursorNode: Node<PersonaNodeData> = {
                   id: `persona-${nanoid()}`,
                   type: NodeType.Persona,
-                  position,
+                  position: cursorPosition,
                   data: {}
                 };
                 setNodes((nodes) => [...nodes, newCursorNode]);
@@ -433,7 +503,7 @@ export default function App() {
             </Button>
             <Button
               variant="outline"
-              onClick={(event) => {
+              onClick={() => {
                 if (cursorNode !== null) {
                   setNodes((nodes) =>
                     nodes.filter((node) => node.id !== cursorNode.id)
@@ -441,15 +511,10 @@ export default function App() {
                   setCursorNode(null);
                 }
 
-                const position = rf.screenToFlowPosition({
-                  x: event.clientX + 1,
-                  y: event.clientY + 1
-                });
-
                 const newCursorNode: Node<{ text: string }> = {
                   id: `text-${nanoid()}`,
                   type: NodeType.Text,
-                  position,
+                  position: cursorPosition,
                   data: {
                     text: '<p>Placeholder</p>'
                   }
@@ -462,33 +527,7 @@ export default function App() {
             </Button>
             <Button
               variant="outline"
-              onClick={(event) => {
-                if (cursorNode !== null) {
-                  setNodes((nodes) =>
-                    nodes.filter((node) => node.id !== cursorNode.id)
-                  );
-                  setCursorNode(null);
-                }
-
-                const position = rf.screenToFlowPosition({
-                  x: event.clientX + 1,
-                  y: event.clientY + 1
-                });
-
-                const newCursorNode: Node<{ src: string }> = {
-                  id: `text-${nanoid()}`,
-                  type: NodeType.Image,
-                  position,
-                  data: {
-                    src: '/peep-standing-1.png'
-                  },
-                  style: {
-                    width: 100
-                  }
-                };
-                setNodes((nodes) => [...nodes, newCursorNode]);
-                setCursorNode(newCursorNode);
-              }}
+              onClick={() => createCursorImageNode('/peep-standing-1.png')}
             >
               Image
             </Button>
@@ -628,6 +667,7 @@ export default function App() {
             onEditPersonas={handleEditPersonas}
             onGenerateProblems={() => setShowProblemDialog(true)}
             onGenerateSolutions={() => setShowSolutionDialog(true)}
+            onCreativeUpscale={handleCreativeUpscale}
           />
         )}
       </ReactFlow>
