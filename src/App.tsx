@@ -462,6 +462,38 @@ export default function App() {
             </Button>
             <Button
               variant="outline"
+              onClick={(event) => {
+                if (cursorNode !== null) {
+                  setNodes((nodes) =>
+                    nodes.filter((node) => node.id !== cursorNode.id)
+                  );
+                  setCursorNode(null);
+                }
+
+                const position = rf.screenToFlowPosition({
+                  x: event.clientX + 1,
+                  y: event.clientY + 1
+                });
+
+                const newCursorNode: Node<{ src: string }> = {
+                  id: `text-${nanoid()}`,
+                  type: NodeType.Image,
+                  position,
+                  data: {
+                    src: '/peep-standing-1.png'
+                  },
+                  style: {
+                    width: 100
+                  }
+                };
+                setNodes((nodes) => [...nodes, newCursorNode]);
+                setCursorNode(newCursorNode);
+              }}
+            >
+              Image
+            </Button>
+            <Button
+              variant="outline"
               disabled={generatingPersonas}
               onClick={() => setShowPersonaDialog(true)}
             >
