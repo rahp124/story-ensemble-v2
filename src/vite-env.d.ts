@@ -2,7 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_OPENAI_API_KEY: string;
-  // more env variables...
+  readonly VITE_STABILITY_API_KEY: string;
 }
 
 interface ImportMeta {

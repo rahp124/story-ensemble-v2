@@ -43,6 +43,7 @@ import {
   generateStoryboardFrame
 } from './api/storyboards';
 import { PersonaNodeData } from './rf-components/PersonaNode';
+import { generateImageFromSketch } from './api/stableDiffusion';
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -388,12 +389,17 @@ export default function App() {
     });
 
     console.log(dataUrl);
-    // .then((dataUrl) => {
-    //   const link = document.createElement('a');
-    //   link.download = 'creative-upscale.png';
-    //   link.href = dataUrl;
-    //   link.click();
-    // });
+
+    const dataBlob = await fetch(dataUrl).then((res) => res.blob());
+    const generatedDataUrl = await generateImageFromSketch(
+      dataBlob,
+      'Create a non-photo realistic, sketch-like image for a storyboard. The image should be representative of the following content: two girls talking. Pixar, Disney'
+    );
+
+    const link = document.createElement('a');
+    link.download = 'creative-upscale.png';
+    link.href = generatedDataUrl;
+    link.click();
   };
 
   const createCursorImageNode = (src: string) => {
