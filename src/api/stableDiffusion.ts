@@ -1,5 +1,15 @@
 const STABLE_DIFFUSION_API = import.meta.env.VITE_STABILITY_API_KEY;
 
+async function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.onabort = () => reject(new Error('Blob to image URL aborted'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 export async function generateImageFromSketch(sketch: Blob, prompt: string) {
   const formData = new FormData();
   formData.set('image', sketch);
@@ -21,6 +31,6 @@ export async function generateImageFromSketch(sketch: Blob, prompt: string) {
   );
 
   const blob = await response.blob();
-  const dataUrl = URL.createObjectURL(blob);
+  const dataUrl = await blobToDataUrl(blob);
   return dataUrl;
 }

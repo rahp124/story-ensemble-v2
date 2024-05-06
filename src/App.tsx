@@ -362,7 +362,16 @@ export default function App() {
   };
 
   const handleCreativeUpscale = async () => {
-    const nodesBounds = getNodesBounds(selectedNodes);
+    const textNodes = selectedNodes.filter(
+      (node) => node.type === NodeType.Text
+    );
+    const imageNodes = selectedNodes.filter(
+      (node) => node.type === NodeType.Image
+    );
+
+    const prompt = textNodes.map((node) => node.data.text).join('\n');
+
+    const nodesBounds = getNodesBounds(imageNodes);
     const { width, height } = nodesBounds;
     const viewport = getViewportForBounds(nodesBounds, width, height, 0.5, 2);
 
@@ -388,18 +397,10 @@ export default function App() {
       }
     });
 
-    console.log(dataUrl);
-
     const dataBlob = await fetch(dataUrl).then((res) => res.blob());
-    const generatedDataUrl = await generateImageFromSketch(
-      dataBlob,
-      'Create a non-photo realistic, sketch-like image for a storyboard. The image should be representative of the following content: two girls talking. Pixar, Disney'
-    );
+    const generatedDataUrl = await generateImageFromSketch(dataBlob, prompt);
 
-    const link = document.createElement('a');
-    link.download = 'creative-upscale.png';
-    link.href = generatedDataUrl;
-    link.click();
+    createCursorImageNode(generatedDataUrl);
   };
 
   const createCursorImageNode = (src: string) => {
