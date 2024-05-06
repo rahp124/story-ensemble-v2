@@ -23,7 +23,7 @@ import { EdgeType, NodeType, edgeTypes, nodeTypes } from './rf-components';
 import { editPersonas, generatePersonas, mockPersonas } from './api/personas';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import React, { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import {
   Dialog,
@@ -44,6 +44,7 @@ import {
 } from './api/storyboards';
 import { PersonaNodeData } from './rf-components/PersonaNode';
 import { generateImageFromSketch } from './api/stableDiffusion';
+import { blobToDataUrl } from './lib/blobToDataUrl';
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -361,6 +362,8 @@ export default function App() {
     return position;
   };
 
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
   const handleCreativeUpscale = async () => {
     const textNodes = selectedNodes.filter(
       (node) => node.type === NodeType.Text
@@ -534,10 +537,23 @@ export default function App() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => createCursorImageNode('/peep-standing-1.png')}
+              onClick={() => imageInputRef.current!.click()}
+              // onClick={() => createCursorImageNode('/peep-standing-1.png')}
             >
               Image
             </Button>
+            <input
+              className="hidden"
+              type="file"
+              ref={imageInputRef}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                const dataUrl = await blobToDataUrl(file);
+                createCursorImageNode(dataUrl);
+              }}
+            />
             <Button
               variant="outline"
               disabled={generatingPersonas}
