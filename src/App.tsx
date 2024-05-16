@@ -5,16 +5,10 @@ import ReactFlow, {
   Controls,
   Edge,
   Node,
-  // MiniMap,
   SelectionMode,
-  useEdgesState,
-  useNodesState,
   Panel,
   useReactFlow,
   getNodesBounds,
-  Connection,
-  addEdge,
-  XYPosition,
   getViewportForBounds
 } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -40,16 +34,13 @@ import { generateSolutions, mockSolutions } from './api/solutions';
 import {
   generateStoryboardOutlines,
   generateStoryboardTitles
-  // generateStoryboardCaptions,
-  // generateStoryboardContinuitySpecification,
-  // generateStoryboardFrame
 } from './api/storyboards';
 import { PersonaNodeData } from './rf-components/PersonaNode';
 import { generateImage, generateImageFromSketch } from './api/stableDiffusion';
 import { blobToDataUrl } from './lib/blobToDataUrl';
 
-const initialNodes: Node[] = [];
-const initialEdges: Edge[] = [];
+import useStore from './store';
+import { useRfCursorPosition } from './lib/useRfCursorPosition';
 
 const PersonaNodeDimensions = {
   width: 400,
@@ -59,13 +50,20 @@ const PersonaNodeDimensions = {
 export default function App() {
   const rf = useReactFlow();
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
-  const onConnect = (connection: Connection) => {
-    const edge = { ...connection, type: EdgeType.Context };
-    setEdges((eds) => addEdge(edge, eds));
-  };
+  const {
+    nodes,
+    setNodes,
+    onNodesChange,
+    edges,
+    setEdges,
+    onEdgesChange,
+    onConnect,
+    cursorNode,
+    swapCursorNode,
+    updateCursorNodePosition,
+    placeCursorNode
+  } = useStore();
+  const { rfCursorPosition, updateRfCursorPosition } = useRfCursorPosition();
 
   const [mockGeneration, setMockGeneration] = useState(false);
 
@@ -120,7 +118,7 @@ export default function App() {
         style: PersonaNodeDimensions
       };
     });
-    setNodes((nodes) => [...nodes, ...newPersonaNodes]);
+    setNodes([...nodes, ...newPersonaNodes]);
 
     // TODO generate images and update nodes
 
@@ -193,7 +191,7 @@ export default function App() {
     });
 
     // create nodes
-    setNodes((nodes) => [...nodes, ...newProblemNodes]);
+    setNodes([...nodes, ...newProblemNodes]);
 
     // create edges
     const newEdges: Edge[] = [];
@@ -207,7 +205,7 @@ export default function App() {
         });
       }
     }
-    setEdges((edges) => [...edges, ...newEdges]);
+    setEdges([...edges, ...newEdges]);
 
     setGeneratingProblems(false);
     setProblemContext('');
@@ -270,7 +268,7 @@ export default function App() {
     });
 
     // create nodes
-    setNodes((nodes) => [...nodes, ...newSolutionNodes]);
+    setNodes([...nodes, ...newSolutionNodes]);
 
     // create edges
     const newEdges: Edge[] = [];
@@ -284,7 +282,7 @@ export default function App() {
         });
       }
     }
-    setEdges((edges) => [...edges, ...newEdges]);
+    setEdges([...edges, ...newEdges]);
 
     setGeneratingSolutions(false);
     setSolutionContext('');
@@ -320,28 +318,11 @@ export default function App() {
       };
     });
 
-    setNodes((nodes) => [...nodes, ...newPersonaNodes]);
+    setNodes([...nodes, ...newPersonaNodes]);
   };
-
-  const [cursorNode, setCursorNode] = useState<Node | null>(null);
 
   const [currentlySelecting, setCurrentlySelecting] = useState(false);
   const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
-
-  const [cursorPosition, setCursorPosition] = useState<XYPosition>({
-    x: 0,
-    y: 0
-  });
-  const updateCursorPosition = (
-    event: React.MouseEvent<HTMLDivElement, MouseEvent>
-  ) => {
-    const position = rf.screenToFlowPosition({
-      x: event.clientX,
-      y: event.clientY
-    });
-    setCursorPosition(position);
-    return position;
-  };
 
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -389,15 +370,10 @@ export default function App() {
   };
 
   const createCursorImageNode = (src: string) => {
-    if (cursorNode !== null) {
-      setNodes((nodes) => nodes.filter((node) => node.id !== cursorNode.id));
-      setCursorNode(null);
-    }
-
     const newCursorNode: Node<{ src: string }> = {
       id: `text-${nanoid()}`,
       type: NodeType.Image,
-      position: cursorPosition,
+      position: rfCursorPosition,
       data: {
         src
       },
@@ -405,8 +381,7 @@ export default function App() {
         width: 100
       }
     };
-    setNodes((nodes) => [...nodes, newCursorNode]);
-    setCursorNode(newCursorNode);
+    swapCursorNode(newCursorNode);
   };
 
   function addStoryboardExperiment(): void {
@@ -474,7 +449,7 @@ export default function App() {
     };
 
     const newNodes = [...imageNodes, ...textNodes, titleNode];
-    setNodes((nodes) => [...nodes, ...newNodes]);
+    setNodes([...nodes, ...newNodes]);
   }
 
   async function experiment() {
@@ -549,7 +524,7 @@ export default function App() {
     };
 
     const newNodes = [...imageNodes, ...textNodes, titleNode];
-    setNodes((nodes) => [...nodes, ...newNodes]);
+    setNodes([...nodes, ...newNodes]);
   }
 
   return (
@@ -575,34 +550,14 @@ export default function App() {
         }}
         proOptions={{ hideAttribution: true }}
         // Click and drop nodes
-        onPaneClick={() => {
-          if (cursorNode) {
-            setCursorNode(null);
-          }
-        }}
-        onNodeClick={(_, node) => {
-          if (cursorNode && node.id === cursorNode.id) {
-            setCursorNode(null);
-          }
-        }}
+        onPaneClick={placeCursorNode}
+        onNodeClick={placeCursorNode}
         onMouseMove={(event) => {
           // Get cursor position directly for performance
-          const position = updateCursorPosition(event);
+          const position = updateRfCursorPosition(event);
 
           if (!cursorNode) return;
-
-          setNodes((nodes) => {
-            const updatedNodes = nodes.map((node) => {
-              if (node.id === cursorNode.id) {
-                return {
-                  ...node,
-                  position
-                };
-              }
-              return node;
-            });
-            return updatedNodes;
-          });
+          updateCursorNodePosition(position);
         }}
         // Selection menu logic
         onSelectionStart={() => {
@@ -617,21 +572,13 @@ export default function App() {
             <Button
               variant="outline"
               onClick={() => {
-                if (cursorNode !== null) {
-                  setNodes((nodes) =>
-                    nodes.filter((node) => node.id !== cursorNode.id)
-                  );
-                  setCursorNode(null);
-                }
-
                 const newCursorNode: Node<PersonaNodeData> = {
                   id: `persona-${nanoid()}`,
                   type: NodeType.Persona,
-                  position: cursorPosition,
+                  position: rfCursorPosition,
                   data: {}
                 };
-                setNodes((nodes) => [...nodes, newCursorNode]);
-                setCursorNode(newCursorNode);
+                swapCursorNode(newCursorNode);
               }}
             >
               Persona
@@ -639,23 +586,15 @@ export default function App() {
             <Button
               variant="outline"
               onClick={() => {
-                if (cursorNode !== null) {
-                  setNodes((nodes) =>
-                    nodes.filter((node) => node.id !== cursorNode.id)
-                  );
-                  setCursorNode(null);
-                }
-
                 const newCursorNode: Node<{ text: string }> = {
                   id: `text-${nanoid()}`,
                   type: NodeType.Text,
-                  position: cursorPosition,
+                  position: rfCursorPosition,
                   data: {
                     text: '<p>Placeholder</p>'
                   }
                 };
-                setNodes((nodes) => [...nodes, newCursorNode]);
-                setCursorNode(newCursorNode);
+                swapCursorNode(newCursorNode);
               }}
             >
               Text
