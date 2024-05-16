@@ -1,24 +1,28 @@
-import { NodeProps, NodeResizer, useReactFlow } from 'reactflow';
-import ContentEditable from 'react-contenteditable';
-import { createRef, useState } from 'react';
+import { NodeProps, NodeResizer } from 'reactflow';
+import ContentEditable, { ContentEditableEvent } from 'react-contenteditable';
+import { createRef, useRef, useState } from 'react';
+import useStore from '@/store';
 // import sanitizeHtml from 'sanitize-html';
 
 export default function TextNode(props: NodeProps<{ text: string }>) {
-  const rf = useReactFlow();
+  const updateTextNode = useStore((state) => state.updateTextNode);
+
+  const text = useRef(props.data.text);
+  const handleInputChange = (e: ContentEditableEvent) => {
+    text.current = e.target.value;
+  };
 
   const [editing, setEditing] = useState(false);
-  const contentEditable = createRef<HTMLDivElement>();
-  const { text } = props.data;
-  const onChange = (newText: string) => {
-    rf.setNodes((nodes) => {
-      return nodes.map((node) => {
-        if (node.id === props.id) {
-          return { ...node, data: { ...node.data, text: newText } };
-        }
-        return node;
-      });
-    });
+  const handleClick = () => {
+    setEditing(true);
   };
+  const handleBlur = () => {
+    setEditing(false);
+    // Only update the text when the user is done editing to preserve undo history and prevent cursor jumping
+    updateTextNode(props.id, text.current);
+  };
+
+  const contentEditable = createRef<HTMLDivElement>();
   // const sanitize = (html: string) => {
   //   onChange(sanitizeHtml(html, { allowedTags: [], allowedAttributes: {} }));
   // };
@@ -45,11 +49,11 @@ export default function TextNode(props: NodeProps<{ text: string }>) {
           className="h-full w-full outline-none"
           contentEditable={editing}
           innerRef={contentEditable}
-          html={text}
-          onChange={(e) => onChange(e.target.value)}
+          html={text.current}
+          onChange={handleInputChange}
           tagName="div"
-          onClick={() => setEditing(true)}
-          onBlur={() => setEditing(false)}
+          onClick={handleClick}
+          onBlur={handleBlur}
         />
       </div>
     </>

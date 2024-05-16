@@ -30,6 +30,8 @@ type RFState = {
   swapCursorNode: (cursorNode: Node | null) => void;
   updateCursorNodePosition: (position: XYPosition) => void;
   placeCursorNode: () => void;
+
+  updateTextNode: (id: string, text: string) => void;
 };
 
 const useStore = create<RFState>((set, get) => ({
@@ -99,7 +101,18 @@ const useStore = create<RFState>((set, get) => ({
       }
     });
   },
-  placeCursorNode: () => set({ cursorNode: null })
+  placeCursorNode: () => set({ cursorNode: null }),
+
+  updateTextNode: (id: string, text: string) => {
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === id) {
+          return { ...node, data: { ...node.data, text } };
+        }
+        return node;
+      })
+    });
+  }
 }));
 
 export default useStore;
