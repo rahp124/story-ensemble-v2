@@ -13,6 +13,13 @@ import {
   applyEdgeChanges,
   XYPosition
 } from 'reactflow';
+import {
+  FrameOutline,
+  generateStoryboardOutlines,
+  generateStoryboardTitles
+} from './api/storyboards';
+import { StoryboardNodeData } from './rf-components/StoryboardNode';
+import { generateImage } from './api/stableDiffusion';
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -32,6 +39,18 @@ type RFState = {
   placeCursorNode: () => void;
 
   updateTextNode: (id: string, text: string) => void;
+
+  generateStoryboardTitles: (id: string) => Promise<void>;
+  generateStoryboardOutlines: (
+    id: string,
+    variationIdx: number,
+    title: string
+  ) => Promise<void>;
+  generateStoryboardImages: (
+    id: string,
+    variationIdx: number,
+    outlineIdx: number
+  ) => Promise<void>;
 };
 
 const useStore = create<RFState>((set, get) => ({
@@ -108,6 +127,113 @@ const useStore = create<RFState>((set, get) => ({
       nodes: get().nodes.map((node) => {
         if (node.id === id) {
           return { ...node, data: { ...node.data, text } };
+        }
+        return node;
+      })
+    });
+  },
+
+  generateStoryboardTitles: async (id: string) => {
+    const context =
+      'Rob is a educated tech salesperson. When attending in person tech conferences he wants to find people in specific industries to help make sales. Create an event engagement app that encourages people to register to connect at in-person events. This app also includes event engagement features to encourage users to register with programs such as scavenger hunts.';
+    ('Bill is a gardener who has trouble reading small print. Create an app that helps him learn about plants using videos.');
+    const titles = await generateStoryboardTitles(context);
+
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === id) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              variations: titles.map((title) => ({
+                title,
+                outlines: []
+              }))
+            }
+          };
+        }
+        return node;
+      })
+    });
+  },
+  generateStoryboardOutlines: async (
+    id: string,
+    variationIdx: number,
+    title: string
+  ) => {
+    const outlines = await generateStoryboardOutlines(title);
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === id) {
+          const typedNode = node as Node<StoryboardNodeData>;
+          return {
+            ...typedNode,
+            data: {
+              ...typedNode.data,
+              variations: typedNode.data.variations.map((variation, idx) => {
+                if (idx === variationIdx) {
+                  return {
+                    ...variation,
+                    outlines
+                  };
+                }
+                return variation;
+              })
+            }
+          };
+        }
+        return node;
+      })
+    });
+  },
+  generateStoryboardImages: async (id, variationIndex, outlineIndex) => {
+    const outline: FrameOutline[] = get()
+      .nodes.find((node) => node.id === id)
+      ?.data.variations.at(variationIndex)
+      ?.outlines.at(outlineIndex)?.outline;
+    if (!outline) return;
+
+    const images = await Promise.all(
+      outline.map(async (frame) => {
+        const image = await generateImage({
+          prompt: frame.imagePrompt,
+          negativePrompt: frame.imageNegativePrompt
+        });
+        return {
+          ...frame,
+          image
+        };
+      })
+    );
+
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === id) {
+          const typedNode = node as Node<StoryboardNodeData>;
+          return {
+            ...typedNode,
+            data: {
+              ...typedNode.data,
+              variations: typedNode.data.variations.map((variation, idx) => {
+                if (idx === variationIndex) {
+                  return {
+                    ...variation,
+                    outlines: variation.outlines.map((outline, idx) => {
+                      if (idx === outlineIndex) {
+                        return {
+                          ...outline,
+                          outline: images
+                        };
+                      }
+                      return outline;
+                    })
+                  };
+                }
+                return variation;
+              })
+            }
+          };
         }
         return node;
       })

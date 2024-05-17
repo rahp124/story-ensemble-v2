@@ -31,16 +31,13 @@ import SelectionToolbar from './components/SelectionToolbar';
 import { useSelectedNodes } from './lib/useSelectedNodes';
 import { generateProblems, mockProblems } from './api/problems';
 import { generateSolutions, mockSolutions } from './api/solutions';
-import {
-  generateStoryboardOutlines,
-  generateStoryboardTitles
-} from './api/storyboards';
 import { PersonaNodeData } from './rf-components/PersonaNode';
-import { generateImage, generateImageFromSketch } from './api/stableDiffusion';
+import { generateImageFromSketch } from './api/stableDiffusion';
 import { blobToDataUrl } from './lib/blobToDataUrl';
 
 import useStore from './store';
 import { useRfCursorPosition } from './lib/useRfCursorPosition';
+import { StoryboardNodeData } from './rf-components/StoryboardNode';
 
 const PersonaNodeDimensions = {
   width: 400,
@@ -384,147 +381,14 @@ export default function App() {
     swapCursorNode(newCursorNode);
   };
 
-  function addStoryboardExperiment(): void {
-    const captions = [
-      'Bill has a hard time reading the small print in the loud store',
-      'Frustrated, he leaves without buying any seeds.',
-      'At home, he opens the seed catalog shopping app.',
-      'Bill sees a list of categories with short titles and images.',
-      'He chooses a plant and watches a video about it',
-      "Bill happily watches more videos about plants he's curious about"
-    ];
-
-    const images = [
-      '/storyboard-1.png',
-      '/storyboard-2.png',
-      '/storyboard-3.png',
-      '/storyboard-4.png',
-      '/storyboard-5.png',
-      '/storyboard-6.png'
-    ];
-    const imageNodes = images.map((src, idx) => {
-      const id = `image-${nanoid()}`;
-      const position = {
-        x: 200 + idx * 200,
-        y: 200
-      };
-
-      return {
-        id,
-        type: NodeType.Image,
-        position,
-        data: { src },
-        style: {
-          width: 200
-        }
-      };
-    });
-
-    const textNodes = captions.map((text, idx) => {
-      const id = `text-${nanoid()}`;
-      const position = {
-        x: 200 + idx * 200,
-        y: 500
-      };
-
-      return {
-        id,
-        type: NodeType.Text,
-        position,
-        data: { text },
-        style: { width: 200 }
-      };
-    });
-
-    const title =
-      'Scenario: A seed catalog app that let users watch videos instead of reading plant info.';
-    const titleNode: Node<{ text: string }> = {
-      id: `text-${nanoid()}`,
-      type: NodeType.Text,
-      position: {
-        x: 450,
-        y: 100
-      },
-      data: { text: title }
-    };
-
-    const newNodes = [...imageNodes, ...textNodes, titleNode];
-    setNodes([...nodes, ...newNodes]);
-  }
-
   async function experiment() {
-    const context =
-      'Rob is a educated tech salesperson. When attending in person tech conferences he wants to find people in specific industries to help make sales. Create an event engagement app that encourages people to register to connect at in-person events. This app also includes event engagement features to encourage users to register with programs such as scavenger hunts.';
-    // 'Bill is a gardener who has trouble reading small print. Create an app that helps him learn about plants using videos.';
-    const titles = await generateStoryboardTitles(context);
-    console.log(titles);
-    const title = titles[0];
-
-    const outlines = await generateStoryboardOutlines(context + ' ' + title);
-    console.log(outlines);
-
-    const outline = outlines[0];
-
-    const frames = await Promise.all(
-      outline.outline.map(async (frame) => {
-        const { imagePrompt, imageNegativePrompt } = frame;
-        const image = await generateImage({
-          prompt: imagePrompt,
-          negativePrompt: imageNegativePrompt
-        });
-
-        return {
-          image,
-          ...frame
-        };
-      })
-    );
-
-    const imageNodes = frames.map((frame, idx) => {
-      const id = `image-${nanoid()}`;
-      const position = {
-        x: 200 + idx * 200,
-        y: 200
-      };
-
-      return {
-        id,
-        type: NodeType.Image,
-        position,
-        data: { src: frame.image },
-        style: {
-          width: 200
-        }
-      };
-    });
-    const textNodes = frames.map((frame, idx) => {
-      const id = `text-${nanoid()}`;
-      const position = {
-        x: 200 + idx * 200,
-        y: 500
-      };
-
-      return {
-        id,
-        type: NodeType.Text,
-        position,
-        data: { text: frame.caption },
-        style: { width: 200 }
-      };
-    });
-
-    const titleNode = {
-      id: `text-${nanoid()}`,
-      type: NodeType.Text,
-      position: {
-        x: 450,
-        y: 100
-      },
-      data: { text: title }
+    const newNode: Node<StoryboardNodeData> = {
+      id: `storyboard-${nanoid()}`,
+      type: NodeType.Storyboard,
+      position: rfCursorPosition,
+      data: { variations: [] }
     };
-
-    const newNodes = [...imageNodes, ...textNodes, titleNode];
-    setNodes([...nodes, ...newNodes]);
+    swapCursorNode(newNode);
   }
 
   return (
@@ -659,9 +523,6 @@ export default function App() {
             >
               Mock generation
             </Toggle>
-            <Button variant="outline" onClick={() => addStoryboardExperiment()}>
-              Storyboard experiment
-            </Button>
           </div>
         </Panel>
         <Controls />

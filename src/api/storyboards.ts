@@ -34,24 +34,23 @@ ${context}
   const { titles } = await generateStructured(storyboardTitlesSchema, messages);
   return titles;
 }
-
+const frameOutlineSchema = z.object({
+  description: z.string(),
+  imagePrompt: z.string(),
+  imageNegativePrompt: z.string(),
+  caption: z.string()
+});
+export type FrameOutline = z.infer<typeof frameOutlineSchema>;
 const storyboardOutlineSchema = z.object({
   outlines: z
     .array(
       z.object({
-        outline: z
-          .object({
-            description: z.string(),
-            imagePrompt: z.string(),
-            imageNegativePrompt: z.string(),
-            caption: z.string()
-          })
-          .array()
-          .min(4)
+        outline: frameOutlineSchema.array().min(4)
       })
     )
     .min(4)
 });
+export type StoryboardOutlines = z.infer<typeof storyboardOutlineSchema>;
 const STORYBOARD_OUTLINE_PROMPT = `
 You are an experienced UX designer.
 
