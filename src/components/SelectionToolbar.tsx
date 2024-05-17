@@ -58,9 +58,9 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
             Generate storyboards
           </Button>
         )}
-        <Button variant="outline" size="sm" onClick={props.onCreativeUpscale}>
+        {/* <Button variant="outline" size="sm" onClick={props.onCreativeUpscale}>
           Creative upscale
-        </Button>
+        </Button> */}
       </div>
     </NodeToolbar>
   );

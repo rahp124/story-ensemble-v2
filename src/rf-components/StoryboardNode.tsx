@@ -7,8 +7,13 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger
+} from '@/components/ui/hover-card';
 import useStore from '@/store';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Code, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { NodeProps } from 'reactflow';
 
@@ -35,6 +40,9 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [generatingOutlines, setGeneratingOutlines] = useState(false);
   const [generatingImages, setGeneratingImages] = useState(false);
 
+  const arrowsDisabled =
+    generatingTitles || generatingOutlines || generatingImages;
+
   const {
     generateStoryboardTitles,
     generateStoryboardOutlines,
@@ -53,7 +61,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
             <Button
               variant="outline"
               size="icon"
-              disabled={currentVariationIndex === 0}
+              disabled={currentVariationIndex === 0 || arrowsDisabled}
               onClick={() => {
                 setCurrentVariationIndex((idx) => idx - 1);
               }}
@@ -64,7 +72,9 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
             <Button
               variant="outline"
               size="icon"
-              disabled={currentVariationIndex === maxVariationIndex}
+              disabled={
+                currentVariationIndex === maxVariationIndex || arrowsDisabled
+              }
               onClick={() => {
                 setCurrentVariationIndex((idx) => idx + 1);
               }}
@@ -80,38 +90,61 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
             <Button
               variant="outline"
               size="icon"
-              disabled={currentOutlineIndex === 0}
+              disabled={currentOutlineIndex === 0 || arrowsDisabled}
               onClick={() => {
                 setCurrentOutlineIndex((idx) => idx - 1);
               }}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="w-full flex flex-col justify-center">
-              <div className="flex gap-4 justify-between mb-8">
-                {outline.map((frame, idx) => {
-                  return (
-                    <div
-                      key={idx}
-                      className="flex flex-col gap-4 w-[200px] justify-between"
-                    >
-                      <div className="h-auto w-full">
-                        {frame.image ? (
-                          <img src={frame.image} />
-                        ) : (
-                          <p>{frame.description}</p>
-                        )}
-                      </div>
-                      <p>{frame.caption}</p>
+            <div className="w-full grid grid-cols-4 gap-4">
+              {outline.map((frame, idx) => {
+                return (
+                  <div
+                    key={idx}
+                    className="flex flex-col gap-2 border-2 border-black rounded-sm pb-2 relative"
+                  >
+                    <div className="w-full">
+                      {frame.image ? (
+                        <img src={frame.image} />
+                      ) : (
+                        <p className="p-1">{frame.description}</p>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
+                    {frame.image && (
+                      <HoverCard openDelay={100}>
+                        <HoverCardTrigger
+                          asChild
+                          className="absolute top-1 right-1"
+                        >
+                          <Button variant="outline" size="icon">
+                            <Code className="h-4 w-4" />
+                          </Button>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="flex flex-col gap-4">
+                          <p className="mb-2">
+                            <b>Prompt</b>: {frame.imagePrompt}
+                          </p>
+                          <p>
+                            <b>Negative prompt</b>: {frame.imageNegativePrompt}
+                          </p>
+                          <Button variant="secondary">Regenerate image</Button>
+                        </HoverCardContent>
+                      </HoverCard>
+                    )}
+                    {frame.image && (
+                      <p className="text-sm text-center">{frame.caption}</p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <Button
               variant="outline"
               size="icon"
-              disabled={currentOutlineIndex === maxOutlineIndex}
+              disabled={
+                currentOutlineIndex === maxOutlineIndex || arrowsDisabled
+              }
               onClick={() => {
                 setCurrentOutlineIndex((idx) => idx + 1);
               }}
