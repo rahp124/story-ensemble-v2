@@ -4,15 +4,10 @@ import { Button } from './ui/button';
 
 export interface SelectionToolbarProps {
   selectedNodes: Node[];
-  onEditPersonas: () => void;
   onGenerateProblems: () => void;
   onGenerateSolutions: () => void;
-  onCreativeUpscale: () => void;
 }
 export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
-  // const showEditPersona = props.selectedNodes.some(
-  //   (node) => node.type === NodeType.Persona
-  // );
   const showGenerateProblems = props.selectedNodes.some(
     (node) => node.type === NodeType.Persona
   );
@@ -30,11 +25,6 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
       nodeId={props.selectedNodes.map((node) => node.id)}
     >
       <div className="flex gap-2">
-        {/* {showEditPersona && (
-          <Button variant="outline" size="sm" onClick={props.onEditPersonas}>
-            Edit personas
-          </Button>
-        )} */}
         {showGenerateProblems && (
           <Button
             variant="outline"
@@ -58,9 +48,6 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
             Generate storyboards
           </Button>
         )}
-        {/* <Button variant="outline" size="sm" onClick={props.onCreativeUpscale}>
-          Creative upscale
-        </Button> */}
       </div>
     </NodeToolbar>
   );

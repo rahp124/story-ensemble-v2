@@ -11,7 +11,8 @@ import {
   OnConnect,
   applyNodeChanges,
   applyEdgeChanges,
-  XYPosition
+  XYPosition,
+  OnSelectionChangeFunc
 } from 'reactflow';
 import {
   FrameOutline,
@@ -26,10 +27,12 @@ const initialEdges: Edge[] = [];
 
 type RFState = {
   nodes: Node[];
+  selectedNodes: Node[];
   edges: Edge[];
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
+  onSelectionChange: OnSelectionChangeFunc;
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
 
@@ -55,6 +58,7 @@ type RFState = {
 
 const useStore = create<RFState>((set, get) => ({
   nodes: initialNodes,
+  selectedNodes: [],
   edges: initialEdges,
   onNodesChange: (changes: NodeChange[]) => {
     set({
@@ -69,6 +73,11 @@ const useStore = create<RFState>((set, get) => ({
   onConnect: (connection: Connection) => {
     set({
       edges: addEdge(connection, get().edges)
+    });
+  },
+  onSelectionChange: ({ nodes }) => {
+    set({
+      selectedNodes: nodes
     });
   },
   setNodes: (nodes: Node[]) => {
@@ -136,7 +145,7 @@ const useStore = create<RFState>((set, get) => ({
   generateStoryboardTitles: async (id: string) => {
     const context =
       'Rob is a educated tech salesperson. When attending in person tech conferences he wants to find people in specific industries to help make sales. Create an event engagement app that encourages people to register to connect at in-person events. This app also includes event engagement features to encourage users to register with programs such as scavenger hunts.';
-    ('Bill is a gardener who has trouble reading small print. Create an app that helps him learn about plants using videos.');
+    // 'Bill is a gardener who has trouble reading small print. Create an app that helps him learn about plants using videos.';
     const titles = await generateStoryboardTitles(context);
 
     set({

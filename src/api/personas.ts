@@ -76,5 +76,3 @@ ${directions}
     }
   ]);
 }
-
-export const mockPersonas: Persona[] = [];

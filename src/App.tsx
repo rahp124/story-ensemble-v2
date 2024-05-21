@@ -8,16 +8,19 @@ import ReactFlow, {
   SelectionMode,
   Panel,
   useReactFlow,
-  getNodesBounds,
-  getViewportForBounds
+  getNodesBounds
+  // getViewportForBounds
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { toPng } from 'html-to-image';
+// import { toPng } from 'html-to-image';
 import { EdgeType, NodeType, edgeTypes, nodeTypes } from './rf-components';
-import { editPersonas, generatePersonas, mockPersonas } from './api/personas';
+import { generatePersonas } from './api/personas';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useRef, useState } from 'react';
+import {
+  //  useRef,
+  useState
+} from 'react';
 import { Loader2 } from 'lucide-react';
 import {
   Dialog,
@@ -26,14 +29,12 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
-import { Toggle } from '@/components/ui/toggle';
 import SelectionToolbar from './components/SelectionToolbar';
-import { useSelectedNodes } from './lib/useSelectedNodes';
-import { generateProblems, mockProblems } from './api/problems';
-import { generateSolutions, mockSolutions } from './api/solutions';
-import { PersonaNodeData } from './rf-components/PersonaNode';
-import { generateImageFromSketch } from './api/stableDiffusion';
-import { blobToDataUrl } from './lib/blobToDataUrl';
+import { generateProblems } from './api/problems';
+import { generateSolutions } from './api/solutions';
+// import { PersonaNodeData } from './rf-components/PersonaNode';
+// import { generateImageFromSketch } from './api/stableDiffusion';
+// import { blobToDataUrl } from './lib/blobToDataUrl';
 
 import useStore from './store';
 import { useRfCursorPosition } from './lib/useRfCursorPosition';
@@ -49,20 +50,20 @@ export default function App() {
 
   const {
     nodes,
+    selectedNodes,
     setNodes,
     onNodesChange,
     edges,
     setEdges,
     onEdgesChange,
     onConnect,
+    onSelectionChange,
     cursorNode,
     swapCursorNode,
     updateCursorNodePosition,
     placeCursorNode
   } = useStore();
   const { rfCursorPosition, updateRfCursorPosition } = useRfCursorPosition();
-
-  const [mockGeneration, setMockGeneration] = useState(false);
 
   // Persona Dialog
   const [showPersonaDialog, setShowPersonaDialog] = useState(false);
@@ -78,9 +79,7 @@ export default function App() {
 
     setGeneratingPersonas(true);
 
-    const personas = !mockGeneration
-      ? (await generatePersonas(personaContext)).personas
-      : mockPersonas;
+    const { personas } = await generatePersonas(personaContext);
 
     const center = rf.screenToFlowPosition({
       x: window.innerWidth / 2,
@@ -123,7 +122,6 @@ export default function App() {
     setPersonaContext('');
   };
 
-  const { selectedNodes } = useSelectedNodes();
   const selectedPersonaNodes = selectedNodes.filter(
     (node) => node.type === NodeType.Persona
   );
@@ -143,13 +141,11 @@ export default function App() {
   const handleGenerateProblems = async () => {
     if (generatingProblems) return;
     setGeneratingProblems(true);
-    //
-    const problems = !mockGeneration
-      ? await generateProblems(
-          problemContext,
-          selectedPersonaNodes.map((node) => node.data.persona)
-        )
-      : mockProblems;
+
+    const problems = await generateProblems(
+      problemContext,
+      selectedPersonaNodes.map((node) => node.data.persona)
+    );
 
     const padding = 20;
 
@@ -221,12 +217,10 @@ export default function App() {
     if (generatingSolutions) return;
     setGeneratingSolutions(true);
     //
-    const solutions = !mockGeneration
-      ? await generateSolutions(
-          solutionContext,
-          selectedProblemNodes.map((node) => node.data.problem)
-        )
-      : mockSolutions;
+    const solutions = await generateSolutions(
+      solutionContext,
+      selectedProblemNodes.map((node) => node.data.problem)
+    );
 
     const padding = 20;
 
@@ -285,101 +279,68 @@ export default function App() {
     setSolutionContext('');
   };
 
-  const handleEditPersonas = async () => {
-    const { personas: updatedPersonas } = await editPersonas(
-      selectedPersonaNodes.map((node) => node.data.persona),
-      'Give the personas full names; all personas should have medium technology proficiency'
-    );
-
-    const padding = 20;
-    const rect = getNodesBounds(selectedNodes);
-
-    const totalWidth =
-      updatedPersonas.length * PersonaNodeDimensions.width +
-      padding * (updatedPersonas.length - 1);
-    const xStart = rect.x + rect.width / 2 - totalWidth / 2;
-    const yStart = rect.y + rect.height + padding;
-
-    const newPersonaNodes: Node[] = updatedPersonas.map((persona, idx) => {
-      const id = `persona-${nanoid()}`;
-      const position = {
-        x: xStart + idx * (PersonaNodeDimensions.width + padding),
-        y: yStart
-      };
-
-      return {
-        id,
-        type: NodeType.Persona,
-        position,
-        data: { persona }
-      };
-    });
-
-    setNodes([...nodes, ...newPersonaNodes]);
-  };
-
   const [currentlySelecting, setCurrentlySelecting] = useState(false);
   const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
 
-  const imageInputRef = useRef<HTMLInputElement>(null);
+  // const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const handleCreativeUpscale = async () => {
-    const textNodes = selectedNodes.filter(
-      (node) => node.type === NodeType.Text
-    );
-    const imageNodes = selectedNodes.filter(
-      (node) => node.type === NodeType.Image
-    );
+  // const handleCreativeUpscale = async () => {
+  //   const textNodes = selectedNodes.filter(
+  //     (node) => node.type === NodeType.Text
+  //   );
+  //   const imageNodes = selectedNodes.filter(
+  //     (node) => node.type === NodeType.Image
+  //   );
 
-    const textContent = textNodes.map((node) => node.data.text).join('\n');
-    const prompt = `Generate an image that depicts ${textContent}`;
+  //   const textContent = textNodes.map((node) => node.data.text).join('\n');
+  //   const prompt = `Generate an image that depicts ${textContent}`;
 
-    const nodesBounds = getNodesBounds(imageNodes);
-    const { width, height } = nodesBounds;
-    const viewport = getViewportForBounds(nodesBounds, width, height, 0.5, 2);
+  //   const nodesBounds = getNodesBounds(imageNodes);
+  //   const { width, height } = nodesBounds;
+  //   const viewport = getViewportForBounds(nodesBounds, width, height, 0.5, 2);
 
-    const viewportElement = document.querySelector(
-      '.react-flow__viewport'
-    ) as HTMLElement;
-    const dataUrl = await toPng(viewportElement, {
-      width,
-      height,
-      style: {
-        width: String(width),
-        height: String(height),
-        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
-      },
-      filter: (node) => {
-        if (
-          node.classList &&
-          node.classList.contains('react-flow__resize-control')
-        ) {
-          return false;
-        }
-        return true;
-      }
-    });
+  //   const viewportElement = document.querySelector(
+  //     '.react-flow__viewport'
+  //   ) as HTMLElement;
+  //   const dataUrl = await toPng(viewportElement, {
+  //     width,
+  //     height,
+  //     style: {
+  //       width: String(width),
+  //       height: String(height),
+  //       transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
+  //     },
+  //     filter: (node) => {
+  //       if (
+  //         node.classList &&
+  //         node.classList.contains('react-flow__resize-control')
+  //       ) {
+  //         return false;
+  //       }
+  //       return true;
+  //     }
+  //   });
 
-    const dataBlob = await fetch(dataUrl).then((res) => res.blob());
-    const generatedDataUrl = await generateImageFromSketch(dataBlob, prompt);
+  //   const dataBlob = await fetch(dataUrl).then((res) => res.blob());
+  //   const generatedDataUrl = await generateImageFromSketch(dataBlob, prompt);
 
-    createCursorImageNode(generatedDataUrl);
-  };
+  //   createCursorImageNode(generatedDataUrl);
+  // };
 
-  const createCursorImageNode = (src: string) => {
-    const newCursorNode: Node<{ src: string }> = {
-      id: `text-${nanoid()}`,
-      type: NodeType.Image,
-      position: rfCursorPosition,
-      data: {
-        src
-      },
-      style: {
-        width: 100
-      }
-    };
-    swapCursorNode(newCursorNode);
-  };
+  // const createCursorImageNode = (src: string) => {
+  //   const newCursorNode: Node<{ src: string }> = {
+  //     id: `text-${nanoid()}`,
+  //     type: NodeType.Image,
+  //     position: rfCursorPosition,
+  //     data: {
+  //       src
+  //     },
+  //     style: {
+  //       width: 100
+  //     }
+  //   };
+  //   swapCursorNode(newCursorNode);
+  // };
 
   async function experiment() {
     const newNode: Node<StoryboardNodeData> = {
@@ -401,6 +362,7 @@ export default function App() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onSelectionChange={onSelectionChange}
         // Viewport
         panOnScroll
         selectionOnDrag={!cursorNode}
@@ -433,7 +395,7 @@ export default function App() {
       >
         <Panel position="top-left">
           <div className="flex flex-col gap-2 p-1">
-            <Button
+            {/* <Button
               variant="outline"
               onClick={() => {
                 const newCursorNode: Node<PersonaNodeData> = {
@@ -481,7 +443,7 @@ export default function App() {
                 const dataUrl = await blobToDataUrl(file);
                 createCursorImageNode(dataUrl);
               }}
-            />
+            /> */}
             <Button
               variant="outline"
               disabled={generatingPersonas}
@@ -515,14 +477,6 @@ export default function App() {
             <Button variant="outline" onClick={() => experiment()}>
               Storyboards
             </Button>
-            <Toggle
-              variant="outline"
-              className="whitespace-nowrap"
-              pressed={mockGeneration}
-              onPressedChange={(pressed) => setMockGeneration(pressed)}
-            >
-              Mock generation
-            </Toggle>
           </div>
         </Panel>
         <Controls />
@@ -615,10 +569,8 @@ export default function App() {
         {showSelectionTooltip && (
           <SelectionToolbar
             selectedNodes={selectedNodes}
-            onEditPersonas={handleEditPersonas}
             onGenerateProblems={() => setShowProblemDialog(true)}
             onGenerateSolutions={() => setShowSolutionDialog(true)}
-            onCreativeUpscale={handleCreativeUpscale}
           />
         )}
       </ReactFlow>

@@ -30,9 +30,3 @@ ${JSON.stringify(personas, null, 2)}
   const { problems } = await generateStructured(problemsSchema, messages);
   return problems;
 }
-
-export const mockProblems = [
-  'Limited access to fresh and affordable ingredients…w-income families seeking nutritious meal options',
-  'Lack of cooking skills and time constraints preven…s from preparing healthy meals for their families',
-  'Limited availability of grocery stores offering di…ds of low-income families residing in rural areas'
-];
