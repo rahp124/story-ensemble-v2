@@ -1,7 +1,7 @@
 import { NodeProps, NodeResizer } from 'reactflow';
 import ContentEditable, { ContentEditableEvent } from 'react-contenteditable';
 import { createRef, useRef, useState } from 'react';
-import useStore from '@/store';
+import { useStore } from '@/store';
 // import sanitizeHtml from 'sanitize-html';
 
 export default function TextNode(props: NodeProps<{ text: string }>) {
