@@ -51,6 +51,8 @@ type RFState = {
 
   updateProblemNode: (id: string, text: string) => void;
 
+  updateSolutionNode: (id: string, text: string) => void;
+
   generateStoryboardTitles: (id: string) => Promise<void>;
   generateStoryboardOutlines: (
     id: string,
@@ -159,6 +161,17 @@ export const useStore = create<RFState>((set, get) => ({
       nodes: get().nodes.map((node) => {
         if (node.id === id) {
           return { ...node, data: { ...node.data, problem } };
+        }
+        return node;
+      })
+    });
+  },
+
+  updateSolutionNode: (id: string, solution: string) => {
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === id) {
+          return { ...node, data: { ...node.data, solution } };
         }
         return node;
       })

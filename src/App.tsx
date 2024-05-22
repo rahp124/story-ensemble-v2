@@ -40,6 +40,7 @@ import { useStore } from './store';
 import { useRfCursorPosition } from './lib/useRfCursorPosition';
 import { StoryboardNodeData } from './rf-components/StoryboardNode';
 import { ProblemNodeData } from './rf-components/ProblemNode';
+import { SolutionNodeData } from './rf-components/SolutionNode';
 
 const PersonaNodeDimensions = {
   width: 400,
@@ -465,6 +466,22 @@ export default function App() {
               }}
             >
               Problem
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const newCursorNode: Node<SolutionNodeData> = {
+                  id: `solution-${nanoid()}`,
+                  type: NodeType.Solution,
+                  position: rfCursorPosition,
+                  data: {
+                    solution: ''
+                  }
+                };
+                swapCursorNode(newCursorNode);
+              }}
+            >
+              Solution
             </Button>
             <Button
               variant="outline"
