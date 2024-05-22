@@ -36,9 +36,11 @@ import { generateSolutions } from './api/solutions';
 // import { generateImageFromSketch } from './api/stableDiffusion';
 // import { blobToDataUrl } from './lib/blobToDataUrl';
 
-import useStore from './store';
+import { useStore } from './store';
 import { useRfCursorPosition } from './lib/useRfCursorPosition';
 import { StoryboardNodeData } from './rf-components/StoryboardNode';
+import { ProblemNodeData } from './rf-components/ProblemNode';
+import { SolutionNodeData } from './rf-components/SolutionNode';
 
 const PersonaNodeDimensions = {
   width: 400,
@@ -57,6 +59,8 @@ export default function App() {
     setEdges,
     onEdgesChange,
     onConnect,
+    onConnectStart,
+    onConnectEnd,
     onSelectionChange,
     cursorNode,
     swapCursorNode,
@@ -362,6 +366,8 @@ export default function App() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
         onSelectionChange={onSelectionChange}
         // Viewport
         panOnScroll
@@ -408,7 +414,7 @@ export default function App() {
               }}
             >
               Persona
-            </Button>
+            </Button> */}
             <Button
               variant="outline"
               onClick={() => {
@@ -425,6 +431,7 @@ export default function App() {
             >
               Text
             </Button>
+            {/*
             <Button
               variant="outline"
               onClick={() => imageInputRef.current!.click()}
@@ -444,6 +451,38 @@ export default function App() {
                 createCursorImageNode(dataUrl);
               }}
             /> */}
+            <Button
+              variant="outline"
+              onClick={() => {
+                const newCursorNode: Node<ProblemNodeData> = {
+                  id: `problem-${nanoid()}`,
+                  type: NodeType.Problem,
+                  position: rfCursorPosition,
+                  data: {
+                    problem: ''
+                  }
+                };
+                swapCursorNode(newCursorNode);
+              }}
+            >
+              Problem
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const newCursorNode: Node<SolutionNodeData> = {
+                  id: `solution-${nanoid()}`,
+                  type: NodeType.Solution,
+                  position: rfCursorPosition,
+                  data: {
+                    solution: ''
+                  }
+                };
+                swapCursorNode(newCursorNode);
+              }}
+            >
+              Solution
+            </Button>
             <Button
               variant="outline"
               disabled={generatingPersonas}

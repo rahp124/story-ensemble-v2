@@ -12,7 +12,7 @@ import {
   HoverCardContent,
   HoverCardTrigger
 } from '@/components/ui/hover-card';
-import useStore from '@/store';
+import { useStore } from '@/store';
 import { ChevronLeft, ChevronRight, Code, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { NodeProps } from 'reactflow';

@@ -12,7 +12,9 @@ import {
   applyNodeChanges,
   applyEdgeChanges,
   XYPosition,
-  OnSelectionChangeFunc
+  OnSelectionChangeFunc,
+  OnConnectStart,
+  OnConnectEnd
 } from 'reactflow';
 import {
   FrameOutline,
@@ -36,12 +38,20 @@ type RFState = {
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
 
+  connectionInProgress: boolean;
+  onConnectStart: OnConnectStart;
+  onConnectEnd: OnConnectEnd;
+
   cursorNode: Node | null;
   swapCursorNode: (cursorNode: Node | null) => void;
   updateCursorNodePosition: (position: XYPosition) => void;
   placeCursorNode: () => void;
 
   updateTextNode: (id: string, text: string) => void;
+
+  updateProblemNode: (id: string, text: string) => void;
+
+  updateSolutionNode: (id: string, text: string) => void;
 
   generateStoryboardTitles: (id: string) => Promise<void>;
   generateStoryboardOutlines: (
@@ -56,7 +66,7 @@ type RFState = {
   ) => Promise<void>;
 };
 
-const useStore = create<RFState>((set, get) => ({
+export const useStore = create<RFState>((set, get) => ({
   nodes: initialNodes,
   selectedNodes: [],
   edges: initialEdges,
@@ -86,6 +96,10 @@ const useStore = create<RFState>((set, get) => ({
   setEdges: (edges: Edge[]) => {
     set({ edges });
   },
+
+  connectionInProgress: false,
+  onConnectStart: () => set({ connectionInProgress: true }),
+  onConnectEnd: () => set({ connectionInProgress: false }),
 
   cursorNode: null,
   swapCursorNode: (cursorNode: Node | null) => {
@@ -136,6 +150,28 @@ const useStore = create<RFState>((set, get) => ({
       nodes: get().nodes.map((node) => {
         if (node.id === id) {
           return { ...node, data: { ...node.data, text } };
+        }
+        return node;
+      })
+    });
+  },
+
+  updateProblemNode: (id: string, problem: string) => {
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === id) {
+          return { ...node, data: { ...node.data, problem } };
+        }
+        return node;
+      })
+    });
+  },
+
+  updateSolutionNode: (id: string, solution: string) => {
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === id) {
+          return { ...node, data: { ...node.data, solution } };
         }
         return node;
       })
@@ -249,5 +285,3 @@ const useStore = create<RFState>((set, get) => ({
     });
   }
 }));
-
-export default useStore;
