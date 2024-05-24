@@ -30,6 +30,51 @@ ${JSON.stringify(problems, null, 2)}
   return solutions;
 }
 
+const solutionSchema = z.object({
+  solution: z.string()
+});
+export async function regenerateSolution(
+  problems: string[],
+  changes: { previous: string; current: string }[],
+  previousSolution: string
+) {
+  const baseMessage = {
+    role: 'user',
+    content: `A solution was is relevant to some problems. Regenerate the solutions based on the new changes.
+Do not come up with multiple solutions. Come up with a single solution that addresses all the changes and differences.
+Ensure solutions are 1-2 sentences.
+    `
+  } as const;
+  const problemsMessage = {
+    role: 'user',
+    content: `PROBLEMS: """
+${JSON.stringify(problems, null, 2)}
+"""`
+  } as const;
+  const changesMessage = {
+    role: 'user',
+    content: `CHANGES: """
+${JSON.stringify(changes, null, 2)}
+"""`
+  } as const;
+  const previousSolutionMessage = {
+    role: 'user',
+    content: `PREVIOUS SOLUTION: """
+${previousSolution}
+"""`
+  } as const;
+
+  const messages: ChatCompletionMessageParam[] = [
+    baseMessage,
+    problemsMessage,
+    changesMessage,
+    previousSolutionMessage
+  ];
+
+  const { solution } = await generateStructured(solutionSchema, messages);
+  return solution;
+}
+
 export const mockSolutions = [
   'Implementing drone technology for efficient delivery of fresh ingredients.',
   'Utilizing drone technology to enhance access to diverse and affordable food options in remote areas.',

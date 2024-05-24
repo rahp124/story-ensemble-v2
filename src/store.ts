@@ -23,6 +23,7 @@ import {
 } from './api/storyboards';
 import { StoryboardNodeData } from './rf-components/StoryboardNode';
 import { generateImage } from './api/stableDiffusion';
+import { regenerateSolution } from './api/solutions';
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -52,6 +53,7 @@ type RFState = {
   updateProblemNode: (id: string, text: string) => void;
 
   updateSolutionNode: (id: string, text: string) => void;
+  regenerateSolutionNode: (id: string, accept: boolean) => void;
 
   generateStoryboardTitles: (id: string) => Promise<void>;
   generateStoryboardOutlines: (
@@ -83,6 +85,40 @@ export const useStore = create<RFState>((set, get) => ({
   onConnect: (connection: Connection) => {
     set({
       edges: addEdge(connection, get().edges)
+    });
+
+    const { target, source } = connection;
+    if (
+      !target ||
+      !source ||
+      !target.startsWith('solution') ||
+      !source.startsWith('problem')
+    )
+      return;
+
+    const sourceNode = get().nodes.find((node) => node.id === source);
+    const targetNode = get().nodes.find((node) => node.id === target);
+    if (!sourceNode || !targetNode) return;
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === target) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              dependencyUpdates: [
+                ...node.data.dependencyUpdates,
+                {
+                  id: source,
+                  previous: sourceNode.data.problem,
+                  current: sourceNode.data.problem
+                }
+              ]
+            }
+          };
+        }
+        return node;
+      })
     });
   },
   onSelectionChange: ({ nodes }) => {
@@ -157,10 +193,46 @@ export const useStore = create<RFState>((set, get) => ({
   },
 
   updateProblemNode: (id: string, problem: string) => {
+    const problemNode = get().nodes.find((node) => node.id === id);
+    if (!problemNode) return;
+
     set({
       nodes: get().nodes.map((node) => {
         if (node.id === id) {
           return { ...node, data: { ...node.data, problem } };
+        }
+        return node;
+      })
+    });
+
+    // update dependent solution nodes with a pending update
+
+    const solutions = get()
+      .edges.filter(
+        (edge) => edge.source === id && edge.target.startsWith('solution')
+      )
+      .map((edge) => edge.target);
+    const solutionNodes = get().nodes.filter((node) =>
+      solutions.includes(node.id)
+    );
+
+    set({
+      nodes: get().nodes.map((node) => {
+        if (solutionNodes.map((node) => node.id).includes(node.id)) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              dependencyUpdates: [
+                ...node.data.dependencyUpdates,
+                {
+                  id,
+                  previous: problemNode.data.problem,
+                  current: problem
+                }
+              ]
+            }
+          };
         }
         return node;
       })
@@ -172,6 +244,73 @@ export const useStore = create<RFState>((set, get) => ({
       nodes: get().nodes.map((node) => {
         if (node.id === id) {
           return { ...node, data: { ...node.data, solution } };
+        }
+        return node;
+      })
+    });
+  },
+  regenerateSolutionNode: async (id: string, accept: boolean) => {
+    const solutionNode = get().nodes.find((node) => node.id === id);
+    if (!solutionNode) return;
+
+    if (!accept) {
+      set({
+        nodes: get().nodes.map((node) => {
+          if (node.id === id) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                dependencyUpdates: []
+              }
+            };
+          }
+          return node;
+        })
+      });
+      return;
+    }
+
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === id) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              regenerating: true
+            }
+          };
+        }
+        return node;
+      })
+    });
+
+    const problemIds = get()
+      .edges.filter((edge) => edge.target === id)
+      .map((edge) => edge.source);
+    const problems: string[] = get()
+      .nodes.filter((node) => problemIds.includes(node.id))
+      .map((node) => node.data.problem);
+
+    const newSolution = await regenerateSolution(
+      problems,
+      solutionNode.data.dependencyUpdates,
+      solutionNode.data.solution
+    );
+
+    get().updateSolutionNode(id, newSolution);
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === id) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              dependencyUpdates: [],
+              regenerating: false
+            }
+          };
         }
         return node;
       })

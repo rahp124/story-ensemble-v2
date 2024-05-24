@@ -475,7 +475,9 @@ export default function App() {
                   type: NodeType.Solution,
                   position: rfCursorPosition,
                   data: {
-                    solution: ''
+                    solution: '',
+                    dependencyUpdates: [],
+                    regenerating: false
                   }
                 };
                 swapCursorNode(newCursorNode);

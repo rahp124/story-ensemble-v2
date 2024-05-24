@@ -1,7 +1,7 @@
 import SourceHandle from '@/components/SourceHandle';
 import TargetHandle from '@/components/TargetHandle';
 import { useStore } from '@/store';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { NodeProps, NodeResizer } from 'reactflow';
 
@@ -10,6 +10,9 @@ export interface ProblemNodeData {
 }
 export default function ProblemNode(props: NodeProps<ProblemNodeData>) {
   const [problem, setProblem] = useState(props.data.problem);
+  useEffect(() => {
+    setProblem(props.data.problem);
+  }, [props.data.problem]);
   const updateProblemNode = useStore((state) => state.updateProblemNode);
 
   return (
@@ -36,7 +39,10 @@ export default function ProblemNode(props: NodeProps<ProblemNodeData>) {
             rows={6}
             value={problem}
             onChange={(e) => setProblem(e.target.value)}
-            onBlur={() => updateProblemNode(props.id, problem)}
+            onBlur={() => {
+              if (problem !== props.data.problem)
+                updateProblemNode(props.id, problem);
+            }}
           />
         </div>
       </div>
