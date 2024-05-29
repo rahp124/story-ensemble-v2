@@ -43,7 +43,3 @@ export async function generateStructured<
 
   return validatedResult;
 }
-
-// openai.images.createVariation({
-//   model: 'dall-e-2'
-// });
