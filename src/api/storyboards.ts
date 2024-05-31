@@ -45,14 +45,15 @@ const storyboardOutlineSchema = z.object({
         outline: frameOutlineSchema.array().min(4)
       })
     )
-    .min(4)
+    .min(1)
+    .max(1)
 });
 export type StoryboardOutlines = z.infer<typeof storyboardOutlineSchema>;
 const STORYBOARD_OUTLINE_PROMPT = `
 You are an experienced UX designer.
 
-Generate 4 different storyboard outlines for a user design storyboard based on the provided context.
-You must generate 4 different outlines, each with at least 4 frames.
+Generate 1 different storyboard outlines for a user design storyboard based on the provided context.
+You must generate 1 outlines, each with at least 4 frames.
 
 The frame outline contains a brief description for each frame in the storyboard.
 The description should tell a cohesive story about the user situation, problem, solution, and resolution.
