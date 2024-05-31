@@ -3,7 +3,6 @@ import ReactFlow, {
   Background,
   BackgroundVariant,
   Controls,
-  Edge,
   Node,
   SelectionMode,
   Panel,
@@ -13,7 +12,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 // import { toPng } from 'html-to-image';
-import { EdgeType, NodeType, edgeTypes, nodeTypes } from './rf-components';
+import { NodeType, edgeTypes, nodeTypes } from './rf-components';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,7 +42,6 @@ export default function App() {
     setNodes,
     onNodesChange,
     edges,
-    setEdges,
     onEdgesChange,
     onConnect,
     onConnectStart,
@@ -62,94 +60,26 @@ export default function App() {
   } = useStore();
   const { rfCursorPosition, updateRfCursorPosition } = useRfCursorPosition();
 
-  // Personas
-  const [showPersonaDialog, setShowPersonaDialog] = useState(false);
-  const [personaContext, setPersonaContext] = useState(
-    'Tech salesperson in a startup with high pressure to perform.'
-  );
-
   const selectedPersonaNodes = selectedNodes.filter(
     (node) => node.type === NodeType.Persona
   );
   const selectedProblemNodes = selectedNodes.filter(
     (node) => node.type === NodeType.Problem
   );
+  const selectedSolutionNodes = selectedNodes.filter(
+    (node) => node.type === NodeType.Solution
+  );
+  // Personas
+  const [showPersonaDialog, setShowPersonaDialog] = useState(false);
+  const [personaContext, setPersonaContext] = useState(
+    'Tech salesperson in a startup with high pressure to perform.'
+  );
 
   // Problems
   const [showProblemDialog, setShowProblemDialog] = useState(false);
-  const [generatingProblems, setGeneratingProblems] = useState(false);
-  const [problemContext, setProblemContext] = useState('');
-
-  const ProblemNodeDimensions = {
-    width: 400,
-    height: 250
-  };
-  const handleGenerateProblems = async () => {
-    if (generatingProblems) return;
-    setGeneratingProblems(true);
-
-    // const problems = await generateProblems(
-    //   problemContext,
-    //   selectedPersonaNodes.map((node) => node.data.persona)
-    // );
-    const problems: string[] = [];
-
-    const padding = 20;
-
-    const center = rf.screenToFlowPosition({
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2
-    });
-    const selectedPersonaBounds = getNodesBounds(selectedPersonaNodes);
-
-    const totalWidth =
-      problems.length * ProblemNodeDimensions.width +
-      padding * (problems.length - 1);
-    const xStart = selectedPersonaNodes.length
-      ? selectedPersonaBounds.x +
-        selectedPersonaBounds.width / 2 -
-        totalWidth / 2
-      : center.x - totalWidth / 2;
-    const y = selectedPersonaNodes.length
-      ? selectedPersonaBounds.y + selectedPersonaBounds.height + 200
-      : center.y - ProblemNodeDimensions.height / 2;
-
-    const newProblemNodes: Node[] = problems.map((problem, idx) => {
-      const id = `problem-${nanoid()}`;
-      const position = {
-        x: xStart + idx * (ProblemNodeDimensions.width + padding),
-        y
-      };
-
-      return {
-        id,
-        type: NodeType.Problem,
-        position,
-        data: { problem },
-        style: ProblemNodeDimensions
-      };
-    });
-
-    // create nodes
-    setNodes([...nodes, ...newProblemNodes]);
-
-    // create edges
-    const newEdges: Edge[] = [];
-    for (const persona of selectedPersonaNodes) {
-      for (const problem of newProblemNodes) {
-        newEdges.push({
-          id: `edge-${nanoid()}`,
-          source: persona.id,
-          target: problem.id,
-          type: EdgeType.Context
-        });
-      }
-    }
-    setEdges([...edges, ...newEdges]);
-
-    setGeneratingProblems(false);
-    setProblemContext('');
-  };
+  const [problemContext, setProblemContext] = useState(
+    'Tech salesperson struggles to find qualified leads at crowded conferences.'
+  );
 
   // Solutions
   const [showSolutionDialog, setShowSolutionDialog] = useState(false);
@@ -283,13 +213,9 @@ export default function App() {
             </Button>
             <Button
               variant="outline"
-              disabled={generatingProblems}
               onClick={() => setShowProblemDialog(true)}
             >
               Problems
-              {generatingProblems && (
-                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-              )}
             </Button>
             <Button
               variant="outline"
@@ -416,7 +342,10 @@ export default function App() {
               onSubmit={(e) => {
                 e.preventDefault();
                 setShowProblemDialog(false);
-                handleGenerateProblems();
+                generateProblemNodes(
+                  problemContext,
+                  selectedPersonaNodes.map((node) => node.id)
+                );
               }}
             >
               <Textarea

@@ -23,11 +23,17 @@ import {
 } from './api/storyboards';
 import { generateImage } from './api/stableDiffusion';
 import { generateSolution, generateSolutionDimensions } from './api/solutions';
-import { Dimension, PersonaNodeData, StoryboardNodeData } from './types';
+import {
+  Dimension,
+  PersonaNodeData,
+  ProblemNodeData,
+  StoryboardNodeData
+} from './types';
 import { allDimensionAssignments } from './lib';
 import { generatePersona, generatePersonaDimensions } from './api/personas';
 import { nanoid } from 'nanoid';
 import { NodeType } from './rf-components';
+import { generateProblem, generateProblemDimensions } from './api/problems';
 
 type RFState = {
   nodes: Node[];
@@ -66,13 +72,19 @@ type RFState = {
   mergePersonaNodes: (ids: string[]) => Promise<void>;
 
   // Problem
-  generateProblemNodes: (context: string) => Promise<void>;
+  generateProblemNodes: (
+    context: string,
+    personaIds: string[]
+  ) => Promise<void>;
   regenerateProblemNodes: (ids: string[], instructions?: string) => void;
   updateProblemNode: (id: string, text: string) => void;
   mergeProblemNodes: (ids: string[]) => Promise<void>;
 
   // Solution
-  generateSolutionNodes: (context: string) => Promise<void>;
+  generateSolutionNodes: (
+    context: string,
+    problemIds: string[]
+  ) => Promise<void>;
   regenerateSolutionNodes: (ids: string[], instructions?: string) => void;
   updateSolutionNode: (id: string, text: string) => void;
   mergeSolutionNodes: (ids: string[]) => Promise<void>;
@@ -279,8 +291,136 @@ export const useStore = create<RFState>((set, get) => ({
         return node;
       })
     });
+
+    // Update dependencies
+    const dependencyIds = get()
+      .edges.filter(
+        (edge) => edge.source === id && edge.target.startsWith('problem')
+      )
+      .map((edge) => edge.target);
+
+    set({
+      nodes: get().nodes.map((node) => {
+        if (dependencyIds.includes(node.id)) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              outOfSync: true
+            }
+          };
+        }
+        return node;
+      })
+    });
   },
 
+  generateProblemNodes: async (context: string, personaIds: string[]) => {
+    const personas: string[] = get()
+      .nodes.filter(
+        (node) => personaIds.includes(node.id) && node.type === NodeType.Persona
+      )
+      .map((node) => node.data.persona);
+    context = `${context}\n\nPersonas: ${personas}`;
+
+    const newDimensions = await generateProblemDimensions(
+      get().personaDimensions,
+      context
+    );
+    set({
+      problemDimensions: [...get().problemDimensions, ...newDimensions]
+    });
+
+    const dimensionPermutations = allDimensionAssignments(
+      get().problemDimensions,
+      5
+    );
+
+    const nodes = await Promise.all(
+      dimensionPermutations.map(async (permutation, idx) => {
+        const personaNode: Node<ProblemNodeData> = {
+          id: `problem-${nanoid()}`,
+          type: NodeType.Problem,
+          position: { x: 100 + idx * 350, y: 600 },
+          style: {
+            width: 300,
+            height: 300
+          },
+          data: {
+            problem: await generateProblem(permutation, context),
+            dimensions: permutation
+          }
+        };
+        return personaNode;
+      })
+    );
+
+    const edges = personaIds.flatMap((personaId) =>
+      nodes.map(({ id }) => ({
+        id: `edge-${nanoid()}`,
+        source: personaId,
+        target: id
+      }))
+    );
+
+    get().setNodes([...get().nodes, ...nodes]);
+    get().setEdges([...get().edges, ...edges]);
+  },
+  regenerateProblemNodes: async (ids: string[], instructions?: string) => {
+    const problemNodes = get().nodes.filter(
+      (node) => node.type === NodeType.Problem && ids.includes(node.id)
+    );
+    if (!problemNodes.length) return;
+
+    problemNodes.forEach(async (node) => {
+      set({
+        nodes: get().nodes.map((node) => {
+          if (ids.includes(node.id)) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                regenerating: true
+              }
+            };
+          }
+          return node;
+        })
+      });
+
+      const personaIds = get()
+        .edges.filter(
+          (edge) => edge.target === node.id && edge.source.startsWith('persona')
+        )
+        .map((edge) => edge.source);
+      const personas: string[] = get()
+        .nodes.filter(
+          (node) =>
+            personaIds.includes(node.id) && node.type === NodeType.Persona
+        )
+        .map((node) => node.data.persona);
+      const context = `Personas: ${personas}`;
+
+      const newPersona = await generateProblem(node.data.dimensions, context);
+
+      get().updateProblemNode(node.id, newPersona);
+      set({
+        nodes: get().nodes.map((node) => {
+          if (ids.includes(node.id)) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                outOfSync: false,
+                regenerating: false
+              }
+            };
+          }
+          return node;
+        })
+      });
+    });
+  },
   updateProblemNode: (id: string, problem: string) => {
     const problemNode = get().nodes.find((node) => node.id === id);
     if (!problemNode) return;
@@ -294,32 +434,21 @@ export const useStore = create<RFState>((set, get) => ({
       })
     });
 
-    // update dependent solution nodes with a pending update
-
-    const solutions = get()
+    // Update dependencies
+    const dependencyIds = get()
       .edges.filter(
         (edge) => edge.source === id && edge.target.startsWith('solution')
       )
       .map((edge) => edge.target);
-    const solutionNodes = get().nodes.filter((node) =>
-      solutions.includes(node.id)
-    );
 
     set({
       nodes: get().nodes.map((node) => {
-        if (solutionNodes.map((node) => node.id).includes(node.id)) {
+        if (dependencyIds.includes(node.id)) {
           return {
             ...node,
             data: {
               ...node.data,
-              dependencyUpdates: [
-                ...node.data.dependencyUpdates,
-                {
-                  id,
-                  previous: problemNode.data.problem,
-                  current: problem
-                }
-              ]
+              outOfSync: true
             }
           };
         }
