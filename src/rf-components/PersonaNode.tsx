@@ -1,8 +1,10 @@
 import { NodeProps, NodeResizer } from 'reactflow';
 import { PersonaNodeData } from '@/types';
 import { useEffect, useState } from 'react';
-import TargetHandle from '@/components/TargetHandle';
 import { useStore } from '@/store';
+import SourceHandle from '@/components/SourceHandle';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
   const [persona, setPersona] = useState(props.data.persona);
@@ -10,6 +12,7 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
     setPersona(props.data.persona);
   }, [props.data.persona]);
   const updatePersonaNode = useStore((state) => state.updatePersonaNode);
+  const { dimensions } = props.data;
 
   return (
     <>
@@ -25,14 +28,13 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
           height: 10
         }}
       />
-      <div className="w-full h-full flex flex-col min-w-[300px] min-h-[200px] nowheel overflow-hidden">
+      <div className="h-full flex flex-col min-w-[300px] min-h-[300px] nowheel overflow-hidden">
         <div className="flex bg-yellow-100 p-2 py-1 w-fit rounded-tr-md">
           <h3 className="font-bold text-sm">Persona</h3>
         </div>
-        <div className="p-4 w-full h-full  flex-grow bg-yellow-100 rounded-tr-md rounded-b-md">
+        <div className="p-4 w-full flex-grow bg-yellow-100 rounded-tr-md rounded-b-md flex flex-col">
           <textarea
-            className="block min-h-full h-full w-full resize-none p-2 text-md bg-yellow-50"
-            rows={6}
+            className="block w-full resize-none p-2 text-md bg-yellow-50 flex-grow"
             value={persona}
             onChange={(e) => setPersona(e.target.value)}
             onBlur={() => {
@@ -40,9 +42,21 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
                 updatePersonaNode(props.id, persona);
             }}
           />
+          <div className="mt-2">
+            <ScrollArea className="w-full h-[80px]">
+              {dimensions.map((dimension) => (
+                <Badge key={dimension.name} variant="secondary">
+                  <span>
+                    <b>{dimension.name}</b>:{' '}
+                    {dimension.currentValues.join(', ')}
+                  </span>
+                </Badge>
+              ))}
+            </ScrollArea>
+          </div>
         </div>
       </div>
-      <TargetHandle />
+      <SourceHandle />
     </>
   );
 }

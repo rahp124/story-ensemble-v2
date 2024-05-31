@@ -35,11 +35,6 @@ import { useRfCursorPosition } from './lib/useRfCursorPosition';
 import { SolutionNodeData, StoryboardNodeData } from './types';
 import { ScrollArea, ScrollBar } from './components/ui/scroll-area';
 
-const PersonaNodeDimensions = {
-  width: 400,
-  height: 500
-};
-
 export default function App() {
   const rf = useReactFlow();
   const {
@@ -70,57 +65,8 @@ export default function App() {
   // Personas
   const [showPersonaDialog, setShowPersonaDialog] = useState(false);
   const [personaContext, setPersonaContext] = useState(
-    'Meal kits for low income rural families'
+    'Tech salesperson in a startup with high pressure to perform.'
   );
-  // const handleGeneratePersonas;
-  // const handleGeneratePersonas = async () => {
-  //   if (generatingPersonas) return;
-
-  //   setGeneratingPersonas(true);
-
-  //   // const { personas } = await generatePersonas(personaContext);
-  //   const personas: Persona[] = [];
-
-  //   const center = rf.screenToFlowPosition({
-  //     x: window.innerWidth / 2,
-  //     y: window.innerHeight / 2
-  //   });
-
-  //   const padding = 20;
-
-  //   const totalWidth =
-  //     personas.length * PersonaNodeDimensions.width +
-  //     padding * (personas.length - 1);
-  //   const xStart = center.x - totalWidth / 2;
-  //   // const totalHeight =
-  //   //   personas.length * PersonaNodeDimensions.height +
-  //   //   padding * (personas.length - 1);
-  //   // const yStart = center.y - totalHeight / 2;
-
-  //   const newPersonaNodes: Node[] = personas.map((persona, idx) => {
-  //     const id = `persona-${nanoid()}`;
-  //     const position = {
-  //       // x: center.x - PersonaNodeDimensions.width / 2,
-  //       // y: yStart + idx * (PersonaNodeDimensions.height + padding)
-  //       x: xStart + idx * (PersonaNodeDimensions.width + padding),
-  //       y: center.y - PersonaNodeDimensions.height / 2
-  //     };
-
-  //     return {
-  //       id,
-  //       type: NodeType.Persona,
-  //       position,
-  //       data: { persona },
-  //       style: PersonaNodeDimensions
-  //     };
-  //   });
-  //   setNodes([...nodes, ...newPersonaNodes]);
-
-  //   // TODO generate images and update nodes
-
-  //   setGeneratingPersonas(false);
-  //   setPersonaContext('');
-  // };
 
   const selectedPersonaNodes = selectedNodes.filter(
     (node) => node.type === NodeType.Persona

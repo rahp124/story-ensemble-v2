@@ -23,9 +23,11 @@ import {
 } from './api/storyboards';
 import { generateImage } from './api/stableDiffusion';
 import { generateSolution, generateSolutionDimensions } from './api/solutions';
-import { Dimension, StoryboardNodeData } from './types';
+import { Dimension, PersonaNodeData, StoryboardNodeData } from './types';
 import { allDimensionAssignments } from './lib';
 import { generatePersona, generatePersonaDimensions } from './api/personas';
+import { nanoid } from 'nanoid';
+import { NodeType } from './rf-components';
 
 type RFState = {
   nodes: Node[];
@@ -239,20 +241,44 @@ export const useStore = create<RFState>((set, get) => ({
       personaDimensions: [...get().personaDimensions, ...newDimensions]
     });
 
-    console.log(newDimensions);
-
     const dimensionPermutations = allDimensionAssignments(
       get().personaDimensions,
-      20
+      5
     );
 
-    const personas = await Promise.all(
-      dimensionPermutations.map((permutation) =>
-        generatePersona(permutation, context)
-      )
+    const personasNodes = await Promise.all(
+      dimensionPermutations.map(async (permutation, idx) => {
+        const personaNode: Node<PersonaNodeData> = {
+          id: `persona-${nanoid()}`,
+          type: NodeType.Persona,
+          position: { x: 100 + idx * 350, y: 200 },
+          style: {
+            width: 300,
+            height: 300
+          },
+          data: {
+            persona: await generatePersona(permutation, context),
+            dimensions: permutation
+          }
+        };
+        return personaNode;
+      })
     );
 
-    console.log(personas);
+    get().setNodes([...get().nodes, ...personasNodes]);
+  },
+  updatePersonaNode: async (id: string, persona: string) => {
+    const personaNode = get().nodes.find((node) => node.id === id);
+    if (!personaNode || personaNode.type !== NodeType.Persona) return;
+
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === id) {
+          return { ...node, data: { ...node.data, persona } };
+        }
+        return node;
+      })
+    });
   },
 
   updateProblemNode: (id: string, problem: string) => {
