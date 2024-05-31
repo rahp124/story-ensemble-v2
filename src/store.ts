@@ -21,12 +21,10 @@ import {
   generateStoryboardOutlines,
   generateStoryboardTitles
 } from './api/storyboards';
-import { StoryboardNodeData } from './rf-components/StoryboardNode';
 import { generateImage } from './api/stableDiffusion';
-import { regenerateSolution } from './api/solutions';
-
-const initialNodes: Node[] = [];
-const initialEdges: Edge[] = [];
+import { generateSolution, generateSolutionDimensions } from './api/solutions';
+import { Dimension, StoryboardNodeData } from './types';
+import { allDimensionAssignments } from './lib';
 
 type RFState = {
   nodes: Node[];
@@ -39,6 +37,12 @@ type RFState = {
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
 
+  personaDimensions: Dimension[];
+  problemDimensions: Dimension[];
+  solutionDimensions: Dimension[];
+  storyboardOutlineDimensions: Dimension[];
+  storyboardImageDimensions: [];
+
   connectionInProgress: boolean;
   onConnectStart: OnConnectStart;
   onConnectEnd: OnConnectEnd;
@@ -48,10 +52,16 @@ type RFState = {
   updateCursorNodePosition: (position: XYPosition) => void;
   placeCursorNode: () => void;
 
+  setNodeOutOfSync: (id: string, outOfSync: boolean) => void;
+
   updateTextNode: (id: string, text: string) => void;
 
   updateProblemNode: (id: string, text: string) => void;
 
+  generateSolutionNodes: (
+    problemDependencyIds: string[],
+    instructions: string
+  ) => Promise<string[]>;
   updateSolutionNode: (id: string, text: string) => void;
   regenerateSolutionNode: (id: string, accept: boolean) => void;
 
@@ -69,9 +79,9 @@ type RFState = {
 };
 
 export const useStore = create<RFState>((set, get) => ({
-  nodes: initialNodes,
+  nodes: [],
   selectedNodes: [],
-  edges: initialEdges,
+  edges: [],
   onNodesChange: (changes: NodeChange[]) => {
     set({
       nodes: applyNodeChanges(changes, get().nodes)
@@ -133,6 +143,12 @@ export const useStore = create<RFState>((set, get) => ({
     set({ edges });
   },
 
+  personaDimensions: [],
+  problemDimensions: [],
+  solutionDimensions: [],
+  storyboardOutlineDimensions: [],
+  storyboardImageDimensions: [],
+
   connectionInProgress: false,
   onConnectStart: () => set({ connectionInProgress: true }),
   onConnectEnd: () => set({ connectionInProgress: false }),
@@ -180,6 +196,17 @@ export const useStore = create<RFState>((set, get) => ({
     });
   },
   placeCursorNode: () => set({ cursorNode: null }),
+
+  setNodeOutOfSync: (id: string, outOfSync: boolean) => {
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === id) {
+          return { ...node, data: { ...node.data, outOfSync } };
+        }
+        return node;
+      })
+    });
+  },
 
   updateTextNode: (id: string, text: string) => {
     set({
@@ -239,6 +266,29 @@ export const useStore = create<RFState>((set, get) => ({
     });
   },
 
+  generateSolutionNodes: async (problemDependencyIds, instructions) => {
+    const existingDimensions = get().solutionDimensions;
+    const newDimensions = await generateSolutionDimensions(
+      existingDimensions,
+      ''
+    );
+    set({
+      solutionDimensions: [...get().solutionDimensions, ...newDimensions]
+    });
+
+    const problems: string[] = [];
+    const dimensionPermutations = allDimensionAssignments(
+      get().solutionDimensions
+    );
+    console.log(dimensionPermutations);
+    const solutions = await Promise.all(
+      dimensionPermutations.map((permutation) =>
+        generateSolution(problems, permutation, instructions)
+      )
+    );
+
+    return solutions;
+  },
   updateSolutionNode: (id: string, solution: string) => {
     set({
       nodes: get().nodes.map((node) => {
@@ -293,7 +343,7 @@ export const useStore = create<RFState>((set, get) => ({
       .nodes.filter((node) => problemIds.includes(node.id))
       .map((node) => node.data.problem);
 
-    const newSolution = await regenerateSolution(
+    const newSolution = await generateSolution(
       problems,
       solutionNode.data.dependencyUpdates,
       solutionNode.data.solution

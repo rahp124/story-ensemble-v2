@@ -1,4 +1,3 @@
-import { Persona } from '@/api/personas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,11 +6,8 @@ import { User } from 'lucide-react';
 import { NodeProps } from 'reactflow';
 import { sentenceCase } from 'change-case';
 import SourceHandle from '@/components/SourceHandle';
+import { PersonaNodeData } from '@/types';
 
-export interface PersonaNodeData {
-  persona?: Persona;
-  avatar?: string;
-}
 export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
   const { persona, avatar } = props.data;
 

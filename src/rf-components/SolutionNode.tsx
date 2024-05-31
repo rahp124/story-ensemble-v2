@@ -8,16 +8,12 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip';
 import { useStore } from '@/store';
+import { SolutionNodeData } from '@/types';
 import { RefreshCw, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { NodeProps, NodeResizer } from 'reactflow';
 
-export interface SolutionNodeData {
-  solution: string;
-  regenerating: boolean;
-  dependencyUpdates: { id: string; previous: string; current: string }[];
-}
 export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
   const [solution, setSolution] = useState(props.data.solution);
   useEffect(() => {
@@ -50,7 +46,7 @@ export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
           </div>
           {props.data.regenerating ? (
             <p>Regenerating...</p>
-          ) : props.data.dependencyUpdates.length > 0 ? (
+          ) : props.data.outOfSync ? (
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>

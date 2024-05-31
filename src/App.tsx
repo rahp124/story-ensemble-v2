@@ -31,16 +31,13 @@ import {
 } from '@/components/ui/dialog';
 import SelectionToolbar from './components/SelectionToolbar';
 import { generateProblems } from './api/problems';
-import { generateSolutions } from './api/solutions';
 // import { PersonaNodeData } from './rf-components/PersonaNode';
 // import { generateImageFromSketch } from './api/stableDiffusion';
 // import { blobToDataUrl } from './lib/blobToDataUrl';
 
 import { useStore } from './store';
 import { useRfCursorPosition } from './lib/useRfCursorPosition';
-import { StoryboardNodeData } from './rf-components/StoryboardNode';
-import { ProblemNodeData } from './rf-components/ProblemNode';
-import { SolutionNodeData } from './rf-components/SolutionNode';
+import { ProblemNodeData, SolutionNodeData, StoryboardNodeData } from './types';
 
 const PersonaNodeDimensions = {
   width: 400,
@@ -65,7 +62,8 @@ export default function App() {
     cursorNode,
     swapCursorNode,
     updateCursorNodePosition,
-    placeCursorNode
+    placeCursorNode,
+    generateSolutionNodes
   } = useStore();
   const { rfCursorPosition, updateRfCursorPosition } = useRfCursorPosition();
 
@@ -220,20 +218,14 @@ export default function App() {
   const handleGenerateSolutions = async () => {
     if (generatingSolutions) return;
     setGeneratingSolutions(true);
-    //
-    const solutions = await generateSolutions(
-      solutionContext,
-      selectedProblemNodes.map((node) => node.data.problem)
-    );
 
+    const solutions = await generateSolutionNodes([], solutionContext);
     const padding = 20;
-
     const center = rf.screenToFlowPosition({
       x: window.innerWidth / 2,
       y: window.innerHeight / 2
     });
     const selectedProblemBounds = getNodesBounds(selectedProblemNodes);
-
     const totalWidth =
       solutions.length * SolutionNodeDimensions.width +
       padding * (solutions.length - 1);
@@ -245,40 +237,36 @@ export default function App() {
     const y = selectedProblemNodes.length
       ? selectedProblemBounds.y + selectedProblemBounds.height + 200
       : center.y - SolutionNodeDimensions.height / 2;
-
-    const newSolutionNodes: Node[] = solutions.map((solution, idx) => {
-      const id = `solution-${nanoid()}`;
-      const position = {
-        x: xStart + idx * (SolutionNodeDimensions.width + padding),
-        y
-      };
-
-      return {
-        id,
-        type: NodeType.Solution,
-        position,
-        data: { solution },
-        style: SolutionNodeDimensions
-      };
-    });
-
+    const newSolutionNodes: Node<SolutionNodeData>[] = solutions.map(
+      (solution, idx) => {
+        const position = {
+          x: xStart + idx * (SolutionNodeDimensions.width + padding),
+          y
+        };
+        return {
+          id: `solution-${nanoid()}`,
+          type: NodeType.Solution,
+          position,
+          data: { solution, dimensions: [] },
+          style: SolutionNodeDimensions
+        };
+      }
+    );
     // create nodes
     setNodes([...nodes, ...newSolutionNodes]);
-
     // create edges
-    const newEdges: Edge[] = [];
-    for (const problem of selectedProblemNodes) {
-      for (const solution of newSolutionNodes) {
-        newEdges.push({
-          id: `edge-${nanoid()}`,
-          source: problem.id,
-          target: solution.id,
-          type: EdgeType.Context
-        });
-      }
-    }
-    setEdges([...edges, ...newEdges]);
-
+    // const newEdges: Edge[] = [];
+    // for (const problem of selectedProblemNodes) {
+    //   for (const solution of newSolutionNodes) {
+    //     newEdges.push({
+    //       id: `edge-${nanoid()}`,
+    //       source: problem.id,
+    //       target: solution.id,
+    //       type: EdgeType.Context
+    //     });
+    //   }
+    // }
+    // setEdges([...edges, ...newEdges]);
     setGeneratingSolutions(false);
     setSolutionContext('');
   };
@@ -351,7 +339,7 @@ export default function App() {
       id: `storyboard-${nanoid()}`,
       type: NodeType.Storyboard,
       position: rfCursorPosition,
-      data: { variations: [] }
+      data: { variations: [], dimensions: [] }
     };
     swapCursorNode(newNode);
   }
@@ -459,7 +447,8 @@ export default function App() {
                   type: NodeType.Problem,
                   position: rfCursorPosition,
                   data: {
-                    problem: ''
+                    problem: '',
+                    dimensions: []
                   }
                 };
                 swapCursorNode(newCursorNode);
@@ -476,8 +465,7 @@ export default function App() {
                   position: rfCursorPosition,
                   data: {
                     solution: '',
-                    dependencyUpdates: [],
-                    regenerating: false
+                    dimensions: []
                   }
                 };
                 swapCursorNode(newCursorNode);

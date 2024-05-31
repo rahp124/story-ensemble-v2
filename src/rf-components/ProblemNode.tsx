@@ -1,13 +1,11 @@
 import SourceHandle from '@/components/SourceHandle';
 import TargetHandle from '@/components/TargetHandle';
 import { useStore } from '@/store';
+import { ProblemNodeData } from '@/types';
 import { useEffect, useState } from 'react';
 
 import { NodeProps, NodeResizer } from 'reactflow';
 
-export interface ProblemNodeData {
-  problem: string;
-}
 export default function ProblemNode(props: NodeProps<ProblemNodeData>) {
   const [problem, setProblem] = useState(props.data.problem);
   useEffect(() => {
