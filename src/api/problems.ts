@@ -1,32 +1,28 @@
-import { z } from 'zod';
-import { generateStructured } from './generateStructured';
-import { Persona } from './personas';
-import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+import { generateStructured, generateString } from './openai';
+import { Dimension, newDimensionsSchema } from '@/types';
 
-const problemsSchema = z.object({
-  problems: z.array(z.string())
-});
+export async function generateProblemDimensions(
+  existingDimensions: Dimension[],
+  context: string
+): Promise<Dimension[]> {
+  const prompt = 'TODO' + existingDimensions + context;
 
-export async function generateProblems(context: string, personas: Persona[]) {
-  const baseMessage = {
-    role: 'user',
-    content: `Generate 3 problems statements in the format: as a ______, I am trying to _________, but _____________ because _________ which makes me feel _________. These problems statements should be relevant to the following context: ${context}`
-  } as const;
-  const personaContextMessage = {
-    role: 'user',
-    content: `The problem statements should apply to people that match following personas. However, phrase problems in a general way that doesn't mention the personas directly.
-    
-PERSONAS: """
-${JSON.stringify(personas, null, 2)}
-"""
-`
-  } as const;
+  const { newDimensions } = await generateStructured(
+    newDimensionsSchema,
+    prompt
+  );
 
-  const messages: ChatCompletionMessageParam[] = [baseMessage];
-  if (personas.length > 0) {
-    messages.push(personaContextMessage);
-  }
+  return newDimensions.map((dimension) => ({
+    ...dimension,
+    currentValues: []
+  }));
+}
 
-  const { problems } = await generateStructured(problemsSchema, messages);
-  return problems;
+export async function generateProblem(
+  dimensionValues: Dimension[],
+  context: string
+) {
+  const prompt = `TODO` + dimensionValues + context;
+
+  return await generateString(prompt);
 }

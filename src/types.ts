@@ -69,8 +69,7 @@ export const personaSchema = z.object({
 export type Persona = z.infer<typeof personaSchema>;
 
 export type PersonaNodeData = NodeData & {
-  persona?: Persona;
-  avatar?: string;
+  persona: string;
 };
 export type ProblemNodeData = NodeData & {
   problem: string;

@@ -14,7 +14,6 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 // import { toPng } from 'html-to-image';
 import { EdgeType, NodeType, edgeTypes, nodeTypes } from './rf-components';
-import { generatePersonas } from './api/personas';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,14 +29,11 @@ import {
   DialogTitle
 } from '@/components/ui/dialog';
 import SelectionToolbar from './components/SelectionToolbar';
-import { generateProblems } from './api/problems';
-// import { PersonaNodeData } from './rf-components/PersonaNode';
-// import { generateImageFromSketch } from './api/stableDiffusion';
-// import { blobToDataUrl } from './lib/blobToDataUrl';
 
 import { useStore } from './store';
 import { useRfCursorPosition } from './lib/useRfCursorPosition';
-import { ProblemNodeData, SolutionNodeData, StoryboardNodeData } from './types';
+import { SolutionNodeData, StoryboardNodeData } from './types';
+import { ScrollArea, ScrollBar } from './components/ui/scroll-area';
 
 const PersonaNodeDimensions = {
   width: 400,
@@ -46,7 +42,6 @@ const PersonaNodeDimensions = {
 
 export default function App() {
   const rf = useReactFlow();
-
   const {
     nodes,
     selectedNodes,
@@ -63,66 +58,69 @@ export default function App() {
     swapCursorNode,
     updateCursorNodePosition,
     placeCursorNode,
+    personaDimensions,
+    generatePersonaNodes,
+    problemDimensions,
+    generateProblemNodes,
+    solutionDimensions,
     generateSolutionNodes
   } = useStore();
   const { rfCursorPosition, updateRfCursorPosition } = useRfCursorPosition();
 
-  // Persona Dialog
+  // Personas
   const [showPersonaDialog, setShowPersonaDialog] = useState(false);
-  const [generatingPersonas, setGeneratingPersonas] = useState(false);
   const [personaContext, setPersonaContext] = useState(
     'Meal kits for low income rural families'
   );
+  // const handleGeneratePersonas;
+  // const handleGeneratePersonas = async () => {
+  //   if (generatingPersonas) return;
 
-  // Select Menu
+  //   setGeneratingPersonas(true);
 
-  const handleGeneratePersonas = async () => {
-    if (generatingPersonas) return;
+  //   // const { personas } = await generatePersonas(personaContext);
+  //   const personas: Persona[] = [];
 
-    setGeneratingPersonas(true);
+  //   const center = rf.screenToFlowPosition({
+  //     x: window.innerWidth / 2,
+  //     y: window.innerHeight / 2
+  //   });
 
-    const { personas } = await generatePersonas(personaContext);
+  //   const padding = 20;
 
-    const center = rf.screenToFlowPosition({
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2
-    });
+  //   const totalWidth =
+  //     personas.length * PersonaNodeDimensions.width +
+  //     padding * (personas.length - 1);
+  //   const xStart = center.x - totalWidth / 2;
+  //   // const totalHeight =
+  //   //   personas.length * PersonaNodeDimensions.height +
+  //   //   padding * (personas.length - 1);
+  //   // const yStart = center.y - totalHeight / 2;
 
-    const padding = 20;
+  //   const newPersonaNodes: Node[] = personas.map((persona, idx) => {
+  //     const id = `persona-${nanoid()}`;
+  //     const position = {
+  //       // x: center.x - PersonaNodeDimensions.width / 2,
+  //       // y: yStart + idx * (PersonaNodeDimensions.height + padding)
+  //       x: xStart + idx * (PersonaNodeDimensions.width + padding),
+  //       y: center.y - PersonaNodeDimensions.height / 2
+  //     };
 
-    const totalWidth =
-      personas.length * PersonaNodeDimensions.width +
-      padding * (personas.length - 1);
-    const xStart = center.x - totalWidth / 2;
-    // const totalHeight =
-    //   personas.length * PersonaNodeDimensions.height +
-    //   padding * (personas.length - 1);
-    // const yStart = center.y - totalHeight / 2;
+  //     return {
+  //       id,
+  //       type: NodeType.Persona,
+  //       position,
+  //       data: { persona },
+  //       style: PersonaNodeDimensions
+  //     };
+  //   });
+  //   setNodes([...nodes, ...newPersonaNodes]);
 
-    const newPersonaNodes: Node[] = personas.map((persona, idx) => {
-      const id = `persona-${nanoid()}`;
-      const position = {
-        // x: center.x - PersonaNodeDimensions.width / 2,
-        // y: yStart + idx * (PersonaNodeDimensions.height + padding)
-        x: xStart + idx * (PersonaNodeDimensions.width + padding),
-        y: center.y - PersonaNodeDimensions.height / 2
-      };
+  //   // TODO generate images and update nodes
 
-      return {
-        id,
-        type: NodeType.Persona,
-        position,
-        data: { persona },
-        style: PersonaNodeDimensions
-      };
-    });
-    setNodes([...nodes, ...newPersonaNodes]);
-
-    // TODO generate images and update nodes
-
-    setGeneratingPersonas(false);
-    setPersonaContext('');
-  };
+  //   setGeneratingPersonas(false);
+  //   setPersonaContext('');
+  // };
 
   const selectedPersonaNodes = selectedNodes.filter(
     (node) => node.type === NodeType.Persona
@@ -131,7 +129,7 @@ export default function App() {
     (node) => node.type === NodeType.Problem
   );
 
-  // Problem Dialog
+  // Problems
   const [showProblemDialog, setShowProblemDialog] = useState(false);
   const [generatingProblems, setGeneratingProblems] = useState(false);
   const [problemContext, setProblemContext] = useState('');
@@ -144,10 +142,11 @@ export default function App() {
     if (generatingProblems) return;
     setGeneratingProblems(true);
 
-    const problems = await generateProblems(
-      problemContext,
-      selectedPersonaNodes.map((node) => node.data.persona)
-    );
+    // const problems = await generateProblems(
+    //   problemContext,
+    //   selectedPersonaNodes.map((node) => node.data.persona)
+    // );
+    const problems: string[] = [];
 
     const padding = 20;
 
@@ -206,7 +205,7 @@ export default function App() {
     setProblemContext('');
   };
 
-  // Solution Dialog
+  // Solutions
   const [showSolutionDialog, setShowSolutionDialog] = useState(false);
   const [generatingSolutions, setGeneratingSolutions] = useState(false);
   const [solutionContext, setSolutionContext] = useState('');
@@ -274,66 +273,7 @@ export default function App() {
   const [currentlySelecting, setCurrentlySelecting] = useState(false);
   const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
 
-  // const imageInputRef = useRef<HTMLInputElement>(null);
-
-  // const handleCreativeUpscale = async () => {
-  //   const textNodes = selectedNodes.filter(
-  //     (node) => node.type === NodeType.Text
-  //   );
-  //   const imageNodes = selectedNodes.filter(
-  //     (node) => node.type === NodeType.Image
-  //   );
-
-  //   const textContent = textNodes.map((node) => node.data.text).join('\n');
-  //   const prompt = `Generate an image that depicts ${textContent}`;
-
-  //   const nodesBounds = getNodesBounds(imageNodes);
-  //   const { width, height } = nodesBounds;
-  //   const viewport = getViewportForBounds(nodesBounds, width, height, 0.5, 2);
-
-  //   const viewportElement = document.querySelector(
-  //     '.react-flow__viewport'
-  //   ) as HTMLElement;
-  //   const dataUrl = await toPng(viewportElement, {
-  //     width,
-  //     height,
-  //     style: {
-  //       width: String(width),
-  //       height: String(height),
-  //       transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
-  //     },
-  //     filter: (node) => {
-  //       if (
-  //         node.classList &&
-  //         node.classList.contains('react-flow__resize-control')
-  //       ) {
-  //         return false;
-  //       }
-  //       return true;
-  //     }
-  //   });
-
-  //   const dataBlob = await fetch(dataUrl).then((res) => res.blob());
-  //   const generatedDataUrl = await generateImageFromSketch(dataBlob, prompt);
-
-  //   createCursorImageNode(generatedDataUrl);
-  // };
-
-  // const createCursorImageNode = (src: string) => {
-  //   const newCursorNode: Node<{ src: string }> = {
-  //     id: `text-${nanoid()}`,
-  //     type: NodeType.Image,
-  //     position: rfCursorPosition,
-  //     data: {
-  //       src
-  //     },
-  //     style: {
-  //       width: 100
-  //     }
-  //   };
-  //   swapCursorNode(newCursorNode);
-  // };
-
+  // Generate storyboard
   async function experiment() {
     const newNode: Node<StoryboardNodeData> = {
       id: `storyboard-${nanoid()}`,
@@ -389,99 +329,11 @@ export default function App() {
       >
         <Panel position="top-left">
           <div className="flex flex-col gap-2 p-1">
-            {/* <Button
-              variant="outline"
-              onClick={() => {
-                const newCursorNode: Node<PersonaNodeData> = {
-                  id: `persona-${nanoid()}`,
-                  type: NodeType.Persona,
-                  position: rfCursorPosition,
-                  data: {}
-                };
-                swapCursorNode(newCursorNode);
-              }}
-            >
-              Persona
-            </Button> */}
             <Button
               variant="outline"
-              onClick={() => {
-                const newCursorNode: Node<{ text: string }> = {
-                  id: `text-${nanoid()}`,
-                  type: NodeType.Text,
-                  position: rfCursorPosition,
-                  data: {
-                    text: '<p>Placeholder</p>'
-                  }
-                };
-                swapCursorNode(newCursorNode);
-              }}
-            >
-              Text
-            </Button>
-            {/*
-            <Button
-              variant="outline"
-              onClick={() => imageInputRef.current!.click()}
-              // onClick={() => createCursorImageNode('/peep-standing-1.png')}
-            >
-              Image
-            </Button>
-            <input
-              className="hidden"
-              type="file"
-              ref={imageInputRef}
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-
-                const dataUrl = await blobToDataUrl(file);
-                createCursorImageNode(dataUrl);
-              }}
-            /> */}
-            <Button
-              variant="outline"
-              onClick={() => {
-                const newCursorNode: Node<ProblemNodeData> = {
-                  id: `problem-${nanoid()}`,
-                  type: NodeType.Problem,
-                  position: rfCursorPosition,
-                  data: {
-                    problem: '',
-                    dimensions: []
-                  }
-                };
-                swapCursorNode(newCursorNode);
-              }}
-            >
-              Problem
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                const newCursorNode: Node<SolutionNodeData> = {
-                  id: `solution-${nanoid()}`,
-                  type: NodeType.Solution,
-                  position: rfCursorPosition,
-                  data: {
-                    solution: '',
-                    dimensions: []
-                  }
-                };
-                swapCursorNode(newCursorNode);
-              }}
-            >
-              Solution
-            </Button>
-            <Button
-              variant="outline"
-              disabled={generatingPersonas}
               onClick={() => setShowPersonaDialog(true)}
             >
               Personas
-              {generatingPersonas && (
-                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-              )}
             </Button>
             <Button
               variant="outline"
@@ -508,6 +360,71 @@ export default function App() {
             </Button>
           </div>
         </Panel>
+        <Panel position="top-right" className="w-[85vw]">
+          <div className="flex items-center gap-2">
+            <h3 className="whitespace-nowrap">Persona dimensions:</h3>
+            <ScrollArea>
+              <div className="flex items-center gap-2 py-4">
+                {personaDimensions.map((dimension) => (
+                  <div key={dimension.name}>
+                    <select className="border border-black rounded-md px-1 py-2">
+                      <option>{dimension.name}</option>
+                      {dimension.values.map((value) => (
+                        <option key={value}>{value}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+                {personaDimensions.length === 0 && (
+                  <p>Generate personas to explore dimensions</p>
+                )}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          </div>
+          <div className="flex items-center gap-2">
+            <h3 className="whitespace-nowrap">Problem dimensions:</h3>
+            <ScrollArea>
+              <div className="flex items-center gap-2 py-4">
+                {problemDimensions.map((dimension) => (
+                  <div key={dimension.name}>
+                    <select className="border border-black rounded-md px-1 py-2">
+                      <option>{dimension.name}</option>
+                      {dimension.values.map((value) => (
+                        <option key={value}>{value}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+                {problemDimensions.length === 0 && (
+                  <p>Generate problems to explore dimensions</p>
+                )}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          </div>
+          <div className="flex items-center gap-2">
+            <h3 className="whitespace-nowrap">Solution dimensions:</h3>
+            <ScrollArea>
+              <div className="flex items-center gap-2 py-4">
+                {solutionDimensions.map((dimension) => (
+                  <div key={dimension.name}>
+                    <select className="border border-black rounded-md px-1 py-2">
+                      <option>{dimension.name}</option>
+                      {dimension.values.map((value) => (
+                        <option key={value}>{value}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+                {solutionDimensions.length === 0 && (
+                  <p>Generate solutions to explore dimensions</p>
+                )}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          </div>
+        </Panel>
         <Controls />
         {/* <MiniMap /> */}
         <Background variant={BackgroundVariant.Dots} />
@@ -523,7 +440,8 @@ export default function App() {
               onSubmit={(e) => {
                 e.preventDefault();
                 setShowPersonaDialog(false);
-                handleGeneratePersonas();
+                generatePersonaNodes(personaContext);
+                // handleGeneratePersonas();
               }}
             >
               <Textarea

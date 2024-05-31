@@ -25,6 +25,7 @@ import { generateImage } from './api/stableDiffusion';
 import { generateSolution, generateSolutionDimensions } from './api/solutions';
 import { Dimension, StoryboardNodeData } from './types';
 import { allDimensionAssignments } from './lib';
+import { generatePersona, generatePersonaDimensions } from './api/personas';
 
 type RFState = {
   nodes: Node[];
@@ -56,15 +57,25 @@ type RFState = {
 
   updateTextNode: (id: string, text: string) => void;
 
+  // Persona
+  generatePersonaNodes: (context: string) => Promise<void>;
+  regeneratePersonaNodes: (ids: string[], instructions?: string) => void;
+  updatePersonaNode: (id: string, text: string) => Promise<void>;
+  mergePersonaNodes: (ids: string[]) => Promise<void>;
+
+  // Problem
+  generateProblemNodes: (context: string) => Promise<void>;
+  regenerateProblemNodes: (ids: string[], instructions?: string) => void;
   updateProblemNode: (id: string, text: string) => void;
+  mergeProblemNodes: (ids: string[]) => Promise<void>;
 
-  generateSolutionNodes: (
-    problemDependencyIds: string[],
-    instructions: string
-  ) => Promise<string[]>;
+  // Solution
+  generateSolutionNodes: (context: string) => Promise<void>;
+  regenerateSolutionNodes: (ids: string[], instructions?: string) => void;
   updateSolutionNode: (id: string, text: string) => void;
-  regenerateSolutionNode: (id: string, accept: boolean) => void;
+  mergeSolutionNodes: (ids: string[]) => Promise<void>;
 
+  // Storyboards
   generateStoryboardTitles: (id: string) => Promise<void>;
   generateStoryboardOutlines: (
     id: string,
@@ -217,6 +228,31 @@ export const useStore = create<RFState>((set, get) => ({
         return node;
       })
     });
+  },
+
+  generatePersonaNodes: async (context: string) => {
+    const newDimensions = await generatePersonaDimensions(
+      get().personaDimensions,
+      context
+    );
+    set({
+      personaDimensions: [...get().personaDimensions, ...newDimensions]
+    });
+
+    console.log(newDimensions);
+
+    const dimensionPermutations = allDimensionAssignments(
+      get().personaDimensions,
+      20
+    );
+
+    const personas = await Promise.all(
+      dimensionPermutations.map((permutation) =>
+        generatePersona(permutation, context)
+      )
+    );
+
+    console.log(personas);
   },
 
   updateProblemNode: (id: string, problem: string) => {

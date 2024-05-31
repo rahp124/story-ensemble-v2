@@ -1,48 +1,48 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User } from 'lucide-react';
-
-import { NodeProps } from 'reactflow';
-import { sentenceCase } from 'change-case';
-import SourceHandle from '@/components/SourceHandle';
+import { NodeProps, NodeResizer } from 'reactflow';
 import { PersonaNodeData } from '@/types';
+import { useEffect, useState } from 'react';
+import TargetHandle from '@/components/TargetHandle';
+import { useStore } from '@/store';
 
 export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
-  const { persona, avatar } = props.data;
+  const [persona, setPersona] = useState(props.data.persona);
+  useEffect(() => {
+    setPersona(props.data.persona);
+  }, [props.data.persona]);
+  const updatePersonaNode = useStore((state) => state.updatePersonaNode);
 
   return (
-    <Card className="nowheel flex flex-col w-full h-full bg-slate-100">
-      <CardHeader className="flex-none">
-        <CardTitle>
-          <div className="flex items-center gap-4">
-            <Avatar>
-              <AvatarImage src={avatar} />
-              <AvatarFallback>
-                <User />
-              </AvatarFallback>
-            </Avatar>
-            <h2>{persona ? persona.Persona.Name : 'New Persona'}</h2>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-auto overflow-auto">
-        <ScrollArea className="prose h-full">
-          {persona &&
-            Object.entries(persona).map(([key, value]) => (
-              <div key={key}>
-                <h3>{sentenceCase(key)}</h3>
-                {Object.entries(value).map(([key, value]) => (
-                  <div key={key}>
-                    <strong>{sentenceCase(key)}</strong>:{' '}
-                    {Array.isArray(value) ? value.join(' • ') : value}
-                  </div>
-                ))}
-              </div>
-            ))}
-        </ScrollArea>
-      </CardContent>
-      <SourceHandle />
-    </Card>
+    <>
+      <NodeResizer
+        nodeId={props.id}
+        isVisible={props.selected}
+        handleClassName="[&:is(.top,.bottom.left)]:hidden"
+        lineClassName="hidden"
+        minWidth={300}
+        minHeight={200}
+        handleStyle={{
+          width: 10,
+          height: 10
+        }}
+      />
+      <div className="w-full h-full flex flex-col min-w-[300px] min-h-[200px] nowheel overflow-hidden">
+        <div className="flex bg-yellow-100 p-2 py-1 w-fit rounded-tr-md">
+          <h3 className="font-bold text-sm">Persona</h3>
+        </div>
+        <div className="p-4 w-full h-full  flex-grow bg-yellow-100 rounded-tr-md rounded-b-md">
+          <textarea
+            className="block min-h-full h-full w-full resize-none p-2 text-md bg-yellow-50"
+            rows={6}
+            value={persona}
+            onChange={(e) => setPersona(e.target.value)}
+            onBlur={() => {
+              if (persona !== props.data.persona)
+                updatePersonaNode(props.id, persona);
+            }}
+          />
+        </div>
+      </div>
+      <TargetHandle />
+    </>
   );
 }
