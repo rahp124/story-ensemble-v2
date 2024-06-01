@@ -4,9 +4,9 @@ import { Dimension } from './types';
  * Create each permutation of dimensions
  * @param dimensions
  */
-export function allDimensionAssignments(
+export function generateRandomAssignments(
   dimensions: Dimension[],
-  maxPermutations: number
+  numAssignments: number
 ) {
   const pinnedDimensions = dimensions.filter(
     (dimension) => dimension.currentValues.length > 0
@@ -14,25 +14,17 @@ export function allDimensionAssignments(
   const unpinnedDimensions = dimensions.filter(
     (dimension) => dimension.currentValues.length === 0
   );
-  let unpinnedAssignments: Dimension[][] = [[]];
-  for (const dimension of unpinnedDimensions) {
-    const newAssignments: Dimension[][] = [];
-    for (const assignment of unpinnedAssignments) {
-      for (const value of dimension.values) {
-        newAssignments.push([
-          ...assignment,
-          { ...dimension, currentValues: [value] }
-        ]);
-      }
-    }
-    unpinnedAssignments = newAssignments;
-  }
 
-  // Select a random subset of the permutations
-  unpinnedAssignments = shuffleArray(unpinnedAssignments).slice(
-    0,
-    maxPermutations
-  );
+  const unpinnedAssignments: Dimension[][] = [];
+
+  for (let i = 0; i < numAssignments; i++) {
+    const assignment = unpinnedDimensions.map((dimension) => {
+      const randomValue =
+        dimension.values[Math.floor(Math.random() * dimension.values.length)];
+      return { ...dimension, currentValues: [randomValue] };
+    });
+    unpinnedAssignments.push(assignment);
+  }
 
   const allAssignments = unpinnedAssignments.map((assignment) => [
     ...assignment,
@@ -40,18 +32,4 @@ export function allDimensionAssignments(
   ]);
 
   return allAssignments;
-}
-
-/**
- * Function to shuffle an array using the Fisher-Yates algorithm.
- * @param array - The array to shuffle.
- * @returns A new array with the elements shuffled.
- */
-function shuffleArray<T>(array: T[]): T[] {
-  const shuffledArray = [...array];
-  for (let i = shuffledArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1)); // Get a random index from 0 to i
-    [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]]; // Swap elements
-  }
-  return shuffledArray;
 }

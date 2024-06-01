@@ -167,11 +167,11 @@ export default function App() {
                 <ScrollArea>
                   <div className="flex items-center gap-2 py-4">
                     {personaDimensions.map((dimension) => (
-                      <div>
+                      <div key={dimension.name}>
                         <select className="border border-black rounded-md px-1 py-2">
                           <option>{dimension.name}</option>
                           {dimension.values.map((value) => (
-                            <option>{value}</option>
+                            <option key={value}>{value}</option>
                           ))}
                         </select>
                       </div>
@@ -188,11 +188,11 @@ export default function App() {
                 <ScrollArea>
                   <div className="flex items-center gap-2 py-4">
                     {problemDimensions.map((dimension) => (
-                      <div>
+                      <div key={dimension.name}>
                         <select className="border border-black rounded-md px-1 py-2">
                           <option>{dimension.name}</option>
                           {dimension.values.map((value) => (
-                            <option>{value}</option>
+                            <option key={value}>{value}</option>
                           ))}
                         </select>
                       </div>
@@ -209,11 +209,11 @@ export default function App() {
                 <ScrollArea>
                   <div className="flex items-center gap-2 py-4">
                     {solutionDimensions.map((dimension) => (
-                      <div>
+                      <div key={dimension.name}>
                         <select className="border border-black rounded-md px-1 py-2">
                           <option>{dimension.name}</option>
                           {dimension.values.map((value) => (
-                            <option>{value}</option>
+                            <option key={value}>{value}</option>
                           ))}
                         </select>
                       </div>

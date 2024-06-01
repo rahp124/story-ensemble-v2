@@ -30,7 +30,7 @@ import {
   SolutionNodeData,
   StoryboardNodeData
 } from './types';
-import { allDimensionAssignments } from './lib';
+import { generateRandomAssignments } from './lib';
 import { generatePersona, generatePersonaDimensions } from './api/personas';
 import { nanoid } from 'nanoid';
 import { NodeType } from './rf-components';
@@ -245,7 +245,7 @@ export const useStore = create<RFState>((set, get) => ({
       personaDimensions: [...get().personaDimensions, ...newDimensions]
     });
 
-    const dimensionPermutations = allDimensionAssignments(
+    const dimensionPermutations = generateRandomAssignments(
       get().personaDimensions,
       5
     );
@@ -324,7 +324,7 @@ export const useStore = create<RFState>((set, get) => ({
       problemDimensions: [...get().problemDimensions, ...newDimensions]
     });
 
-    const dimensionPermutations = allDimensionAssignments(
+    const dimensionPermutations = generateRandomAssignments(
       get().problemDimensions,
       5
     );
@@ -466,7 +466,7 @@ export const useStore = create<RFState>((set, get) => ({
       solutionDimensions: [...get().solutionDimensions, ...newDimensions]
     });
 
-    const dimensionPermutations = allDimensionAssignments(
+    const dimensionPermutations = generateRandomAssignments(
       get().solutionDimensions,
       5
     );
