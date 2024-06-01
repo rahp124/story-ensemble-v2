@@ -5,17 +5,19 @@ export async function generateSolutionDimensions(
   existingDimensions: Dimension[],
   context: string
 ): Promise<Dimension[]> {
-  const prompt = `
-Dimensions define a solution space of possibilities. Each dimension has a set of values that it can be assigned. Combinations of dimensions and values can be used to generate a set of solutions.
-Given a set of existing dimensions and user instructions. Generate a set of new dimensions if needed to fully explore the solution space.
-Dimensions that have already been assigned should be considered pinned which can inform the generation of new dimensions.
-If there are no existing dimensions, make sure to generate a set of dimensions to explore the solution space.
+  const prompt = `You are an AI assistant tasked with enhancing the creative and divergent thinking process for design thinking.
+Your goal is to generate a comprehensive list of dimensions (attributes with a set of allowed values) that can be used to create detailed solution ideas.
+These dimensions will help designers explore various aspects of potential solutions to address a given problem effectively.
+
+Given a set of existing dimensions and user instructions, generate a set of new dimensions if needed to fully explore the solution space.
+These dimensions should help characterize and define possible solutions, their features, benefits, and other aspects specific to just solution ideas.
+DO NOT suggest dimensions that describe the context or problems!!!
 
 Existing Dimensions: """
 ${JSON.stringify(existingDimensions, null, 2)}
 """
 
-Instructions: """
+Context: """
 ${context}
 """`;
 
@@ -31,24 +33,18 @@ ${context}
 }
 
 export async function generateSolution(
-  problems: string[],
   dimensionValues: Dimension[],
   instructions: string
 ) {
-  const prompt = `You are a product and user experience designer.
-
-Given a list of problems generate a solution. This solution is defined by a set of dimensions and assigned values. The dimensions and values should be used to generate a solution that addresses the problems.
-Additionally take into account user instructions.
-
-Problems: """
-${JSON.stringify(problems, null, 2)}
-"""
+  const prompt = `You are an AI assistant tasked with creating a detailed solution idea for design thinking based on specific dimensions and their assigned values.
+Use the given dimensions to generate a coherent and realistic solution idea that can help designers address the identified problem effectively.
+Limit each solution idea to 1-2 sentences. Don't add any Markdown or HTML formatting or line breaks, just plain text.
 
 Dimensions: """
 ${JSON.stringify(dimensionValues, null, 2)}
 """
 
-Instructions: """
+Context: """
 ${instructions}
 """`;
 

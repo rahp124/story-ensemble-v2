@@ -27,6 +27,7 @@ import {
   Dimension,
   PersonaNodeData,
   ProblemNodeData,
+  SolutionNodeData,
   StoryboardNodeData
 } from './types';
 import { allDimensionAssignments } from './lib';
@@ -67,9 +68,9 @@ type RFState = {
 
   // Persona
   generatePersonaNodes: (context: string) => Promise<void>;
-  regeneratePersonaNodes: (ids: string[], instructions?: string) => void;
+  // regeneratePersonaNodes: (ids: string[], instructions?: string) => void;
   updatePersonaNode: (id: string, text: string) => Promise<void>;
-  mergePersonaNodes: (ids: string[]) => Promise<void>;
+  // mergePersonaNodes: (ids: string[]) => Promise<void>;
 
   // Problem
   generateProblemNodes: (
@@ -78,7 +79,7 @@ type RFState = {
   ) => Promise<void>;
   regenerateProblemNodes: (ids: string[], instructions?: string) => void;
   updateProblemNode: (id: string, text: string) => void;
-  mergeProblemNodes: (ids: string[]) => Promise<void>;
+  // mergeProblemNodes: (ids: string[]) => Promise<void>;
 
   // Solution
   generateSolutionNodes: (
@@ -87,7 +88,7 @@ type RFState = {
   ) => Promise<void>;
   regenerateSolutionNodes: (ids: string[], instructions?: string) => void;
   updateSolutionNode: (id: string, text: string) => void;
-  mergeSolutionNodes: (ids: string[]) => Promise<void>;
+  // mergeSolutionNodes: (ids: string[]) => Promise<void>;
 
   // Storyboards
   generateStoryboardTitles: (id: string) => Promise<void>;
@@ -123,17 +124,15 @@ export const useStore = create<RFState>((set, get) => ({
     });
 
     const { target, source } = connection;
-    if (
-      !target ||
-      !source ||
-      !target.startsWith('solution') ||
-      !source.startsWith('problem')
-    )
-      return;
+    if (!target || !source) return;
+    const isPersonaToProblemConnection =
+      source.startsWith('persona') && target.startsWith('problem');
+    const isProblemToSolutionConnection =
+      source.startsWith('problem') && target.startsWith('solution');
+    if (!isPersonaToProblemConnection && !isProblemToSolutionConnection) return;
 
-    const sourceNode = get().nodes.find((node) => node.id === source);
     const targetNode = get().nodes.find((node) => node.id === target);
-    if (!sourceNode || !targetNode) return;
+    if (!targetNode) return;
     set({
       nodes: get().nodes.map((node) => {
         if (node.id === target) {
@@ -141,14 +140,7 @@ export const useStore = create<RFState>((set, get) => ({
             ...node,
             data: {
               ...node.data,
-              dependencyUpdates: [
-                ...node.data.dependencyUpdates,
-                {
-                  id: source,
-                  previous: sourceNode.data.problem,
-                  current: sourceNode.data.problem
-                }
-              ]
+              outOfSync: true
             }
           };
         }
@@ -276,6 +268,7 @@ export const useStore = create<RFState>((set, get) => ({
         return personaNode;
       })
     );
+    console.log('generate nodes');
 
     get().setNodes([...get().nodes, ...personasNodes]);
   },
@@ -324,7 +317,7 @@ export const useStore = create<RFState>((set, get) => ({
     context = `${context}\n\nPersonas: ${personas}`;
 
     const newDimensions = await generateProblemDimensions(
-      get().personaDimensions,
+      get().problemDimensions,
       context
     );
     set({
@@ -338,7 +331,7 @@ export const useStore = create<RFState>((set, get) => ({
 
     const nodes = await Promise.all(
       dimensionPermutations.map(async (permutation, idx) => {
-        const personaNode: Node<ProblemNodeData> = {
+        const node: Node<ProblemNodeData> = {
           id: `problem-${nanoid()}`,
           type: NodeType.Problem,
           position: { x: 100 + idx * 350, y: 600 },
@@ -351,7 +344,7 @@ export const useStore = create<RFState>((set, get) => ({
             dimensions: permutation
           }
         };
-        return personaNode;
+        return node;
       })
     );
 
@@ -457,28 +450,111 @@ export const useStore = create<RFState>((set, get) => ({
     });
   },
 
-  generateSolutionNodes: async (problemDependencyIds, instructions) => {
-    const existingDimensions = get().solutionDimensions;
+  generateSolutionNodes: async (context, problemIds) => {
+    const problems: string[] = get()
+      .nodes.filter(
+        (node) => problemIds.includes(node.id) && node.type === NodeType.Problem
+      )
+      .map((node) => node.data.problem);
+    context = `${context}\n\nProblems: ${problems}`;
+
     const newDimensions = await generateSolutionDimensions(
-      existingDimensions,
-      ''
+      get().solutionDimensions,
+      context
     );
     set({
       solutionDimensions: [...get().solutionDimensions, ...newDimensions]
     });
 
-    const problems: string[] = [];
     const dimensionPermutations = allDimensionAssignments(
-      get().solutionDimensions
-    );
-    console.log(dimensionPermutations);
-    const solutions = await Promise.all(
-      dimensionPermutations.map((permutation) =>
-        generateSolution(problems, permutation, instructions)
-      )
+      get().solutionDimensions,
+      5
     );
 
-    return solutions;
+    const nodes = await Promise.all(
+      dimensionPermutations.map(async (permutation, idx) => {
+        const node: Node<SolutionNodeData> = {
+          id: `solution-${nanoid()}`,
+          type: NodeType.Solution,
+          position: { x: 100 + idx * 350, y: 1000 },
+          style: {
+            width: 300,
+            height: 300
+          },
+          data: {
+            solution: await generateSolution(permutation, context),
+            dimensions: permutation
+          }
+        };
+        return node;
+      })
+    );
+
+    const edges = problemIds.flatMap((problemId) =>
+      nodes.map(({ id }) => ({
+        id: `edge-${nanoid()}`,
+        source: problemId,
+        target: id
+      }))
+    );
+
+    get().setNodes([...get().nodes, ...nodes]);
+    get().setEdges([...get().edges, ...edges]);
+  },
+  regenerateSolutionNodes: async (ids, instructions) => {
+    const solutionNodes = get().nodes.filter(
+      (node) => node.type === NodeType.Solution && ids.includes(node.id)
+    );
+    if (!solutionNodes.length) return;
+
+    solutionNodes.forEach(async (node) => {
+      set({
+        nodes: get().nodes.map((node) => {
+          if (ids.includes(node.id)) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                regenerating: true
+              }
+            };
+          }
+          return node;
+        })
+      });
+
+      const problemIds = get()
+        .edges.filter(
+          (edge) => edge.target === node.id && edge.source.startsWith('problem')
+        )
+        .map((edge) => edge.source);
+      const problems: string[] = get()
+        .nodes.filter(
+          (node) =>
+            problemIds.includes(node.id) && node.type === NodeType.Problem
+        )
+        .map((node) => node.data.persona);
+      const context = `Problems: ${problems}`;
+
+      const newSolution = await generateSolution(node.data.dimensions, context);
+
+      get().updateSolutionNode(node.id, newSolution);
+      set({
+        nodes: get().nodes.map((node) => {
+          if (ids.includes(node.id)) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                outOfSync: false,
+                regenerating: false
+              }
+            };
+          }
+          return node;
+        })
+      });
+    });
   },
   updateSolutionNode: (id: string, solution: string) => {
     set({
@@ -489,67 +565,21 @@ export const useStore = create<RFState>((set, get) => ({
         return node;
       })
     });
-  },
-  regenerateSolutionNode: async (id: string, accept: boolean) => {
-    const solutionNode = get().nodes.find((node) => node.id === id);
-    if (!solutionNode) return;
 
-    if (!accept) {
-      set({
-        nodes: get().nodes.map((node) => {
-          if (node.id === id) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                dependencyUpdates: []
-              }
-            };
-          }
-          return node;
-        })
-      });
-      return;
-    }
+    const dependencyIds = get()
+      .edges.filter(
+        (edge) => edge.source === id && edge.target.startsWith('storyboard')
+      )
+      .map((edge) => edge.target);
 
     set({
       nodes: get().nodes.map((node) => {
-        if (node.id === id) {
+        if (dependencyIds.includes(node.id)) {
           return {
             ...node,
             data: {
               ...node.data,
-              regenerating: true
-            }
-          };
-        }
-        return node;
-      })
-    });
-
-    const problemIds = get()
-      .edges.filter((edge) => edge.target === id)
-      .map((edge) => edge.source);
-    const problems: string[] = get()
-      .nodes.filter((node) => problemIds.includes(node.id))
-      .map((node) => node.data.problem);
-
-    const newSolution = await generateSolution(
-      problems,
-      solutionNode.data.dependencyUpdates,
-      solutionNode.data.solution
-    );
-
-    get().updateSolutionNode(id, newSolution);
-    set({
-      nodes: get().nodes.map((node) => {
-        if (node.id === id) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              dependencyUpdates: [],
-              regenerating: false
+              outOfSync: true
             }
           };
         }

@@ -5,21 +5,13 @@ import ReactFlow, {
   Controls,
   Node,
   SelectionMode,
-  Panel,
-  useReactFlow,
-  getNodesBounds
-  // getViewportForBounds
+  Panel
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-// import { toPng } from 'html-to-image';
 import { NodeType, edgeTypes, nodeTypes } from './rf-components';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import {
-  //  useRef,
-  useState
-} from 'react';
-import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -31,15 +23,13 @@ import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
 import { useRfCursorPosition } from './lib/useRfCursorPosition';
-import { SolutionNodeData, StoryboardNodeData } from './types';
+import { StoryboardNodeData } from './types';
 import { ScrollArea, ScrollBar } from './components/ui/scroll-area';
 
 export default function App() {
-  const rf = useReactFlow();
   const {
     nodes,
     selectedNodes,
-    setNodes,
     onNodesChange,
     edges,
     onEdgesChange,
@@ -66,9 +56,10 @@ export default function App() {
   const selectedProblemNodes = selectedNodes.filter(
     (node) => node.type === NodeType.Problem
   );
-  const selectedSolutionNodes = selectedNodes.filter(
-    (node) => node.type === NodeType.Solution
-  );
+  // const selectedSolutionNodes = selectedNodes.filter(
+  //   (node) => node.type === NodeType.Solution
+  // );
+
   // Personas
   const [showPersonaDialog, setShowPersonaDialog] = useState(false);
   const [personaContext, setPersonaContext] = useState(
@@ -83,68 +74,9 @@ export default function App() {
 
   // Solutions
   const [showSolutionDialog, setShowSolutionDialog] = useState(false);
-  const [generatingSolutions, setGeneratingSolutions] = useState(false);
-  const [solutionContext, setSolutionContext] = useState('');
-
-  const SolutionNodeDimensions = {
-    width: 400,
-    height: 250
-  };
-  const handleGenerateSolutions = async () => {
-    if (generatingSolutions) return;
-    setGeneratingSolutions(true);
-
-    const solutions = await generateSolutionNodes([], solutionContext);
-    const padding = 20;
-    const center = rf.screenToFlowPosition({
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2
-    });
-    const selectedProblemBounds = getNodesBounds(selectedProblemNodes);
-    const totalWidth =
-      solutions.length * SolutionNodeDimensions.width +
-      padding * (solutions.length - 1);
-    const xStart = selectedProblemNodes.length
-      ? selectedProblemBounds.x +
-        selectedProblemBounds.width / 2 -
-        totalWidth / 2
-      : center.x - totalWidth / 2;
-    const y = selectedProblemNodes.length
-      ? selectedProblemBounds.y + selectedProblemBounds.height + 200
-      : center.y - SolutionNodeDimensions.height / 2;
-    const newSolutionNodes: Node<SolutionNodeData>[] = solutions.map(
-      (solution, idx) => {
-        const position = {
-          x: xStart + idx * (SolutionNodeDimensions.width + padding),
-          y
-        };
-        return {
-          id: `solution-${nanoid()}`,
-          type: NodeType.Solution,
-          position,
-          data: { solution, dimensions: [] },
-          style: SolutionNodeDimensions
-        };
-      }
-    );
-    // create nodes
-    setNodes([...nodes, ...newSolutionNodes]);
-    // create edges
-    // const newEdges: Edge[] = [];
-    // for (const problem of selectedProblemNodes) {
-    //   for (const solution of newSolutionNodes) {
-    //     newEdges.push({
-    //       id: `edge-${nanoid()}`,
-    //       source: problem.id,
-    //       target: solution.id,
-    //       type: EdgeType.Context
-    //     });
-    //   }
-    // }
-    // setEdges([...edges, ...newEdges]);
-    setGeneratingSolutions(false);
-    setSolutionContext('');
-  };
+  const [solutionContext, setSolutionContext] = useState(
+    'Solutions for tech conferences organizers to improve networking experience.'
+  );
 
   const [currentlySelecting, setCurrentlySelecting] = useState(false);
   const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
@@ -184,6 +116,7 @@ export default function App() {
           y: 0,
           zoom: 1
         }}
+        minZoom={0.3}
         proOptions={{ hideAttribution: true }}
         // Click and drop nodes
         onPaneClick={placeCursorNode}
@@ -203,98 +136,96 @@ export default function App() {
           setCurrentlySelecting(false);
         }}
       >
-        <Panel position="top-left">
-          <div className="flex flex-col gap-2 p-1">
-            <Button
-              variant="outline"
-              onClick={() => setShowPersonaDialog(true)}
-            >
-              Personas
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowProblemDialog(true)}
-            >
-              Problems
-            </Button>
-            <Button
-              variant="outline"
-              disabled={generatingSolutions}
-              onClick={() => setShowSolutionDialog(true)}
-            >
-              Solutions
-              {generatingSolutions && (
-                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-              )}
-            </Button>
-            <Button variant="outline" onClick={() => experiment()}>
-              Storyboards
-            </Button>
-          </div>
-        </Panel>
-        <Panel position="top-right" className="w-[85vw]">
-          <div className="flex items-center gap-2">
-            <h3 className="whitespace-nowrap">Persona dimensions:</h3>
-            <ScrollArea>
-              <div className="flex items-center gap-2 py-4">
-                {personaDimensions.map((dimension) => (
-                  <div key={dimension.name}>
-                    <select className="border border-black rounded-md px-1 py-2">
-                      <option>{dimension.name}</option>
-                      {dimension.values.map((value) => (
-                        <option key={value}>{value}</option>
-                      ))}
-                    </select>
+        <Panel position="top-center" className="w-[100vw] m-0 p-2">
+          <div className="w-full bg-slate-300 p-4 rounded-lg flex gap-8 opacity-80">
+            <div className="w-[20%] flex flex-col gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowPersonaDialog(true)}
+              >
+                Personas
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowProblemDialog(true)}
+              >
+                Problems
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowSolutionDialog(true)}
+              >
+                Solutions
+              </Button>
+              <Button variant="outline" onClick={() => experiment()}>
+                Storyboards
+              </Button>
+            </div>
+            <div className="w-[80%]">
+              <div className="flex items-center gap-2">
+                <h3 className="whitespace-nowrap">Persona dimensions:</h3>
+                <ScrollArea>
+                  <div className="flex items-center gap-2 py-4">
+                    {personaDimensions.map((dimension) => (
+                      <div>
+                        <select className="border border-black rounded-md px-1 py-2">
+                          <option>{dimension.name}</option>
+                          {dimension.values.map((value) => (
+                            <option>{value}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                    {personaDimensions.length === 0 && (
+                      <p>Generate personas to explore dimensions</p>
+                    )}
                   </div>
-                ))}
-                {personaDimensions.length === 0 && (
-                  <p>Generate personas to explore dimensions</p>
-                )}
+                  <ScrollBar orientation="horizontal" />
+                </ScrollArea>
               </div>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
-          </div>
-          <div className="flex items-center gap-2">
-            <h3 className="whitespace-nowrap">Problem dimensions:</h3>
-            <ScrollArea>
-              <div className="flex items-center gap-2 py-4">
-                {problemDimensions.map((dimension) => (
-                  <div key={dimension.name}>
-                    <select className="border border-black rounded-md px-1 py-2">
-                      <option>{dimension.name}</option>
-                      {dimension.values.map((value) => (
-                        <option key={value}>{value}</option>
-                      ))}
-                    </select>
+              <div className="flex items-center gap-2">
+                <h3 className="whitespace-nowrap">Problem dimensions:</h3>
+                <ScrollArea>
+                  <div className="flex items-center gap-2 py-4">
+                    {problemDimensions.map((dimension) => (
+                      <div>
+                        <select className="border border-black rounded-md px-1 py-2">
+                          <option>{dimension.name}</option>
+                          {dimension.values.map((value) => (
+                            <option>{value}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                    {problemDimensions.length === 0 && (
+                      <p>Generate problems to explore dimensions</p>
+                    )}
                   </div>
-                ))}
-                {problemDimensions.length === 0 && (
-                  <p>Generate problems to explore dimensions</p>
-                )}
+                  <ScrollBar orientation="horizontal" />
+                </ScrollArea>
               </div>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
-          </div>
-          <div className="flex items-center gap-2">
-            <h3 className="whitespace-nowrap">Solution dimensions:</h3>
-            <ScrollArea>
-              <div className="flex items-center gap-2 py-4">
-                {solutionDimensions.map((dimension) => (
-                  <div key={dimension.name}>
-                    <select className="border border-black rounded-md px-1 py-2">
-                      <option>{dimension.name}</option>
-                      {dimension.values.map((value) => (
-                        <option key={value}>{value}</option>
-                      ))}
-                    </select>
+              <div className="flex items-center gap-2">
+                <h3 className="whitespace-nowrap">Solution dimensions:</h3>
+                <ScrollArea>
+                  <div className="flex items-center gap-2 py-4">
+                    {solutionDimensions.map((dimension) => (
+                      <div>
+                        <select className="border border-black rounded-md px-1 py-2">
+                          <option>{dimension.name}</option>
+                          {dimension.values.map((value) => (
+                            <option>{value}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                    {solutionDimensions.length === 0 && (
+                      <p>Generate solutions to explore dimensions</p>
+                    )}
                   </div>
-                ))}
-                {solutionDimensions.length === 0 && (
-                  <p>Generate solutions to explore dimensions</p>
-                )}
+                  <ScrollBar orientation="horizontal" />
+                </ScrollArea>
               </div>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
+            </div>
           </div>
         </Panel>
         <Controls />
@@ -374,7 +305,10 @@ export default function App() {
               onSubmit={(e) => {
                 e.preventDefault();
                 setShowSolutionDialog(false);
-                handleGenerateSolutions();
+                generateSolutionNodes(
+                  solutionContext,
+                  selectedProblemNodes.map((node) => node.id)
+                );
               }}
             >
               <Textarea
