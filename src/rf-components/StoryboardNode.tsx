@@ -1,4 +1,3 @@
-import { FrameOutline } from '@/api/storyboards';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -13,18 +12,11 @@ import {
   HoverCardTrigger
 } from '@/components/ui/hover-card';
 import { useStore } from '@/store';
+import { StoryboardNodeData } from '@/types';
 import { ChevronLeft, ChevronRight, Code, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { NodeProps } from 'reactflow';
 
-export interface StoryboardNodeData {
-  variations: {
-    title: string;
-    outlines: {
-      outline: (FrameOutline & { image?: string })[];
-    }[];
-  }[];
-}
 export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const { id, data } = props;
 

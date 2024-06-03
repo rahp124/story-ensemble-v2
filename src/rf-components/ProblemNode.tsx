@@ -1,19 +1,28 @@
-import SourceHandle from '@/components/SourceHandle';
-import TargetHandle from '@/components/TargetHandle';
-import { useStore } from '@/store';
-import { useEffect, useState } from 'react';
-
 import { NodeProps, NodeResizer } from 'reactflow';
+import { ProblemNodeData } from '@/types';
+import { useEffect, useState } from 'react';
+import { useStore } from '@/store';
+import SourceHandle from '@/components/SourceHandle';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import TargetHandle from '@/components/TargetHandle';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
-export interface ProblemNodeData {
-  problem: string;
-}
 export default function ProblemNode(props: NodeProps<ProblemNodeData>) {
   const [problem, setProblem] = useState(props.data.problem);
   useEffect(() => {
     setProblem(props.data.problem);
   }, [props.data.problem]);
-  const updateProblemNode = useStore((state) => state.updateProblemNode);
+  const { updateProblemNode, regenerateProblemNodes } = useStore();
+
+  const { dimensions } = props.data;
 
   return (
     <>
@@ -29,14 +38,40 @@ export default function ProblemNode(props: NodeProps<ProblemNodeData>) {
           height: 10
         }}
       />
-      <div className="w-full h-full flex flex-col min-w-[300px] min-h-[200px] nowheel overflow-hidden">
-        <div className="flex bg-red-100 p-2 py-1 w-fit rounded-tr-md">
-          <h3 className="font-bold text-sm">Problem</h3>
+      <div className="h-full flex flex-col min-w-[300px] min-h-[300px] nowheel overflow-hidden">
+        <div className="flex justify-between items-center">
+          <div className="flex bg-red-100 p-2 py-1 w-fit rounded-tr-md">
+            <h3 className="font-bold text-sm">Problem</h3>
+          </div>
+          {props.data.regenerating ? (
+            <p>Regenerating...</p>
+          ) : props.data.outOfSync ? (
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5"
+                      onClick={() => {
+                        regenerateProblemNodes([props.id]);
+                      }}
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Linked personas updated. Regenerate problem?</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : null}
         </div>
-        <div className="p-4 w-full h-full  flex-grow bg-red-100 rounded-tr-md rounded-b-md">
+        <div className="p-4 w-full flex-grow bg-red-100 rounded-tr-md rounded-b-md flex flex-col">
           <textarea
-            className="block min-h-full h-full w-full resize-none p-2 text-md bg-red-50"
-            rows={6}
+            className="block w-full resize-none p-2 text-md bg-red-50 flex-grow"
             value={problem}
             onChange={(e) => setProblem(e.target.value)}
             onBlur={() => {
@@ -44,6 +79,18 @@ export default function ProblemNode(props: NodeProps<ProblemNodeData>) {
                 updateProblemNode(props.id, problem);
             }}
           />
+          <div className="mt-2">
+            <ScrollArea className="w-full h-[80px]">
+              {dimensions.map((dimension) => (
+                <Badge key={dimension.name} variant="secondary">
+                  <span>
+                    <b>{dimension.name}</b>:{' '}
+                    {dimension.currentValues.join(', ')}
+                  </span>
+                </Badge>
+              ))}
+            </ScrollArea>
+          </div>
         </div>
       </div>
       <TargetHandle />

@@ -1,33 +1,28 @@
+import { NodeProps, NodeResizer } from 'reactflow';
+import { SolutionNodeData } from '@/types';
+import { useEffect, useState } from 'react';
+import { useStore } from '@/store';
 import SourceHandle from '@/components/SourceHandle';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import TargetHandle from '@/components/TargetHandle';
-import { Button } from '@/components/ui/button';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip';
-import { useStore } from '@/store';
-import { RefreshCw, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
-import { NodeProps, NodeResizer } from 'reactflow';
-
-export interface SolutionNodeData {
-  solution: string;
-  regenerating: boolean;
-  dependencyUpdates: { id: string; previous: string; current: string }[];
-}
 export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
   const [solution, setSolution] = useState(props.data.solution);
   useEffect(() => {
     setSolution(props.data.solution);
   }, [props.data.solution]);
+  const { updateSolutionNode, regenerateSolutionNodes } = useStore();
 
-  const { updateSolutionNode, regenerateSolutionNode } = useStore((state) => {
-    const { updateSolutionNode, regenerateSolutionNode } = state;
-    return { updateSolutionNode, regenerateSolutionNode };
-  });
+  const { dimensions } = props.data;
 
   return (
     <>
@@ -43,14 +38,14 @@ export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
           height: 10
         }}
       />
-      <div className="w-full h-full flex flex-col min-w-[300px] min-h-[200px] nowheel overflow-hidden">
+      <div className="h-full flex flex-col min-w-[300px] min-h-[300px] nowheel overflow-hidden">
         <div className="flex justify-between items-center">
           <div className="flex bg-blue-100 p-2 py-1 w-fit rounded-tr-md">
             <h3 className="font-bold text-sm">Solution</h3>
           </div>
           {props.data.regenerating ? (
             <p>Regenerating...</p>
-          ) : props.data.dependencyUpdates.length > 0 ? (
+          ) : props.data.outOfSync ? (
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -59,40 +54,43 @@ export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
                       variant="ghost"
                       size="icon"
                       className="h-5 w-5"
-                      onClick={async () => {
-                        await regenerateSolutionNode(props.id, true);
+                      onClick={() => {
+                        regenerateSolutionNodes([props.id]);
                       }}
                     >
                       <RefreshCw className="w-4 h-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5"
-                      onClick={() => {
-                        regenerateSolutionNode(props.id, false);
-                      }}
-                    >
-                      <X className="w-4 h-4 text-red-500" />
-                    </Button>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Linked problems updated. Regenerate solution?</p>
+                  <p>Linked personas updated. Regenerate solution?</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           ) : null}
         </div>
-        <div className="p-4 w-full h-full  flex-grow bg-blue-100 rounded-tr-md rounded-b-md">
+        <div className="p-4 w-full flex-grow bg-blue-100 rounded-tr-md rounded-b-md flex flex-col">
           <textarea
-            className="block min-h-full h-full w-full resize-none p-2 text-md bg-blue-50"
-            rows={6}
-            disabled={props.data.regenerating}
+            className="block w-full resize-none p-2 text-md bg-blue-50 flex-grow"
             value={solution}
             onChange={(e) => setSolution(e.target.value)}
-            onBlur={() => updateSolutionNode(props.id, solution)}
+            onBlur={() => {
+              if (solution !== props.data.solution)
+                updateSolutionNode(props.id, solution);
+            }}
           />
+          <div className="mt-2">
+            <ScrollArea className="w-full h-[80px]">
+              {dimensions.map((dimension) => (
+                <Badge key={dimension.name} variant="secondary">
+                  <span>
+                    <b>{dimension.name}</b>:{' '}
+                    {dimension.currentValues.join(', ')}
+                  </span>
+                </Badge>
+              ))}
+            </ScrollArea>
+          </div>
         </div>
       </div>
       <TargetHandle />

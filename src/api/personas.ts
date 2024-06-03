@@ -1,78 +1,49 @@
-import { z } from 'zod';
-import { generateStructured } from './generateStructured';
+import { generateString, generateStructured } from './openai';
+import { Dimension, newDimensionsSchema } from '@/types';
 
-const personaSchema = z.object({
-  Persona: z.object({
-    Name: z.string(),
-    Age: z.string(),
-    Gender: z.string(),
-    Occupation: z.string(),
-    Education: z.string(),
-    IncomeLevel: z.string(),
-    Location: z.string(),
-    FamilyStatus: z.string()
-  }),
-  Psychographics: z.object({
-    PersonalityTraits: z.string(),
-    Values: z.string(),
-    Interests: z.string()
-  }),
-  Environment: z.object({
-    Physical: z.string(),
-    Social: z.string()
-  }),
-  BehavioralPatterns: z.object({
-    DailyRoutines: z.string(),
-    TechInteraction: z.string()
-  }),
-  NeedsAndChallenges: z.object({
-    Needs: z.string(),
-    Challenges: z.string()
-  }),
-  UsageContext: z.object({
-    ProductUse: z.string(),
-    UseInfluencers: z.string()
-  }),
-  TechnologyProficiency: z.object({
-    ComfortLevel: z.string(),
-    PreferredDevices: z.string()
-  }),
-  InformationConsumption: z.object({
-    PreferredSources: z.string(),
-    MediaConsumption: z.string()
-  }),
-  AdditionalMetadata: z.record(z.string(), z.string())
-});
-export type Persona = z.infer<typeof personaSchema>;
-
-const personaListSchema = z.object({
-  personas: z.array(personaSchema)
-});
-
-export async function generatePersonas(context: string) {
-  return generateStructured(personaListSchema, [
-    {
-      role: 'user',
-      content: `Generate a 3 distinct, representative personas that have different challenges relevant to the following context: ${context}`
-    }
-  ]);
-}
-
-export async function editPersonas(personas: Persona[], directions: string) {
-  const content = `Edit the following personas based on the directions. Feel free to add additional personas if needed.
-
-PERSONAS: """
-${JSON.stringify(personas, null, 2)}
+export async function generatePersonaDimensions(
+  existingDimensions: Dimension[],
+  context: string
+): Promise<Dimension[]> {
+  const prompt = `You are an AI assistant tasked with enhancing the creative and divergent thinking process for design thinking.
+Your goal is to generate a comprehensive list of dimensions (attributes with a set of allowed values) that can be used to create detailed personas.
+These dimensions will help designers understand and empathize with their target audience better.
+Given a set of existing dimensions and user instructions, generate a set of new dimensions if needed to fully explore the persona space.
+  
+Existing Dimensions: """
+${JSON.stringify(existingDimensions, null, 2)}
 """
 
-DIRECTIONS: """
-${directions}
+Context: """
+${context}
 """`;
 
-  return generateStructured(personaListSchema, [
-    {
-      role: 'user',
-      content
-    }
-  ]);
+  const { newDimensions } = await generateStructured(
+    newDimensionsSchema,
+    prompt
+  );
+
+  return newDimensions.map((dimension) => ({
+    ...dimension,
+    currentValues: []
+  }));
+}
+
+export async function generatePersona(
+  dimensionValues: Dimension[],
+  context: string
+) {
+  const prompt = `You are an AI assistant tasked with creating a detailed persona for design thinking based on specific dimensions and their assigned values.
+Use the given assignments to generate a coherent and realistic persona that can help designers understand and empathize with their target audience.
+Limit each persona to 1-2 sentences. Don't add any Markdown or HTML formatting or line breaks, just plain text.
+
+Dimensions: """
+${JSON.stringify(dimensionValues, null, 2)}
+"""
+
+Context: """
+${context}
+"""`;
+
+  return await generateString(prompt);
 }

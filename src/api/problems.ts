@@ -1,32 +1,56 @@
-import { z } from 'zod';
-import { generateStructured } from './generateStructured';
-import { Persona } from './personas';
-import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+import { generateStructured, generateString } from './openai';
+import { Dimension, newDimensionsSchema } from '@/types';
 
-const problemsSchema = z.object({
-  problems: z.array(z.string())
-});
+export async function generateProblemDimensions(
+  existingDimensions: Dimension[],
+  context: string
+): Promise<Dimension[]> {
+  const prompt = `You are an AI assistant tasked with enhancing the creative and divergent thinking process for design thinking.
+Your goal is to generate a comprehensive list of dimensions (attributes with a set of allowed values) that can be used to create detailed problem statements.
+These dimensions will help designers understand and frame the problems they are addressing better.
 
-export async function generateProblems(context: string, personas: Persona[]) {
-  const baseMessage = {
-    role: 'user',
-    content: `Generate 3 problems statements in the format: as a ______, I am trying to _________, but _____________ because _________ which makes me feel _________. These problems statements should be relevant to the following context: ${context}`
-  } as const;
-  const personaContextMessage = {
-    role: 'user',
-    content: `The problem statements should apply to people that match following personas. However, phrase problems in a general way that doesn't mention the personas directly.
-    
-PERSONAS: """
-${JSON.stringify(personas, null, 2)}
+Given a set of existing dimensions and user instructions, generate a set of new dimensions if needed to fully explore the problem space.
+These dimensions should help characterize and define possible problems the root cause, consequences, participants, and other aspects specific to just problem statements.
+DO NOT suggest dimensions that describe the context or solutions!!!
+  
+Existing Dimensions: """
+${JSON.stringify(existingDimensions, null, 2)}
 """
-`
-  } as const;
 
-  const messages: ChatCompletionMessageParam[] = [baseMessage];
-  if (personas.length > 0) {
-    messages.push(personaContextMessage);
-  }
+Context: """
+${context}
+"""`;
 
-  const { problems } = await generateStructured(problemsSchema, messages);
-  return problems;
+  const { newDimensions } = await generateStructured(
+    newDimensionsSchema,
+    prompt
+  );
+
+  return newDimensions.map((dimension) => ({
+    ...dimension,
+    currentValues: []
+  }));
+}
+
+export async function generateProblem(
+  dimensionValues: Dimension[],
+  context: string
+) {
+  const prompt = `Using the assigned values for each dimension, generate a detailed problem statement.
+Structure the problem statement as follows: "As an [occupation or role], they struggle with [problem] because of [cause], which leads to [consequence]."
+Ensure the problem statement is realistic and provides a comprehensive understanding of the issue.
+
+Example: As an entry-level professional, they struggle with making informed investment decisions because of a lack of knowledge, which leads to high levels of stress and missed financial opportunities.
+
+Limit each problem statement to 1-2 sentences. Don't add any Markdown or HTML formatting or line breaks, just plain text.
+
+Dimensions: """
+${JSON.stringify(dimensionValues, null, 2)}
+"""
+
+Context: """
+${context}
+"""`;
+
+  return await generateString(prompt);
 }
