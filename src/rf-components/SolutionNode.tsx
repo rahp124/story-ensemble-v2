@@ -45,7 +45,7 @@ export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
           </div>
           {props.data.regenerating ? (
             <p>Regenerating...</p>
-          ) : props.data.outOfSync ? (
+          ) : (
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -59,15 +59,20 @@ export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
                       }}
                     >
                       <RefreshCw className="w-4 h-4" />
+                      {props.data.outOfSync && (
+                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full absolute top-1 right-0"></span>
+                      )}
                     </Button>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Linked personas updated. Regenerate solution?</p>
-                </TooltipContent>
+                {props.data.outOfSync && (
+                  <TooltipContent>
+                    <p>Dependencies updated. Regenerate problem?</p>
+                  </TooltipContent>
+                )}
               </Tooltip>
             </TooltipProvider>
-          ) : null}
+          )}
         </div>
         <div className="p-4 w-full flex-grow bg-blue-100 rounded-tr-md rounded-b-md flex flex-col">
           <textarea

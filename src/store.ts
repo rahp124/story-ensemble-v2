@@ -68,7 +68,7 @@ type RFState = {
 
   // Persona
   generatePersonaNodes: (context: string) => Promise<void>;
-  // regeneratePersonaNodes: (ids: string[], instructions?: string) => void;
+  regeneratePersonaNodes: (ids: string[], instructions?: string) => void;
   updatePersonaNode: (id: string, text: string) => Promise<void>;
   // mergePersonaNodes: (ids: string[]) => Promise<void>;
 
@@ -271,6 +271,48 @@ export const useStore = create<RFState>((set, get) => ({
     console.log('generate nodes');
 
     get().setNodes([...get().nodes, ...personasNodes]);
+  },
+  regeneratePersonaNodes: async (ids: string[], instructions?: string) => {
+    const personaNodes = get().nodes.filter(
+      (node) => node.type === NodeType.Persona && ids.includes(node.id)
+    );
+    if (!personaNodes.length) return;
+
+    personaNodes.forEach(async (node) => {
+      set({
+        nodes: get().nodes.map((node) => {
+          if (ids.includes(node.id)) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                regenerating: true
+              }
+            };
+          }
+          return node;
+        })
+      });
+
+      const newPersona = await generatePersona(node.data.dimensions, '');
+
+      get().updatePersonaNode(node.id, newPersona);
+      set({
+        nodes: get().nodes.map((node) => {
+          if (ids.includes(node.id)) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                outOfSync: false,
+                regenerating: false
+              }
+            };
+          }
+          return node;
+        })
+      });
+    });
   },
   updatePersonaNode: async (id: string, persona: string) => {
     const personaNode = get().nodes.find((node) => node.id === id);

@@ -5,13 +5,21 @@ import { useStore } from '@/store';
 import SourceHandle from '@/components/SourceHandle';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
 export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
   const [persona, setPersona] = useState(props.data.persona);
   useEffect(() => {
     setPersona(props.data.persona);
   }, [props.data.persona]);
-  const updatePersonaNode = useStore((state) => state.updatePersonaNode);
+  const { updatePersonaNode, regeneratePersonaNodes } = useStore();
   const { dimensions } = props.data;
 
   return (
@@ -29,8 +37,40 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
         }}
       />
       <div className="h-full flex flex-col min-w-[300px] min-h-[300px] nowheel overflow-hidden">
-        <div className="flex bg-yellow-100 p-2 py-1 w-fit rounded-tr-md">
-          <h3 className="font-bold text-sm">Persona</h3>
+        <div className="flex justify-between items-center">
+          <div className="flex bg-yellow-100 p-2 py-1 w-fit rounded-tr-md">
+            <h3 className="font-bold text-sm">Persona</h3>
+          </div>
+          {props.data.regenerating ? (
+            <p>Regenerating...</p>
+          ) : (
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5"
+                      onClick={() => {
+                        regeneratePersonaNodes([props.id]);
+                      }}
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      {props.data.outOfSync && (
+                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full absolute top-1 right-0"></span>
+                      )}
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                {props.data.outOfSync && (
+                  <TooltipContent>
+                    <p>Dependencies updated. Regenerate problem?</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
         <div className="p-4 w-full flex-grow bg-yellow-100 rounded-tr-md rounded-b-md flex flex-col">
           <textarea
