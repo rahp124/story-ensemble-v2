@@ -6,12 +6,15 @@ export const newDimensionsSchema = z.object({
     .object({
       name: z.string(),
       description: z.string(),
-      values: z.array(z.string())
+      values: z
+        .array(z.string())
+        .refine((items) => new Set(items).size === items.length)
     })
     .array()
 });
 
 export type Dimension = {
+  id: string;
   name: string;
   description: string;
   values: string[];

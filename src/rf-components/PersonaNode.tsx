@@ -85,7 +85,7 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
           <div className="mt-2">
             <ScrollArea className="w-full h-[80px]">
               {dimensions.map((dimension) => (
-                <Badge key={dimension.name} variant="secondary">
+                <Badge key={dimension.id} variant="secondary">
                   <span>
                     <b>{dimension.name}</b>:{' '}
                     {dimension.currentValues.join(', ')}

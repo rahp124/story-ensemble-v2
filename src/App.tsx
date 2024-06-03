@@ -167,7 +167,7 @@ export default function App() {
                 <ScrollArea>
                   <div className="flex items-center gap-2 py-4">
                     {personaDimensions.map((dimension) => (
-                      <div key={dimension.name}>
+                      <div key={dimension.id}>
                         <select className="border border-black rounded-md px-1 py-2">
                           <option>{dimension.name}</option>
                           {dimension.values.map((value) => (
@@ -188,7 +188,7 @@ export default function App() {
                 <ScrollArea>
                   <div className="flex items-center gap-2 py-4">
                     {problemDimensions.map((dimension) => (
-                      <div key={dimension.name}>
+                      <div key={dimension.id}>
                         <select className="border border-black rounded-md px-1 py-2">
                           <option>{dimension.name}</option>
                           {dimension.values.map((value) => (
@@ -209,7 +209,7 @@ export default function App() {
                 <ScrollArea>
                   <div className="flex items-center gap-2 py-4">
                     {solutionDimensions.map((dimension) => (
-                      <div key={dimension.name}>
+                      <div key={dimension.id}>
                         <select className="border border-black rounded-md px-1 py-2">
                           <option>{dimension.name}</option>
                           {dimension.values.map((value) => (

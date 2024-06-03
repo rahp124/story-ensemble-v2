@@ -1,5 +1,6 @@
 import { Dimension, newDimensionsSchema } from '@/types';
 import { generateString, generateStructured } from './openai';
+import { nanoid } from 'nanoid';
 
 export async function generateSolutionDimensions(
   existingDimensions: Dimension[],
@@ -28,6 +29,7 @@ ${context}
 
   return newDimensions.map((dimension) => ({
     ...dimension,
+    id: `solution-dim-${nanoid()}`,
     currentValues: []
   }));
 }

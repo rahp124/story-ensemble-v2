@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid';
 import { generateStructured, generateString } from './openai';
 import { Dimension, newDimensionsSchema } from '@/types';
 
@@ -28,6 +29,7 @@ ${context}
 
   return newDimensions.map((dimension) => ({
     ...dimension,
+    id: `problem-dim-${nanoid()}`,
     currentValues: []
   }));
 }
