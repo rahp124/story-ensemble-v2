@@ -31,7 +31,11 @@ import {
   StoryboardNodeData
 } from './types';
 import { generateRandomAssignments } from './lib';
-import { generatePersona, generatePersonaDimensions } from './api/personas';
+import {
+  generatePersona,
+  generatePersonaDimensions,
+  mergePersonas
+} from './api/personas';
 import { nanoid } from 'nanoid';
 import { NodeType } from './rf-components';
 import { generateProblem, generateProblemDimensions } from './api/problems';
@@ -67,12 +71,20 @@ type RFState = {
   updateTextNode: (id: string, text: string) => void;
 
   // Persona
+  pinPersonaDimension: (id: string, currentValue: string[]) => void;
+  // addPersonaDimension: (dimensionName: string) => void;
+
   generatePersonaNodes: (context: string) => Promise<void>;
   regeneratePersonaNodes: (ids: string[], instructions?: string) => void;
   updatePersonaNode: (id: string, text: string) => Promise<void>;
-  // mergePersonaNodes: (ids: string[]) => Promise<void>;
+  mergePersonaNodes: (
+    personaNodes: Node<PersonaNodeData>[],
+    instructions?: string
+  ) => Promise<void>;
 
   // Problem
+  pinProblemDimension: (id: string, currentValue: string[]) => void;
+
   generateProblemNodes: (
     context: string,
     personaIds: string[]
@@ -82,6 +94,8 @@ type RFState = {
   // mergeProblemNodes: (ids: string[]) => Promise<void>;
 
   // Solution
+  pinSolutionDimension: (id: string, currentValue: string[]) => void;
+
   generateSolutionNodes: (
     context: string,
     problemIds: string[]
@@ -236,6 +250,22 @@ export const useStore = create<RFState>((set, get) => ({
     });
   },
 
+  pinPersonaDimension: (id: string, currentValue: string[]) => {
+    const dimension = get().personaDimensions.find((d) => d.id === id);
+    if (!dimension) return;
+
+    set({
+      personaDimensions: get().personaDimensions.map((d) => {
+        if (d.id === id) {
+          return {
+            ...d,
+            currentValues: currentValue
+          };
+        }
+        return d;
+      })
+    });
+  },
   generatePersonaNodes: async (context: string) => {
     const newDimensions = await generatePersonaDimensions(
       get().personaDimensions,
@@ -268,7 +298,6 @@ export const useStore = create<RFState>((set, get) => ({
         return personaNode;
       })
     );
-    console.log('generate nodes');
 
     get().setNodes([...get().nodes, ...personasNodes]);
   },
@@ -346,6 +375,49 @@ export const useStore = create<RFState>((set, get) => ({
           };
         }
         return node;
+      })
+    });
+  },
+  mergePersonaNodes: async (personaNodes, instructions) => {
+    const peronas = personaNodes.map((node) => node.data.persona);
+    const personaDimensions = get().personaDimensions;
+
+    const { mergedPersona, mergedDimensions } = await mergePersonas(
+      peronas,
+      personaDimensions,
+      instructions || ''
+    );
+
+    const personaNode: Node<PersonaNodeData> = {
+      id: `persona-${nanoid()}`,
+      type: NodeType.Persona,
+      position: { x: -200, y: 200 },
+      style: {
+        width: 300,
+        height: 300
+      },
+      data: {
+        persona: mergedPersona,
+        dimensions: mergedDimensions
+      }
+    };
+
+    get().setNodes([...get().nodes, personaNode]);
+  },
+
+  pinProblemDimension: (id: string, currentValue: string[]) => {
+    const dimension = get().problemDimensions.find((d) => d.id === id);
+    if (!dimension) return;
+
+    set({
+      problemDimensions: get().problemDimensions.map((d) => {
+        if (d.id === id) {
+          return {
+            ...d,
+            currentValues: currentValue
+          };
+        }
+        return d;
       })
     });
   },
@@ -488,6 +560,23 @@ export const useStore = create<RFState>((set, get) => ({
           };
         }
         return node;
+      })
+    });
+  },
+
+  pinSolutionDimension: (id: string, currentValue: string[]) => {
+    const dimension = get().solutionDimensions.find((d) => d.id === id);
+    if (!dimension) return;
+
+    set({
+      solutionDimensions: get().solutionDimensions.map((d) => {
+        if (d.id === id) {
+          return {
+            ...d,
+            currentValues: currentValue
+          };
+        }
+        return d;
       })
     });
   },

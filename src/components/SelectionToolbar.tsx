@@ -1,22 +1,26 @@
 import { NodeType } from '@/rf-components';
 import { Node, NodeToolbar, Position } from 'reactflow';
-import { Button } from './ui/button';
+import { Button } from '@mantine/core';
 
 export interface SelectionToolbarProps {
   selectedNodes: Node[];
+  onMergePersonas: () => void;
   onGenerateProblems: () => void;
   onGenerateSolutions: () => void;
 }
 export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
+  const showMergePersonas =
+    props.selectedNodes.filter((node) => node.type === NodeType.Persona)
+      .length > 1;
   const showGenerateProblems = props.selectedNodes.some(
     (node) => node.type === NodeType.Persona
   );
   const showGenerateSolutions = props.selectedNodes.some(
     (node) => node.type === NodeType.Problem
   );
-  const showGenerateStoryboards = props.selectedNodes.some(
-    (node) => node.type === NodeType.Solution
-  );
+  // const showGenerateStoryboards = props.selectedNodes.some(
+  //   (node) => node.type === NodeType.Solution
+  // );
 
   return (
     <NodeToolbar
@@ -24,11 +28,16 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
       position={Position.Bottom}
       nodeId={props.selectedNodes.map((node) => node.id)}
     >
-      <div className="flex gap-2">
+      <Button.Group>
+        {showMergePersonas && (
+          <Button variant="outline" size="xs" onClick={props.onMergePersonas}>
+            Merge personas
+          </Button>
+        )}
         {showGenerateProblems && (
           <Button
             variant="outline"
-            size="sm"
+            size="xs"
             onClick={props.onGenerateProblems}
           >
             Generate problem statements
@@ -37,18 +46,13 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
         {showGenerateSolutions && (
           <Button
             variant="outline"
-            size="sm"
+            size="xs"
             onClick={props.onGenerateSolutions}
           >
             Generate solutions
           </Button>
         )}
-        {showGenerateStoryboards && (
-          <Button variant="outline" size="sm">
-            Generate storyboards
-          </Button>
-        )}
-      </div>
+      </Button.Group>
     </NodeToolbar>
   );
 }

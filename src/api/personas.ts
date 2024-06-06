@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 import { generateString, generateStructured } from './openai';
 import { Dimension, newDimensionsSchema } from '@/types';
+import { z } from 'zod';
 
 export async function generatePersonaDimensions(
   existingDimensions: Dimension[],
@@ -48,4 +49,80 @@ ${context}
 """`;
 
   return await generateString(prompt);
+}
+
+export async function classifyPersona(
+  persona: string,
+  dimensions: Dimension[]
+) {
+  // Given a persona and a set of dimensions classify the persona using the dimensions
+  const dimensionSchema = z.object({
+    classifiedDimensions: z
+      .union(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        dimensions.map((d) => {
+          return z.object({
+            id: z.literal(d.id),
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            currentValues: z.array(z.union(d.values.map((v) => z.literal(v))))
+          });
+        })
+      )
+      .array()
+  });
+
+  const prompt = `You are an AI assistant tasked with classifying a persona based on specific dimensions.
+Given a list of dimensions and a persona classify the personas by specifying the persona's dimension value in the currentValues array
+
+Persona: """
+${persona}
+"""
+
+Dimensions: """
+${JSON.stringify(dimensions, null, 2)}
+"""
+`;
+
+  const classifiedDimensions: { id: string; currentValues: string[] }[] = (
+    await generateStructured(dimensionSchema, prompt)
+  ).classifiedDimensions;
+
+  const newDimensions = dimensions.map((d) => {
+    const classifiedDimension = classifiedDimensions.find(
+      (cd) => cd.id === d.id
+    );
+
+    return {
+      ...d,
+      currentValues: classifiedDimension?.currentValues || []
+    };
+  });
+
+  return newDimensions;
+}
+
+export async function mergePersonas(
+  personas: string[],
+  dimensions: Dimension[],
+  instructions: string
+) {
+  const prompt = `You are an AI assistant tasked with merging multiple personas into a single persona.
+Limit each persona to 1-2 sentences. Don't add any Markdown or HTML formatting or line breaks, just plain text.
+
+Personas: """
+${personas.join('\n')}
+"""
+
+Instructions: """
+${instructions}
+"""
+`;
+
+  const mergedPersona = await generateString(prompt);
+
+  const mergedDimensions = await classifyPersona(mergedPersona, dimensions);
+
+  return { mergedPersona, mergedDimensions };
 }
