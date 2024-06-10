@@ -17,14 +17,14 @@ import {
   OnConnectEnd
 } from 'reactflow';
 import {
-  FrameOutline,
-  generateStoryboardOutlines,
-  generateStoryboardTitles
+  generateStoryboardDimensions,
+  generateStoryboardOutline
 } from './api/storyboards';
 import { generateImage } from './api/stableDiffusion';
 import { generateSolution, generateSolutionDimensions } from './api/solutions';
 import {
   Dimension,
+  FrameOutline,
   PersonaNodeData,
   ProblemNodeData,
   SolutionNodeData,
@@ -54,8 +54,7 @@ type RFState = {
   personaDimensions: Dimension[];
   problemDimensions: Dimension[];
   solutionDimensions: Dimension[];
-  storyboardOutlineDimensions: Dimension[];
-  storyboardImageDimensions: [];
+  storyboardDimensions: Dimension[];
 
   connectionInProgress: boolean;
   onConnectStart: OnConnectStart;
@@ -105,17 +104,11 @@ type RFState = {
   // mergeSolutionNodes: (ids: string[]) => Promise<void>;
 
   // Storyboards
-  generateStoryboardTitles: (id: string) => Promise<void>;
-  generateStoryboardOutlines: (
-    id: string,
-    variationIdx: number,
-    title: string
-  ) => Promise<void>;
-  generateStoryboardImages: (
-    id: string,
-    variationIdx: number,
-    outlineIdx: number
-  ) => Promise<void>;
+  generateStoryboardDimensions: (context: string) => Promise<void>;
+  pinStoryboardDimension: (id: string, currentValue: string[]) => void;
+
+  generateStoryboardNode: (context: string) => Promise<void>;
+  generateStoryboardImages: (id: string) => Promise<void>;
 };
 
 export const useStore = create<RFState>((set, get) => ({
@@ -177,8 +170,7 @@ export const useStore = create<RFState>((set, get) => ({
   personaDimensions: [],
   problemDimensions: [],
   solutionDimensions: [],
-  storyboardOutlineDimensions: [],
-  storyboardImageDimensions: [],
+  storyboardDimensions: [],
 
   connectionInProgress: false,
   onConnectStart: () => set({ connectionInProgress: true }),
@@ -719,65 +711,62 @@ export const useStore = create<RFState>((set, get) => ({
     });
   },
 
-  generateStoryboardTitles: async (id: string) => {
-    const context =
-      'Rob is a educated tech salesperson. When attending in person tech conferences he wants to find people in specific industries to help make sales. Create an event engagement app that encourages people to register to connect at in-person events. This app also includes event engagement features to encourage users to register with programs such as scavenger hunts.';
-    // 'Bill is a gardener who has trouble reading small print. Create an app that helps him learn about plants using videos.';
-    const titles = await generateStoryboardTitles(context);
+  generateStoryboardDimensions: async (context: string) => {
+    const newDimensions = await generateStoryboardDimensions(
+      get().storyboardDimensions,
+      context
+    );
 
     set({
-      nodes: get().nodes.map((node) => {
-        if (node.id === id) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              variations: titles.map((title) => ({
-                title,
-                outlines: []
-              }))
-            }
-          };
-        }
-        return node;
-      })
+      storyboardDimensions: [...get().storyboardDimensions, ...newDimensions]
     });
   },
-  generateStoryboardOutlines: async (
-    id: string,
-    variationIdx: number,
-    title: string
-  ) => {
-    const outlines = await generateStoryboardOutlines(title);
+  pinStoryboardDimension: (id: string, currentValue: string[]) => {
+    const dimension = get().storyboardDimensions.find((d) => d.id === id);
+    if (!dimension) return;
+
     set({
-      nodes: get().nodes.map((node) => {
-        if (node.id === id) {
-          const typedNode = node as Node<StoryboardNodeData>;
+      storyboardDimensions: get().storyboardDimensions.map((d) => {
+        if (d.id === id) {
           return {
-            ...typedNode,
-            data: {
-              ...typedNode.data,
-              variations: typedNode.data.variations.map((variation, idx) => {
-                if (idx === variationIdx) {
-                  return {
-                    ...variation,
-                    outlines
-                  };
-                }
-                return variation;
-              })
-            }
+            ...d,
+            currentValues: currentValue
           };
         }
-        return node;
+        return d;
       })
     });
   },
-  generateStoryboardImages: async (id, variationIndex, outlineIndex) => {
-    const outline: FrameOutline[] = get()
-      .nodes.find((node) => node.id === id)
-      ?.data.variations.at(variationIndex)
-      ?.outlines.at(outlineIndex)?.outline;
+  generateStoryboardNode: async (context: string) => {
+    // TODO dependencies
+
+    const dimensionPermutation = generateRandomAssignments(
+      get().storyboardDimensions,
+      1
+    )[0];
+
+    const storyboardData = await generateStoryboardOutline(
+      dimensionPermutation,
+      context
+    );
+
+    const node: Node<StoryboardNodeData> = {
+      id: `storyboard-${nanoid()}`,
+      type: NodeType.Storyboard,
+      position: { x: 100, y: 1000 },
+      data: {
+        storyboard: storyboardData,
+        dimensions: dimensionPermutation
+      }
+    };
+    set({
+      nodes: [...get().nodes, node]
+    });
+  },
+
+  generateStoryboardImages: async (id) => {
+    const outline: FrameOutline[] = get().nodes.find((node) => node.id === id)
+      ?.data.storyboard.outline;
     if (!outline) return;
 
     const images = await Promise.all(
@@ -801,23 +790,10 @@ export const useStore = create<RFState>((set, get) => ({
             ...typedNode,
             data: {
               ...typedNode.data,
-              variations: typedNode.data.variations.map((variation, idx) => {
-                if (idx === variationIndex) {
-                  return {
-                    ...variation,
-                    outlines: variation.outlines.map((outline, idx) => {
-                      if (idx === outlineIndex) {
-                        return {
-                          ...outline,
-                          outline: images
-                        };
-                      }
-                      return outline;
-                    })
-                  };
-                }
-                return variation;
-              })
+              storyboard: {
+                ...typedNode.data.storyboard,
+                outline: images
+              }
             }
           };
         }

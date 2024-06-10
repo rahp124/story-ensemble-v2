@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { FrameOutline } from './api/storyboards';
 
 export const newDimensionsSchema = z.object({
   newDimensions: z
@@ -27,6 +26,20 @@ export type NodeData = {
   dimensions: Dimension[];
 };
 
+const frameOutlineSchema = z.object({
+  description: z.string(),
+  imagePrompt: z.string(),
+  imageNegativePrompt: z.string(),
+  caption: z.string()
+});
+export type FrameOutline = z.infer<typeof frameOutlineSchema>;
+
+export const storyboardOutlineSchema = z.object({
+  title: z.string(),
+  outline: frameOutlineSchema.array().min(4)
+});
+export type StoryboardOutline = z.infer<typeof storyboardOutlineSchema>;
+
 export type PersonaNodeData = NodeData & {
   persona: string;
 };
@@ -37,10 +50,10 @@ export type SolutionNodeData = NodeData & {
   solution: string;
 };
 export type StoryboardNodeData = NodeData & {
-  variations: {
+  storyboard: {
     title: string;
-    outlines: {
-      outline: (FrameOutline & { image?: string })[];
-    }[];
-  }[];
+    outline: (FrameOutline & {
+      image?: string;
+    })[];
+  };
 };

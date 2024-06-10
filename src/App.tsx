@@ -1,9 +1,7 @@
-import { nanoid } from 'nanoid';
 import ReactFlow, {
   Background,
   BackgroundVariant,
   Controls,
-  Node,
   SelectionMode,
   Panel
 } from 'reactflow';
@@ -14,7 +12,6 @@ import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
 import { useRfCursorPosition } from './lib/useRfCursorPosition';
-import { StoryboardNodeData } from './types';
 import { Plus } from 'lucide-react';
 import {
   Accordion,
@@ -38,7 +35,6 @@ export default function App() {
     onConnectEnd,
     onSelectionChange,
     cursorNode,
-    swapCursorNode,
     updateCursorNodePosition,
     placeCursorNode,
     personaDimensions,
@@ -50,9 +46,13 @@ export default function App() {
     generateProblemNodes,
     solutionDimensions,
     pinSolutionDimension,
-    generateSolutionNodes
+    generateSolutionNodes,
+    storyboardDimensions,
+    generateStoryboardDimensions,
+    generateStoryboardNode,
+    pinStoryboardDimension
   } = useStore();
-  const { rfCursorPosition, updateRfCursorPosition } = useRfCursorPosition();
+  const { updateRfCursorPosition } = useRfCursorPosition();
 
   const selectedPersonaNodes = selectedNodes.filter(
     (node) => node.type === NodeType.Persona
@@ -128,19 +128,21 @@ export default function App() {
   );
   const [generatingSolutionNodes, setGeneratingSolutionNodes] = useState(false);
 
+  /* Storyboard */
+  const [storyboardContext, setStoryboardContext] =
+    useState(`Problem: Tech salesperson struggles to find qualified leads at crowded conferences.
+
+Solution: Solutions for tech conferences organizers to improve networking experience.
+Organizers create an event engagement app that encourages people to register to connect at in-person events.
+
+Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for the app. Makes meaningful connections leading to sales.`);
+  const [generatingStoryboardDimensions, setGeneratingStoryboardDimensions] =
+    useState(false);
+  const [generatingStoryboardNodes, setGeneratingStoryboardNodes] =
+    useState(false);
+
   const [currentlySelecting, setCurrentlySelecting] = useState(false);
   const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
-
-  // Generate storyboard
-  async function experiment() {
-    const newNode: Node<StoryboardNodeData> = {
-      id: `storyboard-${nanoid()}`,
-      type: NodeType.Storyboard,
-      position: rfCursorPosition,
-      data: { variations: [], dimensions: [] }
-    };
-    swapCursorNode(newNode);
-  }
 
   return (
     <div className="h-[100vh] w-[100vw]">
@@ -360,7 +362,7 @@ export default function App() {
                             async (instructions: string) => {
                               setGeneratingSolutionNodes(true);
                               await generateSolutionNodes(
-                                personaContext + instructions,
+                                solutionContext + instructions,
                                 []
                               );
                               setGeneratingSolutionNodes(false);
@@ -410,20 +412,86 @@ export default function App() {
                 </Accordion.Control>
                 <Accordion.Panel>
                   <div className="flex flex-col gap-6 py-2">
+                    <Textarea
+                      label="Storyboard context"
+                      autosize={true}
+                      minRows={2}
+                      maxRows={4}
+                      value={storyboardContext}
+                      onChange={(event) =>
+                        setStoryboardContext(event.currentTarget.value)
+                      }
+                    />
                     <Button.Group>
                       <Button
                         className="w-full"
                         variant="outline"
-                        onClick={() => experiment()}
+                        loading={generatingStoryboardDimensions}
+                        onClick={async () => {
+                          if (generatingStoryboardDimensions) return;
+
+                          triggerInstructionsModal(
+                            async (instructions: string) => {
+                              setGeneratingStoryboardDimensions(true);
+                              await generateStoryboardDimensions(
+                                personaContext + instructions
+                              );
+                              setGeneratingStoryboardDimensions(false);
+                            },
+                            'Instructions for storyboard dimension generation'
+                          );
+                        }}
                       >
                         <Plus className="mr-2 h-4 w-4" />
-                        Generate storyboard
+                        Storyboard dimensions
                       </Button>
-                      <Button variant="outline" className="w-full">
+                      <Button
+                        className="w-full"
+                        variant="outline"
+                        loading={generatingStoryboardNodes}
+                        onClick={async () => {
+                          if (generatingStoryboardNodes) return;
+
+                          triggerInstructionsModal(
+                            async (instructions: string) => {
+                              setGeneratingStoryboardNodes(true);
+                              await generateStoryboardNode(
+                                storyboardContext + instructions
+                              );
+                              setGeneratingStoryboardNodes(false);
+                            },
+                            'Instructions for storyboard generation'
+                          );
+                        }}
+                      >
                         <Plus className="mr-2 h-4 w-4" />
-                        Add storyboard dimension
+                        Generate storyboards
                       </Button>
                     </Button.Group>
+                    <ScrollArea.Autosize mah={400}>
+                      <div className="flex flex-col gap-4">
+                        {storyboardDimensions.map((dimension) => (
+                          <MultiSelect
+                            key={dimension.id}
+                            label={dimension.name}
+                            description={dimension.description}
+                            placeholder="Pin dimension"
+                            data={dimension.values}
+                            value={dimension.currentValues}
+                            onChange={(value) =>
+                              pinStoryboardDimension(dimension.id, value)
+                            }
+                            withCheckIcon={true}
+                            checkIconPosition="right"
+                          />
+                        ))}
+                        {storyboardDimensions.length === 0 && (
+                          <p className="text-sm">
+                            No storyboard dimensions generated.
+                          </p>
+                        )}
+                      </div>
+                    </ScrollArea.Autosize>
                   </div>
                 </Accordion.Panel>
               </Accordion.Item>

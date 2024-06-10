@@ -1,59 +1,55 @@
-import { z } from 'zod';
 import { generateStructured } from './openai';
+import { nanoid } from 'nanoid';
+import {
+  Dimension,
+  newDimensionsSchema,
+  storyboardOutlineSchema
+} from '@/types';
 
-const storyboardTitlesSchema = z.object({
-  titles: z.array(z.string())
-});
-const STORYBOARD_TITLE_PROMPT = `
-Generate 4 different storyboard titles for a user design storyboard based on the provided context.
-The title is a sentence summarize a story about the user situation, problem, solution, and resolution.
+export async function generateStoryboardDimensions(
+  existingDimensions: Dimension[],
+  context: string
+): Promise<Dimension[]> {
+  const prompt = `You are an AI assistant tasked with enhancing the creative and divergent thinking process for design thinking.
+Your goal is to generate a comprehensive list of dimensions (attributes with a set of allowed values) that can be used to create detailed storyboard ideas.
+These dimensions will help designers explore various different storyboards to communicate and explore a solution to a problem within a specific context.
 
-Examples:
+Given a set of existing dimensions and user instructions, generate a set of new dimensions if needed to fully explore the storyboard space.
+These dimensions should help characterize and define possible storyboards, including their themes, characters, settings, tone, as well as aesthetics such as the style of the storyboard.
+DO NOT suggest dimensions that describe the context or problems!!!
 
-Given Context: 'Bill is a gardener who has trouble reading small print. Create an app that helps him learn about plants using videos.'
-Output: 'A seed catalog app that lets users watch videos instead of reading plant info.'
-
-Given Context: 'Rob is a student who struggles with public speaking. Create a virtual reality game to help him overcome his fear.'
-Output: 'A virtual reality game that helps users overcome their fear of public speaking.'
-`;
-export async function generateStoryboardTitles(context: string) {
-  const contextPrompt = `
-CONTEXT: """
-${context}
+Existing Dimensions: """
+${JSON.stringify(existingDimensions, null, 2)}
 """
-`;
-  const messageContent = [STORYBOARD_TITLE_PROMPT, contextPrompt];
 
-  const { titles } = await generateStructured(
-    storyboardTitlesSchema,
-    messageContent.join('\n\n')
+Context: """
+${context}
+"""`;
+
+  const { newDimensions } = await generateStructured(
+    newDimensionsSchema,
+    prompt
   );
-  return titles;
+
+  return newDimensions.map((dimension) => ({
+    ...dimension,
+    id: `storyboard-dim-${nanoid()}`,
+    currentValues: []
+  }));
 }
 
-const frameOutlineSchema = z.object({
-  description: z.string(),
-  imagePrompt: z.string(),
-  imageNegativePrompt: z.string(),
-  caption: z.string()
-});
-export type FrameOutline = z.infer<typeof frameOutlineSchema>;
-const storyboardOutlineSchema = z.object({
-  outlines: z
-    .array(
-      z.object({
-        outline: frameOutlineSchema.array().min(4)
-      })
-    )
-    .min(1)
-    .max(1)
-});
-export type StoryboardOutlines = z.infer<typeof storyboardOutlineSchema>;
-const STORYBOARD_OUTLINE_PROMPT = `
-You are an experienced UX designer.
+export async function generateStoryboardOutline(
+  dimensionValues: Dimension[],
+  context: string
+) {
+  const prompt = `
+You are an AI assistant tasked with creating a detailed storyboard outline for design thinking based on specific dimensions and their assigned values.
+Use the given dimensions to generate a coherent storyboard outline to visualize a problem, solution, and the surrounding context.
 
-Generate 1 different storyboard outlines for a user design storyboard based on the provided context.
-You must generate 1 outlines, each with at least 4 frames.
+The title is a sentence summarize a story about the user situation, problem, solution, and resolution.
+Example title: 'A seed catalog app that lets users watch videos instead of reading plant info.'
+
+Generate an outline with at least 4 frames.
 
 The frame outline contains a brief description for each frame in the storyboard.
 The description should tell a cohesive story about the user situation, problem, solution, and resolution.
@@ -77,7 +73,7 @@ Each frame outline also contains a caption that will be displayed directly below
 The caption should aim to clarify or add context to the visual image.
 The caption should be shorter than the frame description since it will be displayed directly below the visual image.
 
-Example:
+Outline Example:
 Context: "Bill is a gardener who has trouble reading small print. Create an app that helps him learn about plants using videos."
 Output: [
   {
@@ -105,17 +101,17 @@ Output: [
     "caption": "Bill happily watches more videos about plants he's curious about"
   }
 ]
-`;
-export async function generateStoryboardOutlines(context: string) {
-  const contextPrompt = `
-CONTEXT: """
+  
+Dimensions: """
+${JSON.stringify(dimensionValues, null, 2)}
+"""
+
+Context: """
 ${context}
 """`;
-  const messageContent = [STORYBOARD_OUTLINE_PROMPT, contextPrompt];
-
-  const { outlines } = await generateStructured(
+  const storyboardOutline = await generateStructured(
     storyboardOutlineSchema,
-    messageContent.join('\n\n')
+    prompt
   );
-  return outlines;
+  return storyboardOutline;
 }
