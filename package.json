@@ -35,6 +35,7 @@
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.23.4",
     "zod-to-json-schema": "^3.23.0",
+    "zundo": "^2.1.0",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

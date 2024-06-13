@@ -3,11 +3,12 @@ import ReactFlow, {
   BackgroundVariant,
   Controls,
   SelectionMode,
-  Panel
+  Panel,
+  Node
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { NodeType, edgeTypes, nodeTypes } from './rf-components';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
@@ -22,6 +23,7 @@ import {
   Textarea
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { PersonaNodeData, ProblemNodeData } from './types';
 
 export default function App() {
   const {
@@ -39,25 +41,41 @@ export default function App() {
     placeCursorNode,
     personaDimensions,
     pinPersonaDimension,
+    generatePersonaDimensions,
     generatePersonaNodes,
     mergePersonaNodes,
     problemDimensions,
     pinProblemDimension,
+    generateProblemDimensions,
     generateProblemNodes,
     solutionDimensions,
     pinSolutionDimension,
+    generateSolutionDimensions,
     generateSolutionNodes,
     storyboardDimensions,
     generateStoryboardDimensions,
     generateStoryboardNode,
     pinStoryboardDimension
   } = useStore();
+  const { undo, redo } = useStore.temporal.getState();
+
+  useEffect(() => {
+    document.addEventListener('keydown', (event) => {
+      if (event.ctrlKey && event.key === 'z') {
+        undo();
+      }
+      if (event.ctrlKey && event.key === 'y') {
+        redo();
+      }
+    });
+  });
+
   const { updateRfCursorPosition } = useRfCursorPosition();
 
-  const selectedPersonaNodes = selectedNodes.filter(
+  const selectedPersonaNodes: Node<PersonaNodeData>[] = selectedNodes.filter(
     (node) => node.type === NodeType.Persona
   );
-  const selectedProblemNodes = selectedNodes.filter(
+  const selectedProblemNodes: Node<ProblemNodeData>[] = selectedNodes.filter(
     (node) => node.type === NodeType.Problem
   );
   // const selectedSolutionNodes = selectedNodes.filter(
@@ -115,18 +133,24 @@ export default function App() {
     'Tech salesperson in a startup with high pressure to perform.'
   );
   const [generatingPersonaNodes, setGeneratingPersonaNodes] = useState(false);
+  const [generatingPersonaDimensions, setGeneratingPersonaDimensions] =
+    useState(false);
 
   /* Problems */
   const [problemContext, setProblemContext] = useState(
     'Tech salesperson struggles to find qualified leads at crowded conferences.'
   );
   const [generatingProblemNodes, setGeneratingProblemNodes] = useState(false);
+  const [generatingProblemDimensions, setGeneratingProblemDimensions] =
+    useState(false);
 
   /* Solutions */
   const [solutionContext, setSolutionContext] = useState(
     'Solutions for tech conferences organizers to improve networking experience.'
   );
   const [generatingSolutionNodes, setGeneratingSolutionNodes] = useState(false);
+  const [generatingSolutionDimensions, setGeneratingSolutionDimensions] =
+    useState(false);
 
   /* Storyboard */
   const [storyboardContext, setStoryboardContext] =
@@ -209,31 +233,37 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
                     />
                     <Button.Group>
                       <Button
-                        className="w-full"
                         variant="outline"
-                        loading={generatingPersonaNodes}
+                        className="w-full"
+                        loading={generatingPersonaDimensions}
                         onClick={async () => {
-                          if (generatingPersonaNodes) return;
+                          if (generatingPersonaDimensions) return;
 
-                          triggerInstructionsModal(
-                            async (instructions: string) => {
-                              setGeneratingPersonaNodes(true);
-                              await generatePersonaNodes(
-                                personaContext + instructions
-                              );
-                              setGeneratingPersonaNodes(false);
-                            },
-                            'Instructions for persona generation'
-                          );
+                          setGeneratingPersonaDimensions(true);
+                          await generatePersonaDimensions(personaContext);
+                          setGeneratingPersonaDimensions(false);
                         }}
                       >
                         <Plus className="mr-2 h-4 w-4" />
-                        Generate personas
+                        Persona dimensions
                       </Button>
-                      <Button variant="outline" className="w-full">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add persona dimension
-                      </Button>
+                      {personaDimensions.length > 0 && (
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          loading={generatingPersonaNodes}
+                          onClick={async () => {
+                            if (generatingPersonaNodes) return;
+
+                            setGeneratingPersonaNodes(true);
+                            await generatePersonaNodes(personaContext);
+                            setGeneratingPersonaNodes(false);
+                          }}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Personas
+                        </Button>
+                      )}
                     </Button.Group>
                     <ScrollArea.Autosize mah={400}>
                       <div className="flex flex-col gap-4">
@@ -252,11 +282,6 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
                             checkIconPosition="right"
                           />
                         ))}
-                        {personaDimensions.length === 0 && (
-                          <p className="text-sm">
-                            No persona dimensions generated.
-                          </p>
-                        )}
                       </div>
                     </ScrollArea.Autosize>
                   </div>
@@ -280,32 +305,37 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
                     />
                     <Button.Group>
                       <Button
-                        className="w-full"
                         variant="outline"
-                        loading={generatingProblemNodes}
+                        className="w-full"
+                        loading={generatingProblemDimensions}
                         onClick={async () => {
-                          if (generatingProblemNodes) return;
+                          if (generatingProblemDimensions) return;
 
-                          triggerInstructionsModal(
-                            async (instructions: string) => {
-                              setGeneratingProblemNodes(true);
-                              await generateProblemNodes(
-                                personaContext + instructions,
-                                []
-                              );
-                              setGeneratingProblemNodes(false);
-                            },
-                            'Instructions for problem generation'
-                          );
+                          setGeneratingProblemDimensions(true);
+                          await generateProblemDimensions(problemContext);
+                          setGeneratingProblemDimensions(false);
                         }}
                       >
                         <Plus className="mr-2 h-4 w-4" />
-                        Generate problems
+                        Problem dimensions
                       </Button>
-                      <Button variant="outline" className="w-full">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add problem dimension
-                      </Button>
+                      {problemDimensions.length > 0 && (
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          loading={generatingProblemNodes}
+                          onClick={async () => {
+                            if (generatingProblemNodes) return;
+
+                            setGeneratingProblemNodes(true);
+                            await generateProblemNodes(personaContext, []);
+                            setGeneratingProblemNodes(false);
+                          }}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Problems
+                        </Button>
+                      )}
                     </Button.Group>
                     <ScrollArea.Autosize mah={400}>
                       <div className="flex flex-col gap-4">
@@ -324,11 +354,6 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
                             checkIconPosition="right"
                           />
                         ))}
-                        {problemDimensions.length === 0 && (
-                          <p className="text-sm">
-                            No problem dimensions generated.
-                          </p>
-                        )}
                       </div>
                     </ScrollArea.Autosize>
                   </div>
@@ -352,32 +377,37 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
                     />
                     <Button.Group>
                       <Button
-                        className="w-full"
                         variant="outline"
-                        loading={generatingSolutionNodes}
+                        className="w-full"
+                        loading={generatingSolutionDimensions}
                         onClick={async () => {
-                          if (generatingSolutionNodes) return;
+                          if (generatingSolutionDimensions) return;
 
-                          triggerInstructionsModal(
-                            async (instructions: string) => {
-                              setGeneratingSolutionNodes(true);
-                              await generateSolutionNodes(
-                                solutionContext + instructions,
-                                []
-                              );
-                              setGeneratingSolutionNodes(false);
-                            },
-                            'Instructions for solution generation'
-                          );
+                          setGeneratingSolutionDimensions(true);
+                          await generateSolutionDimensions(solutionContext);
+                          setGeneratingSolutionDimensions(false);
                         }}
                       >
                         <Plus className="mr-2 h-4 w-4" />
-                        Generate solutions
+                        Solution dimensions
                       </Button>
-                      <Button variant="outline" className="w-full">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add solution dimension
-                      </Button>
+                      {solutionDimensions.length > 0 && (
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          loading={generatingSolutionNodes}
+                          onClick={async () => {
+                            if (generatingSolutionNodes) return;
+
+                            setGeneratingSolutionNodes(true);
+                            await generateSolutionNodes(solutionContext, []);
+                            setGeneratingSolutionNodes(false);
+                          }}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Solutions
+                        </Button>
+                      )}
                     </Button.Group>
                     <ScrollArea.Autosize mah={400}>
                       <div className="flex flex-col gap-4">
@@ -396,11 +426,6 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
                             checkIconPosition="right"
                           />
                         ))}
-                        {solutionDimensions.length === 0 && (
-                          <p className="text-sm">
-                            No solution dimensions generated.
-                          </p>
-                        )}
                       </div>
                     </ScrollArea.Autosize>
                   </div>
@@ -514,16 +539,28 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
             }
             onGenerateProblems={() =>
               triggerInstructionsModal(async (instruction) => {
+                const personaContext = selectedPersonaNodes
+                  .map((node) => node.data.persona)
+                  .join('\n');
+
+                const context = `${personaContext}\n\n${problemContext}\n\n${instruction}`;
+
                 await generateProblemNodes(
-                  problemContext + instruction,
+                  context,
                   selectedPersonaNodes.map((node) => node.id)
                 );
               }, `Instructions for problem generation (${selectedPersonaNodes.length} personas selected)`)
             }
             onGenerateSolutions={() =>
               triggerInstructionsModal(async (instruction) => {
+                const problemContext = selectedProblemNodes
+                  .map((node) => node.data.problem)
+                  .join('\n');
+
+                const context = `${problemContext}\n\n${solutionContext}\n\n${instruction}`;
+
                 await generateSolutionNodes(
-                  solutionContext + instruction,
+                  context,
                   selectedProblemNodes.map((node) => node.id)
                 );
               }, `Instructions for solution generation (${selectedProblemNodes.length} problems selected)`)

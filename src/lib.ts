@@ -8,28 +8,19 @@ export function generateRandomAssignments(
   dimensions: Dimension[],
   numAssignments: number
 ) {
-  const pinnedDimensions = dimensions.filter(
-    (dimension) => dimension.currentValues.length > 0
-  );
-  const unpinnedDimensions = dimensions.filter(
-    (dimension) => dimension.currentValues.length === 0
-  );
-
-  const unpinnedAssignments: Dimension[][] = [];
+  const assignments: Dimension[][] = [];
 
   for (let i = 0; i < numAssignments; i++) {
-    const assignment = unpinnedDimensions.map((dimension) => {
+    const assignment = dimensions.map((dimension) => {
+      const possibleValues = dimension.currentValues.length
+        ? dimension.currentValues
+        : dimension.values;
       const randomValue =
-        dimension.values[Math.floor(Math.random() * dimension.values.length)];
+        possibleValues[Math.floor(Math.random() * possibleValues.length)];
       return { ...dimension, currentValues: [randomValue] };
     });
-    unpinnedAssignments.push(assignment);
+    assignments.push(assignment);
   }
 
-  const allAssignments = unpinnedAssignments.map((assignment) => [
-    ...assignment,
-    ...pinnedDimensions
-  ]);
-
-  return allAssignments;
+  return assignments;
 }
