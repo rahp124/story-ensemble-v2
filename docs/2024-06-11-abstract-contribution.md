@@ -23,11 +23,12 @@ The following are some possible contributions for the system and their implicati
 
 **Motivation:**
 
-- Generalized chat interfaces may struggle with iterative, non-linear, and multi-step workflows
+- Generalized chat interfaces may struggle with iterative, non-linear, and multi-step workflows (not sure if true)
   - For iterative outputs, existing interfaces regenerate the entire output, even if previous steps have already been determined
   - For non-linear thinking it may be necessary to update all existing outputs to account for changes in prior steps
   - Chat interfaces make it difficult to constrain work within a single step before moving on the the next step
 - **Key contribution**: Provide a structured interface which supports multi-step, iterative, non-linear workflows, specifically design thinking.
+- Improve explainability using dependencies that describe the relationship between ideas and their role in generation
 
 **Implications:**
 
@@ -40,6 +41,10 @@ The following are some possible contributions for the system and their implicati
   - Allow users to make adjustments at any step. Iterations on previous steps can be streamlined by using generative AI to propagate changes to dependent steps.
 - Support iterative, non-linear, multi-stage design thinking workflow
   - Iterative - dependency driven features allows thinking to guide the thinking process and ensures that we aren't jumping straight to the end conclusion
+
+**Cons:**
+
+- ChatGPT is already pretty good at responding to natural language prompts. Need to clearly motivate why additional complexity with a canvas and dependencies is better.
 
 ## Visualize the outcome of iterations
 
