@@ -5,15 +5,10 @@ import { useStore } from '@/store';
 import SourceHandle from '@/components/SourceHandle';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import TargetHandle from '@/components/TargetHandle';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui/tooltip';
+import { Tooltip } from '@mantine/core';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { Eye, RefreshCw } from 'lucide-react';
+import TargetHandle from '@/components/TargetHandle';
 
 export default function ProblemNode(props: NodeProps<ProblemNodeData>) {
   const [problem, setProblem] = useState(props.data.problem);
@@ -21,8 +16,7 @@ export default function ProblemNode(props: NodeProps<ProblemNodeData>) {
     setProblem(props.data.problem);
   }, [props.data.problem]);
   const { updateProblemNode, regenerateProblemNodes } = useStore();
-
-  const { dimensions } = props.data;
+  const { dimensions, image } = props.data;
 
   return (
     <>
@@ -46,32 +40,37 @@ export default function ProblemNode(props: NodeProps<ProblemNodeData>) {
           {props.data.regenerating ? (
             <p>Regenerating...</p>
           ) : (
-            <TooltipProvider delayDuration={200}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5"
-                      onClick={() => {
-                        regenerateProblemNodes([props.id]);
-                      }}
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                      {props.data.outOfSync && (
-                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full absolute top-1 right-0"></span>
-                      )}
-                    </Button>
-                  </div>
-                </TooltipTrigger>
-                {props.data.outOfSync && (
-                  <TooltipContent>
-                    <p>Dependencies updated. Regenerate problem?</p>
-                  </TooltipContent>
-                )}
+            <div className="flex gap-2">
+              {image && (
+                <Tooltip
+                  label={<img src={image} className="w-[200px] h-[200px]" />}
+                >
+                  <Eye className="w-5 h-5" />
+                </Tooltip>
+              )}
+              <Tooltip
+                label={
+                  <p>
+                    {props.data.outOfSync ? 'Dependencies updated. ' : ''}
+                    Regenerate problem
+                  </p>
+                }
+              >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5"
+                  onClick={() => {
+                    regenerateProblemNodes([props.id]);
+                  }}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  {props.data.outOfSync && (
+                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full absolute top-1 right-0"></span>
+                  )}
+                </Button>
               </Tooltip>
-            </TooltipProvider>
+            </div>
           )}
         </div>
         <div className="p-4 w-full flex-grow bg-red-100 rounded-tr-md rounded-b-md flex flex-col">

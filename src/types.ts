@@ -24,6 +24,7 @@ export type NodeData = {
   outOfSync?: boolean;
   regenerating?: boolean;
   dimensions: Dimension[];
+  image?: string;
 };
 
 const frameOutlineSchema = z.object({

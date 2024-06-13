@@ -48,12 +48,16 @@ export async function generateImage({
       body: formData,
       headers: {
         Authorization: `Bearer ${STABLE_DIFFUSION_API}`,
-        Accept: 'image/*'
+        Accept: 'application/json'
       }
     }
   );
 
-  const blob = await response.blob();
-  const dataUrl = await blobToDataUrl(blob);
-  return dataUrl;
+  const { image } = await response.json();
+
+  return `data:image/webp;base64,${image}`;
+
+  // const blob = await response.blob();
+  // const dataUrl = await blobToDataUrl(blob);
+  // return dataUrl;
 }
