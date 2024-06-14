@@ -96,7 +96,7 @@ type RFState = {
   // addPersonaDimension: (dimensionName: string) => void;
 
   generatePersonaDimensions: (context: string) => Promise<void>;
-  generatePersonaNodes: (context: string) => Promise<void>;
+  generatePersonaNodes: (context: string) => Promise<string[]>;
   regeneratePersonaNodes: (ids: string[], instructions?: string) => void;
   updatePersonaNode: (id: string, text: string) => Promise<void>;
   mergePersonaNodes: (
@@ -110,7 +110,7 @@ type RFState = {
   generateProblemNodes: (
     context: string,
     personaIds: string[]
-  ) => Promise<void>;
+  ) => Promise<string[]>;
   regenerateProblemNodes: (ids: string[], instructions?: string) => void;
   updateProblemNode: (id: string, text: string) => void;
   // mergeProblemNodes: (ids: string[]) => Promise<void>;
@@ -121,7 +121,7 @@ type RFState = {
   generateSolutionNodes: (
     context: string,
     problemIds: string[]
-  ) => Promise<void>;
+  ) => Promise<string[]>;
   regenerateSolutionNodes: (ids: string[], instructions?: string) => void;
   updateSolutionNode: (id: string, text: string) => void;
   // mergeSolutionNodes: (ids: string[]) => Promise<void>;
@@ -303,7 +303,7 @@ export const useStore = create<RFState>()(
           5
         );
 
-        await Promise.all(
+        const ids = await Promise.all(
           dimensionPermutations.map(async (permutation, idx) => {
             const node: Node<PersonaNodeData> = {
               id: `persona-${nanoid()}`,
@@ -321,13 +321,17 @@ export const useStore = create<RFState>()(
 
             set({ nodes: [...get().nodes, node] });
 
-            const image = await generateIllustrativeImage(
+            generateIllustrativeImage(
               `Illustrate persona: ${node.data.persona}`
-            );
+            ).then((image) => {
+              get().updateNode(node.id, { data: { image } });
+            });
 
-            get().updateNode(node.id, { data: { image } });
+            return node.id;
           })
         );
+
+        return ids;
       },
       regeneratePersonaNodes: async (ids: string[], instructions?: string) => {
         const personaNodes = get().nodes.filter(
@@ -438,13 +442,23 @@ export const useStore = create<RFState>()(
         if (get().problemDimensions.length === 0) {
           await get().generateProblemDimensions(context);
         }
-
         const dimensionPermutations = generateRandomAssignments(
           get().problemDimensions,
           5
         );
 
-        await Promise.all(
+        if (personaIds.length === 0) {
+          personaIds = [(await get().generatePersonaNodes(context))[0]];
+        }
+        const personaContext = get()
+          .nodes.filter(
+            (node) =>
+              node.type === NodeType.Persona && personaIds.includes(node.id)
+          )
+          .map((node) => node.data.persona)
+          .join('\n');
+
+        const ids = await Promise.all(
           dimensionPermutations.map(async (permutation, idx) => {
             const node: Node<ProblemNodeData> = {
               id: `problem-${nanoid()}`,
@@ -455,7 +469,10 @@ export const useStore = create<RFState>()(
                 height: 300
               },
               data: {
-                problem: await generateProblem(permutation, context),
+                problem: await generateProblem(
+                  permutation,
+                  context + personaContext
+                ),
                 dimensions: permutation
               }
             };
@@ -470,13 +487,17 @@ export const useStore = create<RFState>()(
               edges: [...get().edges, ...edges]
             });
 
-            const image = await generateIllustrativeImage(
+            generateIllustrativeImage(
               `Illustrate problem: ${node.data.problem}`
-            );
+            ).then((image) => {
+              get().updateNode(node.id, { data: { image } });
+            });
 
-            get().updateNode(node.id, { data: { image } });
+            return node.id;
           })
         );
+
+        return ids;
       },
       regenerateProblemNodes: async (ids: string[], instructions?: string) => {
         const problemNodes = get().nodes.filter(
@@ -575,13 +596,23 @@ export const useStore = create<RFState>()(
         if (get().solutionDimensions.length === 0) {
           await get().generateSolutionDimensions(context);
         }
-
         const dimensionPermutations = generateRandomAssignments(
           get().solutionDimensions,
           5
         );
 
-        await Promise.all(
+        if (problemIds.length === 0) {
+          problemIds = [(await get().generateProblemNodes(context, []))[0]];
+        }
+        const problemContext = get()
+          .nodes.filter(
+            (node) =>
+              node.type === NodeType.Problem && problemIds.includes(node.id)
+          )
+          .map((node) => node.data.problem)
+          .join('\n');
+
+        const ids = await Promise.all(
           dimensionPermutations.map(async (permutation, idx) => {
             const node: Node<SolutionNodeData> = {
               id: `solution-${nanoid()}`,
@@ -592,7 +623,10 @@ export const useStore = create<RFState>()(
                 height: 300
               },
               data: {
-                solution: await generateSolution(permutation, context),
+                solution: await generateSolution(
+                  permutation,
+                  context + problemContext
+                ),
                 dimensions: permutation
               }
             };
@@ -608,12 +642,17 @@ export const useStore = create<RFState>()(
               edges: [...get().edges, ...edges]
             });
 
-            const image = await generateIllustrativeImage(
+            generateIllustrativeImage(
               `Illustrate solution: ${node.data.solution}`
-            );
-            get().updateNode(node.id, { data: { image } });
+            ).then((image) => {
+              get().updateNode(node.id, { data: { image } });
+            });
+
+            return node.id;
           })
         );
+
+        return ids;
       },
       regenerateSolutionNodes: async (ids, instructions) => {
         const solutionNodes = get().nodes.filter(
