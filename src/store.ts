@@ -751,7 +751,7 @@ export const useStore = create<RFState>()(
           position: { x: 100, y: 1000 },
           style: {
             width: 1200,
-            height: 700
+            height: 600
           },
           data: {
             storyboard: storyboardData,

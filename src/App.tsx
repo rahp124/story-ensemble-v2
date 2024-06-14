@@ -130,7 +130,7 @@ export default function App() {
 
   /* Personas */
   const [personaContext, setPersonaContext] = useState(
-    'Tech salesperson in a startup with high pressure to perform.'
+    'Tech salesperson responsible for finding leads and making sales at in-person events.'
   );
   const [generatingPersonaNodes, setGeneratingPersonaNodes] = useState(false);
   const [generatingPersonaDimensions, setGeneratingPersonaDimensions] =

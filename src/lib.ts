@@ -8,10 +8,11 @@ export function generateRandomAssignments(
   dimensions: Dimension[],
   numAssignments: number
 ) {
+  const pinnedDimensions = dimensions.filter((d) => d.currentValues.length);
   const assignments: Dimension[][] = [];
 
   for (let i = 0; i < numAssignments; i++) {
-    const assignment = dimensions.map((dimension) => {
+    const assignment = pinnedDimensions.map((dimension) => {
       const possibleValues = dimension.currentValues.length
         ? dimension.currentValues
         : dimension.values;
