@@ -481,7 +481,10 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
                             async (instructions: string) => {
                               setGeneratingStoryboardNodes(true);
                               await generateStoryboardNode(
-                                storyboardContext + instructions
+                                storyboardContext + instructions,
+                                [],
+                                [],
+                                []
                               );
                               setGeneratingStoryboardNodes(false);
                             },

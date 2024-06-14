@@ -31,8 +31,8 @@ export default function BaseNode(props: BaseNodeProps) {
   }, [props.content]);
 
   const { nodeProps } = props;
-  const { dimensions, image } = nodeProps.data;
-  const [showImage, setShowImage] = useState(true);
+  const { dimensions, image, regenerating, outOfSync } = nodeProps.data;
+  const [showImage, setShowImage] = useState(false);
 
   return (
     <>
@@ -71,8 +71,8 @@ export default function BaseNode(props: BaseNodeProps) {
             <Tooltip
               label={
                 <p>
-                  {nodeProps.data.outOfSync ? 'Dependencies updated. ' : ''}
-                  Regenerate problem
+                  {outOfSync ? 'Dependencies updated. ' : ''}
+                  Regenerate
                 </p>
               }
             >
@@ -80,13 +80,13 @@ export default function BaseNode(props: BaseNodeProps) {
                 variant="subtle"
                 size="sm"
                 color="dark"
-                loading={nodeProps.data.regenerating}
+                loading={regenerating}
                 onClick={() => {
                   props.onRegenerateContent();
                 }}
               >
                 <RefreshCw className="w-5 h-5" />
-                {nodeProps.data.outOfSync && (
+                {outOfSync && (
                   <span className="w-1.5 h-1.5 bg-red-500 rounded-full absolute top-1 right-0"></span>
                 )}
               </ActionIcon>

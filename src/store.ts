@@ -130,7 +130,13 @@ type RFState = {
   generateStoryboardDimensions: (context: string) => Promise<void>;
   pinStoryboardDimension: (id: string, currentValue: string[]) => void;
 
-  generateStoryboardNode: (context: string) => Promise<void>;
+  generateStoryboardNode: (
+    context: string,
+    personaIds: string[],
+    problemIds: string[],
+    solutionIds: string[]
+  ) => Promise<void>;
+  regenerateStoryboardNode: (id: string) => Promise<void>;
   generateStoryboardImages: (id: string) => Promise<void>;
 };
 
@@ -358,9 +364,7 @@ export const useStore = create<RFState>()(
 
         // Update dependencies
         const dependencyIds = get()
-          .edges.filter(
-            (edge) => edge.source === id && edge.target.startsWith('problem')
-          )
+          .edges.filter((edge) => edge.source === id)
           .map((edge) => edge.target);
 
         set({
@@ -523,9 +527,7 @@ export const useStore = create<RFState>()(
 
         // Update dependencies
         const dependencyIds = get()
-          .edges.filter(
-            (edge) => edge.source === id && edge.target.startsWith('solution')
-          )
+          .edges.filter((edge) => edge.source === id)
           .map((edge) => edge.target);
 
         set({
@@ -658,9 +660,7 @@ export const useStore = create<RFState>()(
         get().updateNode(id, { data: { solution } });
 
         const dependencyIds = get()
-          .edges.filter(
-            (edge) => edge.source === id && edge.target.startsWith('storyboard')
-          )
+          .edges.filter((edge) => edge.source === id)
           .map((edge) => edge.target);
 
         set({
@@ -708,31 +708,131 @@ export const useStore = create<RFState>()(
           })
         });
       },
-      generateStoryboardNode: async (context: string) => {
-        // TODO dependencies
+      generateStoryboardNode: async (
+        context: string,
+        personaIds: string[],
+        problemIds: string[],
+        solutionIds: string[]
+      ) => {
+        const personas = get()
+          .nodes.filter(
+            (node) =>
+              node.type === NodeType.Persona && personaIds.includes(node.id)
+          )
+          .map((node) => node.data.persona)
+          .join('\n');
+        const problems = get()
+          .nodes.filter(
+            (node) =>
+              node.type === NodeType.Problem && problemIds.includes(node.id)
+          )
+          .map((node) => node.data.persona)
+          .join('\n');
+        const solutions = get().nodes.filter(
+          (node) =>
+            node.type === NodeType.Solution && solutionIds.includes(node.id)
+        );
 
         const dimensionPermutation = generateRandomAssignments(
           get().storyboardDimensions,
           1
         )[0];
 
+        const fullContext = `${context}\n\nPersonas: ${personas}\n\nProblems: ${problems}\n\nSolutions: ${solutions}`;
+
         const storyboardData = await generateStoryboardOutline(
           dimensionPermutation,
-          context
+          fullContext
         );
 
         const node: Node<StoryboardNodeData> = {
           id: `storyboard-${nanoid()}`,
           type: NodeType.Storyboard,
           position: { x: 100, y: 1000 },
+          style: {
+            width: 1200,
+            height: 700
+          },
           data: {
             storyboard: storyboardData,
             dimensions: dimensionPermutation
           }
         };
+        const edges = [...personaIds, ...problemIds, ...solutionIds].map(
+          (sourceId) => ({
+            id: `edge-${nanoid()}`,
+            source: sourceId,
+            target: node.id
+          })
+        );
         set({
-          nodes: [...get().nodes, node]
+          nodes: [...get().nodes, node],
+          edges: [...get().edges, ...edges]
         });
+
+        await get().generateStoryboardImages(node.id);
+      },
+      regenerateStoryboardNode: async (id) => {
+        const storyboardNode = get().nodes.find((node) => node.id === id);
+        if (!storyboardNode) return;
+
+        get().updateNode(id, { data: { regenerating: true } });
+
+        const personaIds = get()
+          .edges.filter(
+            (edge) => edge.target === id && edge.source.startsWith('persona')
+          )
+          .map((edge) => edge.source);
+        const personas = get()
+          .nodes.filter(
+            (node) =>
+              node.type === NodeType.Persona && personaIds.includes(node.id)
+          )
+          .map((node) => node.data.persona)
+          .join('\n');
+
+        const problemIds = get()
+          .edges.filter(
+            (edge) => edge.target === id && edge.source.startsWith('problem')
+          )
+          .map((edge) => edge.source);
+        const problems = get()
+          .nodes.filter(
+            (node) =>
+              node.type === NodeType.Problem && problemIds.includes(node.id)
+          )
+          .map((node) => node.data.problem)
+          .join('\n');
+
+        const solutionIds = get()
+          .edges.filter(
+            (edge) => edge.target === id && edge.source.startsWith('solution')
+          )
+          .map((edge) => edge.source);
+        const solutions = get()
+          .nodes.filter(
+            (node) =>
+              node.type === NodeType.Solution && solutionIds.includes(node.id)
+          )
+          .map((node) => node.data.solution)
+          .join('\n');
+
+        const fullContext = `Personas: ${personas}\n\nProblems: ${problems}\n\nSolutions: ${solutions}`;
+
+        const storyboardData = await generateStoryboardOutline(
+          storyboardNode?.data.dimensions,
+          fullContext
+        );
+
+        get().updateNode(id, {
+          data: {
+            storyboard: storyboardData,
+            regenerating: false,
+            outOfSync: false
+          }
+        });
+
+        await get().generateStoryboardImages(id);
       },
 
       generateStoryboardImages: async (id) => {
