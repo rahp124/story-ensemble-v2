@@ -288,6 +288,10 @@ export const useStore = create<RFState>()(
         });
       },
       generatePersonaNodes: async (context: string) => {
+        if (get().personaDimensions.length === 0) {
+          await get().generatePersonaDimensions(context);
+        }
+
         const dimensionPermutations = generateRandomAssignments(
           get().personaDimensions,
           5
@@ -427,6 +431,10 @@ export const useStore = create<RFState>()(
         });
       },
       generateProblemNodes: async (context: string, personaIds: string[]) => {
+        if (get().problemDimensions.length === 0) {
+          await get().generateProblemDimensions(context);
+        }
+
         const dimensionPermutations = generateRandomAssignments(
           get().problemDimensions,
           5
@@ -562,6 +570,10 @@ export const useStore = create<RFState>()(
         });
       },
       generateSolutionNodes: async (context, problemIds) => {
+        if (get().solutionDimensions.length === 0) {
+          await get().generateSolutionDimensions(context);
+        }
+
         const dimensionPermutations = generateRandomAssignments(
           get().solutionDimensions,
           5

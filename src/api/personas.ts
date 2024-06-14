@@ -7,10 +7,9 @@ export async function generatePersonaDimensions(
   existingDimensions: Dimension[],
   context: string
 ): Promise<Dimension[]> {
-  const prompt = `You are an AI assistant tasked with enhancing the creative and divergent thinking process for design thinking.
-Your goal is to generate a comprehensive list of dimensions (attributes with a set of allowed values) that can be used to create detailed personas.
-These dimensions will help designers understand and empathize with their target audience better.
-Given a set of existing dimensions and user instructions, generate a set of new dimensions if needed to fully explore the persona space.
+  const prompt = `Generate a unique and orthogonal dimensions (attributes with a set of allowed values) that can be used to explore and categorize possible personas.
+Given a set of existing dimensions and context, generate new dimensions if needed to explore the persona space.
+Only generate the principal orthogonal dimensions.
   
 Existing Dimensions: """
 ${JSON.stringify(existingDimensions, null, 2)}
