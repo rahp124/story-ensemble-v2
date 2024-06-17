@@ -33,7 +33,9 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
       />
       <Card className="h-full" withBorder>
         <div className="flex justify-between mb-2">
-          <p className="font-bold text-sm">Storyboard</p>
+          <p className="font-bold text-sm">
+            <span className="mr-1">🎞</span> Storyboard
+          </p>
           <ActionIcon.Group>
             {/* <ActionIcon variant="default">
               <Eye />

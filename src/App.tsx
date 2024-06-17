@@ -4,7 +4,8 @@ import ReactFlow, {
   Controls,
   SelectionMode,
   Panel,
-  Node
+  Node,
+  useReactFlow
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { NodeType, edgeTypes, nodeTypes } from './rf-components';
@@ -26,6 +27,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { PersonaNodeData, ProblemNodeData } from './types';
 
 export default function App() {
+  const rf = useReactFlow();
   const {
     nodes,
     selectedNodes,
@@ -213,7 +215,7 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
         }}
       >
         <Panel position="top-left" className="w-[500px] max-h-[90vh]">
-          <div className="border border-slate-500 bg-white rounded-lg p-4">
+          <div className="border border-slate-500 bg-white rounded-lg p-2">
             <Accordion>
               <Accordion.Item value="personas">
                 <Accordion.Control>

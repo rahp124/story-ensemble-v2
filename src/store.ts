@@ -97,6 +97,7 @@ type RFState = {
 
   generatePersonaDimensions: (context: string) => Promise<void>;
   generatePersonaNodes: (context: string) => Promise<string[]>;
+  generatePersonaImage: (id: string) => Promise<void>;
   regeneratePersonaNodes: (ids: string[], instructions?: string) => void;
   updatePersonaNode: (id: string, text: string) => Promise<void>;
   mergePersonaNodes: (
@@ -111,6 +112,7 @@ type RFState = {
     context: string,
     personaIds: string[]
   ) => Promise<string[]>;
+  generateProblemImage: (id: string) => Promise<void>;
   regenerateProblemNodes: (ids: string[], instructions?: string) => void;
   updateProblemNode: (id: string, text: string) => void;
   // mergeProblemNodes: (ids: string[]) => Promise<void>;
@@ -122,6 +124,7 @@ type RFState = {
     context: string,
     problemIds: string[]
   ) => Promise<string[]>;
+  generateSolutionImage: (id: string) => Promise<void>;
   regenerateSolutionNodes: (ids: string[], instructions?: string) => void;
   updateSolutionNode: (id: string, text: string) => void;
   // mergeSolutionNodes: (ids: string[]) => Promise<void>;
@@ -321,17 +324,33 @@ export const useStore = create<RFState>()(
 
             set({ nodes: [...get().nodes, node] });
 
-            generateIllustrativeImage(
-              `Illustrate persona: ${node.data.persona}`
-            ).then((image) => {
-              get().updateNode(node.id, { data: { image } });
-            });
+            get().generatePersonaImage(node.id);
 
             return node.id;
           })
         );
 
         return ids;
+      },
+      generatePersonaImage: async (id: string) => {
+        const node = get().nodes.find(
+          (node) => node.id === id && node.type === NodeType.Persona
+        );
+        if (!node) return;
+
+        get().updateNode(id, {
+          data: {
+            regeneratingImage: true
+          }
+        });
+
+        const newImage = await generateIllustrativeImage(
+          `Illustarte persona: ${node.data.persona}`
+        );
+
+        get().updateNode(node.id, {
+          data: { image: newImage, regeneratingImage: false }
+        });
       },
       regeneratePersonaNodes: async (ids: string[], instructions?: string) => {
         const personaNodes = get().nodes.filter(
@@ -354,10 +373,7 @@ export const useStore = create<RFState>()(
             }
           });
 
-          const newImage = await generateIllustrativeImage(
-            `Illustrate persona: ${newPersona}`
-          );
-          get().updateNode(node.id, { data: { image: newImage } });
+          get().generatePersonaImage(node.id);
         });
       },
       updatePersonaNode: async (id: string, persona: string) => {
@@ -487,17 +503,31 @@ export const useStore = create<RFState>()(
               edges: [...get().edges, ...edges]
             });
 
-            generateIllustrativeImage(
-              `Illustrate problem: ${node.data.problem}`
-            ).then((image) => {
-              get().updateNode(node.id, { data: { image } });
-            });
+            get().generateProblemImage(node.id);
 
             return node.id;
           })
         );
 
         return ids;
+      },
+      generateProblemImage: async (id: string) => {
+        const node = get().nodes.find(
+          (node) => node.id === id && node.type === NodeType.Problem
+        );
+        if (!node) return;
+
+        get().updateNode(id, {
+          data: {
+            regeneratingImage: true
+          }
+        });
+
+        const image = await generateIllustrativeImage(
+          `Illustrate problem: ${node.data.problem}`
+        );
+
+        get().updateNode(id, { data: { image, regeneratingImage: false } });
       },
       regenerateProblemNodes: async (ids: string[], instructions?: string) => {
         const problemNodes = get().nodes.filter(
@@ -534,10 +564,7 @@ export const useStore = create<RFState>()(
             data: { outOfSync: false, regenerating: false }
           });
 
-          const image = await generateIllustrativeImage(
-            `Illustrate problem: ${newProblem}`
-          );
-          get().updateNode(node.id, { data: { image } });
+          get().generateProblemImage(node.id);
         });
       },
       updateProblemNode: (id: string, problem: string) => {
@@ -642,17 +669,33 @@ export const useStore = create<RFState>()(
               edges: [...get().edges, ...edges]
             });
 
-            generateIllustrativeImage(
-              `Illustrate solution: ${node.data.solution}`
-            ).then((image) => {
-              get().updateNode(node.id, { data: { image } });
-            });
+            get().generateSolutionImage(node.id);
 
             return node.id;
           })
         );
 
         return ids;
+      },
+      generateSolutionImage: async (id) => {
+        const node = get().nodes.find(
+          (node) => node.id === id && node.type === NodeType.Solution
+        );
+        if (!node) return;
+
+        get().updateNode(node.id, {
+          data: {
+            regeneratingImage: true
+          }
+        });
+
+        const image = await generateIllustrativeImage(
+          `Illustrate solution: ${node.data.solution}`
+        );
+
+        get().updateNode(node.id, {
+          data: { image, regeneratingImage: false }
+        });
       },
       regenerateSolutionNodes: async (ids, instructions) => {
         const solutionNodes = get().nodes.filter(
@@ -689,10 +732,7 @@ export const useStore = create<RFState>()(
             data: { outOfSync: false, regenerating: false }
           });
 
-          const image = await generateIllustrativeImage(
-            `Illustrate solution: ${newSolution}`
-          );
-          get().updateNode(node.id, { data: { image } });
+          get().generateSolutionImage(node.id);
         });
       },
       updateSolutionNode: (id: string, solution: string) => {

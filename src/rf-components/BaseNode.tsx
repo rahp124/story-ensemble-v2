@@ -1,27 +1,44 @@
 import SourceHandle from '@/components/SourceHandle';
 import TargetHandle from '@/components/TargetHandle';
-import { NodeData } from '@/types';
+import { Dimension, NodeData } from '@/types';
 import {
   ActionIcon,
   ScrollArea,
   Tooltip,
   Image,
   Skeleton,
-  Badge
+  Badge,
+  Modal,
+  MultiSelect,
+  Button,
+  Switch
 } from '@mantine/core';
-import { Eye, EyeOff, RefreshCw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useDisclosure } from '@mantine/hooks';
+import { RefreshCw, Settings, ImageIcon, ImageOff } from 'lucide-react';
+import { ReactNode, useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
+
+function RefreshImageIcon() {
+  return (
+    <span className="w-5 h-5 relative">
+      <RefreshCw className="w-5 h-5" />
+      <ImageIcon className="w-2.5 h-2.5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+    </span>
+  );
+}
 
 export interface BaseNodeProps {
   nodeProps: NodeProps<NodeData>;
 
-  nodeName: string;
+  nodeName: ReactNode;
   nodeBackgroundClass: string;
   textAreaBackgroundClass: string;
   content: string;
   onUpdateContent: (content: string) => void;
   onRegenerateContent: () => void;
+  onRegenerateImage: () => void;
+
+  allDimensions: Dimension[];
 
   targetHandle: boolean;
   sourceHandle: boolean;
@@ -33,8 +50,34 @@ export default function BaseNode(props: BaseNodeProps) {
   }, [props.content]);
 
   const { nodeProps } = props;
-  const { dimensions, image, regenerating, outOfSync } = nodeProps.data;
+  const { dimensions, image, regenerating, regeneratingImage, outOfSync } =
+    nodeProps.data;
   const [showImage, setShowImage] = useState(false);
+
+  const [modalOpened, { open, close }] = useDisclosure(false);
+  const initialNodeDimensions = props.allDimensions.map((dimension) => {
+    const pinnedDimension = dimensions.find((d) => d.id === dimension.id);
+    return pinnedDimension ? pinnedDimension : dimension;
+  });
+  const [nodeDimensions, setNodeDimensions] = useState(initialNodeDimensions);
+
+  const resetNode = () => {
+    setContent(props.content);
+    setNodeDimensions(initialNodeDimensions);
+  };
+  const handleNodeDimensionChange = (dimensionId: string, values: string[]) => {
+    const newDimensions = nodeDimensions.map((dimension) => {
+      if (dimension.id === dimensionId) {
+        return {
+          ...dimension,
+          currentValues: values
+        };
+      }
+      return dimension;
+    });
+
+    setNodeDimensions(newDimensions);
+  };
 
   return (
     <>
@@ -51,29 +94,32 @@ export default function BaseNode(props: BaseNodeProps) {
         }}
       />
       <div
-        className={`h-full flex flex-col min-w-[300px] min-h-[300px] ${
+        className={`h-full flex flex-col min-w-[300px] min-h-[300px] p-3 ${
           nodeProps.selected ? 'nowheel' : ''
-        }`}
+        } ${props.nodeBackgroundClass}`}
       >
-        <div className="flex justify-between items-center">
-          <div
-            className={`flex p-2 py-1 w-fit rounded-tr-md ${props.nodeBackgroundClass}`}
-          >
-            <h3 className="font-bold text-sm">{props.nodeName}</h3>
-          </div>
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="font-bold text-sm">{props.nodeName}</h3>
           <div className="flex gap-2">
-            <ActionIcon
-              variant="subtle"
+            <Switch
               size="sm"
-              color="dark"
-              onClick={() => setShowImage((showImage) => !showImage)}
-            >
-              {showImage ? (
-                <EyeOff className="w-5 h-5" />
-              ) : (
-                <Eye className="w-5 h-5" />
-              )}
-            </ActionIcon>
+              checked={showImage}
+              onChange={(event) => setShowImage(event.currentTarget.checked)}
+              onLabel={<ImageIcon className="w-3 h-3" />}
+              offLabel={<ImageOff className="w-3 h-3" />}
+            />
+            <Tooltip label="Regenerate image">
+              <ActionIcon
+                variant="subtle"
+                size="sm"
+                loading={regenerating || regeneratingImage}
+                onClick={() => {
+                  props.onRegenerateImage();
+                }}
+              >
+                <RefreshImageIcon />
+              </ActionIcon>
+            </Tooltip>
             <Tooltip
               label={
                 <p>
@@ -85,7 +131,6 @@ export default function BaseNode(props: BaseNodeProps) {
               <ActionIcon
                 variant="subtle"
                 size="sm"
-                color="dark"
                 loading={regenerating}
                 onClick={() => {
                   props.onRegenerateContent();
@@ -99,9 +144,7 @@ export default function BaseNode(props: BaseNodeProps) {
             </Tooltip>
           </div>
         </div>
-        <div
-          className={`p-4 w-full flex-grow rounded-tr-md rounded-b-md flex flex-col overflow-hidden ${props.nodeBackgroundClass}`}
-        >
+        <div className="w-full flex-grow rounded-tr-md rounded-b-md flex flex-col overflow-hidden">
           {showImage && image ? (
             <Image src={image} className="h-full object-cover" />
           ) : showImage && !image ? (
@@ -117,6 +160,12 @@ export default function BaseNode(props: BaseNodeProps) {
                 }}
               />
               <div className="mt-2">
+                <div className="flex justify-between mt-4 mb-2">
+                  <h3 className="text-sm font-bold">Dimensions</h3>
+                  <ActionIcon variant="subtle" size="sm" onClick={open}>
+                    <Settings className="w-5 h-5" />
+                  </ActionIcon>
+                </div>
                 <ScrollArea className="w-full h-[80px]">
                   {dimensions.map((dimension) => (
                     <Badge
@@ -140,6 +189,27 @@ export default function BaseNode(props: BaseNodeProps) {
       </div>
       {props.targetHandle && <TargetHandle />}
       {props.sourceHandle && <SourceHandle />}
+      <Modal
+        opened={modalOpened}
+        onClose={() => {
+          resetNode();
+          close();
+        }}
+        title="Edit node dimensions"
+      >
+        {nodeDimensions.map((dimension) => (
+          <MultiSelect
+            key={dimension.id}
+            label={dimension.name}
+            data={dimension.values}
+            value={dimension.currentValues}
+            onChange={(value) => handleNodeDimensionChange(dimension.id, value)}
+            withCheckIcon={true}
+            checkIconPosition="right"
+          />
+        ))}
+        <Button type="submit">Submit</Button>
+      </Modal>
     </>
   );
 }
