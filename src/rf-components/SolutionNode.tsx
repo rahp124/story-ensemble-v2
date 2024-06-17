@@ -8,7 +8,8 @@ export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
     solutionDimensions,
     updateSolutionNode,
     regenerateSolutionNodes,
-    generateSolutionImage
+    generateSolutionImage,
+    updateNode
   } = useStore();
 
   return (
@@ -25,6 +26,14 @@ export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
       onUpdateContent={(content) => updateSolutionNode(props.id, content)}
       onRegenerateContent={() => regenerateSolutionNodes([props.id])}
       onRegenerateImage={() => generateSolutionImage(props.id)}
+      onUpdateDimensions={(newDimensions) => {
+        updateNode(props.id, {
+          data: {
+            dimensions: newDimensions,
+            outOfSync: true
+          }
+        });
+      }}
       allDimensions={solutionDimensions}
       targetHandle={true}
       sourceHandle={true}

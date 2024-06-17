@@ -200,8 +200,13 @@ export const useStore = create<RFState>()(
           nodes: state.nodes.map((node) => {
             if (node.id === id) {
               return mergeWith(node, data, (objValue, srcValue, key, obj) => {
+                // Allow setting an undefined value
                 if (objValue !== srcValue && typeof srcValue === 'undefined') {
                   obj[key] = srcValue;
+                }
+                // Allow setting an empty array
+                if (Array.isArray(srcValue) && srcValue.length === 0) {
+                  return srcValue;
                 }
               });
             }

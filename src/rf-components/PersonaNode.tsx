@@ -8,7 +8,8 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
     personaDimensions,
     updatePersonaNode,
     regeneratePersonaNodes,
-    generatePersonaImage
+    generatePersonaImage,
+    updateNode
   } = useStore();
 
   return (
@@ -25,6 +26,14 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
       onUpdateContent={(content) => updatePersonaNode(props.id, content)}
       onRegenerateImage={() => generatePersonaImage(props.id)}
       onRegenerateContent={() => regeneratePersonaNodes([props.id])}
+      onUpdateDimensions={(newDimensions) => {
+        updateNode(props.id, {
+          data: {
+            dimensions: newDimensions,
+            outOfSync: true
+          }
+        });
+      }}
       allDimensions={personaDimensions}
       targetHandle={false}
       sourceHandle={true}

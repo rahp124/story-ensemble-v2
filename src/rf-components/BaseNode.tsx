@@ -11,11 +11,13 @@ import {
   Modal,
   MultiSelect,
   Button,
-  Switch
+  Switch,
+  Divider,
+  ScrollAreaAutosize
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { RefreshCw, Settings, ImageIcon, ImageOff } from 'lucide-react';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 
 function RefreshImageIcon() {
@@ -24,6 +26,12 @@ function RefreshImageIcon() {
       <RefreshCw className="w-5 h-5" />
       <ImageIcon className="w-2.5 h-2.5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
     </span>
+  );
+}
+
+function NotificationIcon() {
+  return (
+    <span className="w-1.5 h-1.5 bg-red-500 rounded-full absolute top-0 right-0"></span>
   );
 }
 
@@ -37,6 +45,7 @@ export interface BaseNodeProps {
   onUpdateContent: (content: string) => void;
   onRegenerateContent: () => void;
   onRegenerateImage: () => void;
+  onUpdateDimensions: (dimensions: Dimension[]) => void;
 
   allDimensions: Dimension[];
 
@@ -55,16 +64,20 @@ export default function BaseNode(props: BaseNodeProps) {
   const [showImage, setShowImage] = useState(false);
 
   const [modalOpened, { open, close }] = useDisclosure(false);
-  const initialNodeDimensions = props.allDimensions.map((dimension) => {
-    const pinnedDimension = dimensions.find((d) => d.id === dimension.id);
-    return pinnedDimension ? pinnedDimension : dimension;
-  });
+  const initialNodeDimensions = useMemo(
+    () =>
+      props.allDimensions.map((dimension) => {
+        const pinnedDimension = dimensions.find((d) => d.id === dimension.id);
+        return pinnedDimension ? pinnedDimension : dimension;
+      }),
+    [dimensions, props.allDimensions]
+  );
   const [nodeDimensions, setNodeDimensions] = useState(initialNodeDimensions);
 
-  const resetNode = () => {
-    setContent(props.content);
+  useEffect(() => {
     setNodeDimensions(initialNodeDimensions);
-  };
+  }, [initialNodeDimensions]);
+
   const handleNodeDimensionChange = (dimensionId: string, values: string[]) => {
     const newDimensions = nodeDimensions.map((dimension) => {
       if (dimension.id === dimensionId) {
@@ -137,9 +150,7 @@ export default function BaseNode(props: BaseNodeProps) {
                 }}
               >
                 <RefreshCw className="w-5 h-5" />
-                {outOfSync && (
-                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full absolute top-1 right-0"></span>
-                )}
+                {outOfSync && <NotificationIcon />}
               </ActionIcon>
             </Tooltip>
           </div>
@@ -192,23 +203,52 @@ export default function BaseNode(props: BaseNodeProps) {
       <Modal
         opened={modalOpened}
         onClose={() => {
-          resetNode();
+          setNodeDimensions(initialNodeDimensions);
           close();
         }}
         title="Edit node dimensions"
+        classNames={{
+          root: 'h-full',
+          content: 'flex flex-col',
+          body: 'flex flex-col h-full overflow-hidden p-0'
+        }}
       >
-        {nodeDimensions.map((dimension) => (
-          <MultiSelect
-            key={dimension.id}
-            label={dimension.name}
-            data={dimension.values}
-            value={dimension.currentValues}
-            onChange={(value) => handleNodeDimensionChange(dimension.id, value)}
-            withCheckIcon={true}
-            checkIconPosition="right"
-          />
-        ))}
-        <Button type="submit">Submit</Button>
+        <form
+          className="flex flex-col h-full overflow-hidden"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const newDimensions = nodeDimensions.filter(
+              ({ currentValues }) => currentValues.length
+            );
+            props.onUpdateDimensions(newDimensions);
+            close();
+          }}
+        >
+          <ScrollAreaAutosize>
+            <div className="px-4 pb-4">
+              {nodeDimensions.map((dimension) => (
+                <MultiSelect
+                  key={dimension.id}
+                  label={dimension.name}
+                  data={dimension.values}
+                  value={dimension.currentValues}
+                  onChange={(value) =>
+                    handleNodeDimensionChange(dimension.id, value)
+                  }
+                  withCheckIcon={true}
+                  checkIconPosition="right"
+                />
+              ))}
+            </div>
+          </ScrollAreaAutosize>
+
+          <div className="px-4 pb-4">
+            <Divider />
+            <Button type="submit" className="mt-4">
+              Update dimensions
+            </Button>
+          </div>
+        </form>
       </Modal>
     </>
   );
