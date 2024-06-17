@@ -8,8 +8,10 @@ export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
 
   return (
     <BaseNode
+      nodeName="Solution"
       nodeProps={props}
-      color="blue"
+      nodeBackgroundClass="bg-blue-100"
+      textAreaBackgroundClass="bg-blue-50"
       content={props.data.solution}
       onUpdateContent={(content) => updateSolutionNode(props.id, content)}
       onRegenerateContent={() => regenerateSolutionNodes([props.id])}

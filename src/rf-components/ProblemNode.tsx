@@ -8,8 +8,10 @@ export default function ProblemNode(props: NodeProps<ProblemNodeData>) {
 
   return (
     <BaseNode
+      nodeName="Problem"
       nodeProps={props}
-      color="red"
+      nodeBackgroundClass="bg-red-100"
+      textAreaBackgroundClass="bg-red-50"
       content={props.data.problem}
       onUpdateContent={(content) => updateProblemNode(props.id, content)}
       onRegenerateContent={() => regenerateProblemNodes([props.id])}

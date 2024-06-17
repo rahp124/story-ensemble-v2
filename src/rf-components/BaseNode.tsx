@@ -16,7 +16,9 @@ import { NodeProps, NodeResizer } from 'reactflow';
 export interface BaseNodeProps {
   nodeProps: NodeProps<NodeData>;
 
-  color: string;
+  nodeName: string;
+  nodeBackgroundClass: string;
+  textAreaBackgroundClass: string;
   content: string;
   onUpdateContent: (content: string) => void;
   onRegenerateContent: () => void;
@@ -48,12 +50,16 @@ export default function BaseNode(props: BaseNodeProps) {
           height: 10
         }}
       />
-      <div className="h-full flex flex-col min-w-[300px] min-h-[300px] nowheel">
+      <div
+        className={`h-full flex flex-col min-w-[300px] min-h-[300px] ${
+          nodeProps.selected ? 'nowheel' : ''
+        }`}
+      >
         <div className="flex justify-between items-center">
           <div
-            className={`flex bg-${props.color}-100 p-2 py-1 w-fit rounded-tr-md`}
+            className={`flex p-2 py-1 w-fit rounded-tr-md ${props.nodeBackgroundClass}`}
           >
-            <h3 className="font-bold text-sm">Persona</h3>
+            <h3 className="font-bold text-sm">{props.nodeName}</h3>
           </div>
           <div className="flex gap-2">
             <ActionIcon
@@ -94,7 +100,7 @@ export default function BaseNode(props: BaseNodeProps) {
           </div>
         </div>
         <div
-          className={`p-4 w-full flex-grow bg-${props.color}-100 rounded-tr-md rounded-b-md flex flex-col overflow-hidden`}
+          className={`p-4 w-full flex-grow rounded-tr-md rounded-b-md flex flex-col overflow-hidden ${props.nodeBackgroundClass}`}
         >
           {showImage && image ? (
             <Image src={image} className="h-full object-cover" />
@@ -103,7 +109,7 @@ export default function BaseNode(props: BaseNodeProps) {
           ) : (
             <>
               <textarea
-                className={`block w-full resize-none p-2 text-md bg-${props.color}-50 flex-grow`}
+                className={`block w-full resize-none p-2 text-md flex-grow ${props.textAreaBackgroundClass}`}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 onBlur={() => {

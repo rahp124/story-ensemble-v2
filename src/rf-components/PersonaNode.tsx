@@ -8,8 +8,10 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
 
   return (
     <BaseNode
+      nodeName="Persona"
       nodeProps={props}
-      color="yellow"
+      nodeBackgroundClass="bg-yellow-100"
+      textAreaBackgroundClass="bg-yellow-50"
       content={props.data.persona}
       onUpdateContent={(content) => updatePersonaNode(props.id, content)}
       onRegenerateContent={() => regeneratePersonaNodes([props.id])}
