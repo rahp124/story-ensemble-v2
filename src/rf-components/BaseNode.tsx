@@ -1,3 +1,4 @@
+import NotificationDot from '@/components/NotificationDot';
 import SourceHandle from '@/components/SourceHandle';
 import TargetHandle from '@/components/TargetHandle';
 import { Dimension, NodeData } from '@/types';
@@ -26,12 +27,6 @@ function RefreshImageIcon() {
       <RefreshCw className="w-5 h-5" />
       <ImageIcon className="w-2.5 h-2.5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
     </span>
-  );
-}
-
-function NotificationIcon() {
-  return (
-    <span className="w-1.5 h-1.5 bg-red-500 rounded-full absolute top-0 right-0"></span>
   );
 }
 
@@ -150,7 +145,7 @@ export default function BaseNode(props: BaseNodeProps) {
                 }}
               >
                 <RefreshCw className="w-5 h-5" />
-                {outOfSync && <NotificationIcon />}
+                {outOfSync && <NotificationDot />}
               </ActionIcon>
             </Tooltip>
           </div>

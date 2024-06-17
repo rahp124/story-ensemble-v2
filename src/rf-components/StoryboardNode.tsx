@@ -1,8 +1,9 @@
+import NotificationDot from '@/components/NotificationDot';
 import TargetHandle from '@/components/TargetHandle';
 import { useStore } from '@/store';
 import { StoryboardNodeData } from '@/types';
-import { ActionIcon, Card, Input, Tooltip } from '@mantine/core';
-import { Eye, EyeOff, Info, RefreshCw } from 'lucide-react';
+import { ActionIcon, Card, Input, Switch, Tooltip } from '@mantine/core';
+import { ImageIcon, ImageOff, Info, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 
@@ -12,7 +13,8 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     () => setTitle(props.data.storyboard.title),
     [props.data.storyboard.title]
   );
-  const [showImageByIdx, setShowImageByIdx] = useState(new Map());
+  const [showImage, setShowImage] = useState(false);
+
   const { dimensions, regenerating, outOfSync, storyboard } = props.data;
 
   const { regenerateStoryboardNode } = useStore();
@@ -36,21 +38,24 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
           <p className="font-bold text-sm">
             <span className="mr-1">🎞</span> Storyboard
           </p>
-          <ActionIcon.Group>
-            {/* <ActionIcon variant="default">
-              <Eye />
-            </ActionIcon> */}
+          <div className="flex gap-2">
+            <Switch
+              size="sm"
+              checked={showImage}
+              onChange={(event) => setShowImage(event.currentTarget.checked)}
+              onLabel={<ImageIcon className="w-3 h-3" />}
+              offLabel={<ImageOff className="w-3 h-3" />}
+            />
             <ActionIcon
-              variant="default"
+              variant="subtle"
+              size="sm"
               loading={regenerating}
               onClick={() => regenerateStoryboardNode(props.id)}
             >
               <RefreshCw />
-              {outOfSync && (
-                <span className="w-1.5 h-1.5 bg-red-500 rounded-full absolute top-1 right-0"></span>
-              )}
+              {outOfSync && <NotificationDot />}
             </ActionIcon>
-          </ActionIcon.Group>
+          </div>
         </div>
         <div className="mb-4">
           <Input
@@ -75,21 +80,6 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
             <div key={idx} className="flex flex-col gap-2 pb-2 relative">
               <div className="flex justify-end mb-2">
                 <ActionIcon.Group>
-                  <ActionIcon
-                    variant="default"
-                    size="sm"
-                    onClick={() => {
-                      const updated = new Map(showImageByIdx);
-                      if (showImageByIdx.get(idx)) {
-                        updated.delete(idx);
-                      } else {
-                        updated.set(idx, true);
-                      }
-                      setShowImageByIdx(updated);
-                    }}
-                  >
-                    {showImageByIdx.get(idx) ? <EyeOff /> : <Eye />}
-                  </ActionIcon>
                   <Tooltip
                     w={300}
                     multiline
@@ -108,18 +98,11 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                       <Info />
                     </ActionIcon>
                   </Tooltip>
-
-                  {/* <ActionIcon variant="default" size="sm">
-                    <RefreshCw />
-                    {props.data.outOfSync && (
-                      <span className="w-1.5 h-1.5 bg-red-500 rounded-full absolute top-1 right-0"></span>
-                    )}
-                  </ActionIcon> */}
                 </ActionIcon.Group>
               </div>
 
               <div className="border-2 border-black rounded-sm">
-                {showImageByIdx.get(idx) ? (
+                {showImage ? (
                   <img src={frame.image} />
                 ) : (
                   <p>{frame.description}</p>
