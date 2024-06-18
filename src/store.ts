@@ -51,10 +51,9 @@ const indexDbStorage: StateStorage = {
   getItem: async (name) => {
     return (await indexDbKv.get(name)) || null;
   },
-  setItem: async (name, value) =>
-    debounce(async () => {
-      await indexDbKv.set(name, value);
-    }, 1000),
+  setItem: debounce(async (key: string, value: string) => {
+    await indexDbKv.set(key, value);
+  }, 1000),
   removeItem: async (name) => {
     await indexDbKv.del(name);
   }
