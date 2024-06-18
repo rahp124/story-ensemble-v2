@@ -17,7 +17,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
 
   const { regenerating, outOfSync, storyboard } = props.data;
 
-  const { regenerateStoryboardNode } = useStore();
+  const { globalShowImage, regenerateStoryboardNode } = useStore();
 
   return (
     <>
@@ -102,7 +102,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               </div>
 
               <div className="border-2 border-black rounded-sm">
-                {showImage ? (
+                {showImage || globalShowImage ? (
                   <img src={frame.image} />
                 ) : (
                   <p>{frame.description}</p>

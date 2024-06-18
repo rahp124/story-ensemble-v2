@@ -13,13 +13,14 @@ import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
 import { useRfCursorPosition } from './lib/useRfCursorPosition';
-import { Plus } from 'lucide-react';
+import { ImageIcon, ImageOff, Plus } from 'lucide-react';
 import {
   Accordion,
   Button,
   Modal,
   MultiSelect,
   ScrollArea,
+  Switch,
   Textarea
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -39,6 +40,8 @@ export default function App() {
     cursorNode,
     updateCursorNodePosition,
     placeCursorNode,
+    globalShowImage,
+    setGlobalShowImage,
     personaDimensions,
     pinPersonaDimension,
     generatePersonaDimensions,
@@ -213,11 +216,24 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
         }}
       >
         <Panel position="top-left" className="w-[500px] max-h-[90vh]">
-          <div className="border border-slate-500 bg-white rounded-lg p-2">
+          <div className="border border-slate-500 bg-white rounded-lg p-0.5">
+            <div className="flex justify-between items-center px-4 py-2">
+              {' '}
+              <h3 className="font-bold text-md">StoryEnsemble</h3>
+              <Switch
+                size="sm"
+                checked={globalShowImage}
+                onChange={(event) =>
+                  setGlobalShowImage(event.currentTarget.checked)
+                }
+                onLabel={<ImageIcon className="w-3 h-3" />}
+                offLabel={<ImageOff className="w-3 h-3" />}
+              />
+            </div>
             <Accordion>
               <Accordion.Item value="personas">
                 <Accordion.Control>
-                  <h3 className="font-bold text-md">Personas</h3>
+                  <h3 className="font-bold text-sm">Personas</h3>
                 </Accordion.Control>
                 <Accordion.Panel>
                   <div className="flex flex-col gap-6 py-2">
@@ -289,7 +305,7 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
               </Accordion.Item>
               <Accordion.Item value="problems">
                 <Accordion.Control>
-                  <span className="font-bold text-md">Problems</span>
+                  <span className="font-bold text-sm">Problems</span>
                 </Accordion.Control>
                 <Accordion.Panel>
                   <div className="flex flex-col gap-6 py-2">
@@ -361,7 +377,7 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
               </Accordion.Item>
               <Accordion.Item value="solutions">
                 <Accordion.Control>
-                  <span className="font-bold text-md">Solutions</span>
+                  <span className="font-bold text-sm">Solutions</span>
                 </Accordion.Control>
                 <Accordion.Panel>
                   <div className="flex flex-col gap-6 py-2">
@@ -431,9 +447,9 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
                   </div>
                 </Accordion.Panel>
               </Accordion.Item>
-              <Accordion.Item value="storyboards">
+              <Accordion.Item value="storyboards" className="border-none">
                 <Accordion.Control>
-                  <span className="font-bold text-md">Storyboards</span>
+                  <span className="font-bold text-sm">Storyboards</span>
                 </Accordion.Control>
                 <Accordion.Panel>
                   <div className="flex flex-col gap-6 py-2">

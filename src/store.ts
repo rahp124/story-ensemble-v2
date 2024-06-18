@@ -84,6 +84,9 @@ type RFState = {
   updateCursorNodePosition: (position: XYPosition) => void;
   placeCursorNode: () => void;
 
+  globalShowImage: boolean;
+  setGlobalShowImage: (show: boolean) => void;
+
   setNodeOutOfSync: (id: string, outOfSync: boolean) => void;
 
   updateTextNode: (id: string, text: string) => void;
@@ -268,6 +271,11 @@ export const useStore = create<RFState>()(
           });
         },
         placeCursorNode: () => set({ cursorNode: null }),
+
+        globalShowImage: false,
+        setGlobalShowImage: (showImage: boolean) => {
+          set({ globalShowImage: showImage });
+        },
 
         setNodeOutOfSync: (id: string, outOfSync: boolean) => {
           get().updateNode(id, { data: { outOfSync } });

@@ -1,6 +1,7 @@
 import NotificationDot from '@/components/NotificationDot';
 import SourceHandle from '@/components/SourceHandle';
 import TargetHandle from '@/components/TargetHandle';
+import { useStore } from '@/store';
 import { Dimension, NodeData } from '@/types';
 import {
   ActionIcon,
@@ -68,6 +69,8 @@ export default function BaseNode(props: BaseNodeProps) {
     [dimensions, props.allDimensions]
   );
   const [nodeDimensions, setNodeDimensions] = useState(initialNodeDimensions);
+
+  const { globalShowImage } = useStore();
 
   useEffect(() => {
     setNodeDimensions(initialNodeDimensions);
@@ -151,7 +154,7 @@ export default function BaseNode(props: BaseNodeProps) {
           </div>
         </div>
         <div className="w-full flex-grow flex flex-col overflow-hidden">
-          {showImage && image ? (
+          {(showImage || globalShowImage) && image ? (
             <div className="relative">
               <Tooltip
                 variant=""
@@ -168,7 +171,7 @@ export default function BaseNode(props: BaseNodeProps) {
               </Tooltip>
               <Image src={image} className="h-full object-cover" />
             </div>
-          ) : showImage && !image ? (
+          ) : (showImage || globalShowImage) && !image ? (
             <Skeleton className="h-full w-full" />
           ) : (
             <>
