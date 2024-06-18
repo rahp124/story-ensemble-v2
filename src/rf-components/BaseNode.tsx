@@ -17,7 +17,7 @@ import {
   ScrollAreaAutosize
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { RefreshCw, Settings, ImageIcon, ImageOff } from 'lucide-react';
+import { RefreshCw, Settings, ImageIcon, ImageOff, Info } from 'lucide-react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 
@@ -108,7 +108,7 @@ export default function BaseNode(props: BaseNodeProps) {
       >
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-bold text-sm">{props.nodeName}</h3>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <Switch
               size="sm"
               checked={showImage}
@@ -116,7 +116,7 @@ export default function BaseNode(props: BaseNodeProps) {
               onLabel={<ImageIcon className="w-3 h-3" />}
               offLabel={<ImageOff className="w-3 h-3" />}
             />
-            <Tooltip label="Regenerate image">
+            <Tooltip label="Regenerate illustrative image">
               <ActionIcon
                 variant="subtle"
                 size="sm"
@@ -150,9 +150,24 @@ export default function BaseNode(props: BaseNodeProps) {
             </Tooltip>
           </div>
         </div>
-        <div className="w-full flex-grow rounded-tr-md rounded-b-md flex flex-col overflow-hidden">
+        <div className="w-full flex-grow flex flex-col overflow-hidden">
           {showImage && image ? (
-            <Image src={image} className="h-full object-cover" />
+            <div className="relative">
+              <Tooltip
+                variant=""
+                label="Illustrative image to visualize the node"
+              >
+                <ActionIcon
+                  className="absolute top-1 right-1"
+                  radius="xl"
+                  size="sm"
+                  color="gray"
+                >
+                  <Info className="w-full h-full" />
+                </ActionIcon>
+              </Tooltip>
+              <Image src={image} className="h-full object-cover" />
+            </div>
           ) : showImage && !image ? (
             <Skeleton className="h-full w-full" />
           ) : (
