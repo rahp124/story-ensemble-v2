@@ -29,6 +29,12 @@ export type NodeData = {
 };
 
 const frameOutlineSchema = z.object({
+  frameType: z.union([
+    z.literal('context'),
+    z.literal('problem'),
+    z.literal('solution'),
+    z.literal('resolution')
+  ]),
   description: z.string(),
   imagePrompt: z.string(),
   imageNegativePrompt: z.string(),

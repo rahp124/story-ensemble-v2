@@ -2,10 +2,35 @@ import NotificationDot from '@/components/NotificationDot';
 import TargetHandle from '@/components/TargetHandle';
 import { useStore } from '@/store';
 import { StoryboardNodeData } from '@/types';
-import { ActionIcon, Card, Input, Switch, Tooltip } from '@mantine/core';
+import {
+  ActionIcon,
+  AspectRatio,
+  Card,
+  Input,
+  Switch,
+  Tooltip
+} from '@mantine/core';
 import { ImageIcon, ImageOff, Info, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
+
+function frameTypeText(
+  frameType: 'context' | 'problem' | 'solution' | 'resolution'
+) {
+  if (frameType === 'context') return 'Context 👤';
+  if (frameType === 'problem') return 'Problem 🚨';
+  if (frameType === 'solution') return 'Solution 💡';
+  if (frameType === 'resolution') return 'Resolution 🎉';
+}
+
+function frameTypeBorder(
+  frameType: 'context' | 'problem' | 'solution' | 'resolution'
+) {
+  if (frameType === 'context') return 'border-yellow-500';
+  if (frameType === 'problem') return 'border-red-500';
+  if (frameType === 'solution') return 'border-blue-500';
+  if (frameType === 'resolution') return 'border-green-500';
+}
 
 export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [title, setTitle] = useState(props.data.storyboard.title);
@@ -78,7 +103,10 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
           {' '}
           {storyboard.outline.map((frame, idx) => (
             <div key={idx} className="flex flex-col gap-2 pb-2 relative">
-              <div className="flex justify-end mb-2">
+              <div className="flex justify-between mb-2">
+                <p className="font-bold text-sm">
+                  Frame {idx + 1} - {frameTypeText(frame.frameType)}
+                </p>
                 <ActionIcon.Group>
                   <Tooltip
                     w={300}
@@ -101,12 +129,18 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 </ActionIcon.Group>
               </div>
 
-              <div className="border-2 border-black rounded-sm">
-                {showImage || globalShowImage ? (
-                  <img src={frame.image} />
-                ) : (
-                  <p>{frame.description}</p>
-                )}
+              <div
+                className={`border-2 rounded-sm ${frameTypeBorder(
+                  frame.frameType
+                )}`}
+              >
+                <AspectRatio ratio={1}>
+                  {showImage || globalShowImage ? (
+                    <img src={frame.image} />
+                  ) : (
+                    <p className="p-2">{frame.description}</p>
+                  )}
+                </AspectRatio>
               </div>
 
               <p>{frame.caption}</p>
