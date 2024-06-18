@@ -95,7 +95,7 @@ type RFState = {
   generatePersonaDimensions: (context: string) => Promise<void>;
   generatePersonaNodes: (context: string) => Promise<string[]>;
   generatePersonaImage: (id: string) => Promise<void>;
-  regeneratePersonaNodes: (ids: string[], instructions?: string) => void;
+  regeneratePersonaNodes: (ids: string[]) => void;
   updatePersonaNode: (id: string, text: string) => Promise<void>;
   mergePersonaNodes: (
     personaNodes: Node<PersonaNodeData>[],
@@ -110,7 +110,7 @@ type RFState = {
     personaIds: string[]
   ) => Promise<string[]>;
   generateProblemImage: (id: string) => Promise<void>;
-  regenerateProblemNodes: (ids: string[], instructions?: string) => void;
+  regenerateProblemNodes: (ids: string[]) => void;
   updateProblemNode: (id: string, text: string) => void;
   // mergeProblemNodes: (ids: string[]) => Promise<void>;
 
@@ -122,7 +122,7 @@ type RFState = {
     problemIds: string[]
   ) => Promise<string[]>;
   generateSolutionImage: (id: string) => Promise<void>;
-  regenerateSolutionNodes: (ids: string[], instructions?: string) => void;
+  regenerateSolutionNodes: (ids: string[]) => void;
   updateSolutionNode: (id: string, text: string) => void;
   // mergeSolutionNodes: (ids: string[]) => Promise<void>;
 
@@ -358,10 +358,7 @@ export const useStore = create<RFState>()(
             data: { image: newImage, regeneratingImage: false }
           });
         },
-        regeneratePersonaNodes: async (
-          ids: string[],
-          instructions?: string
-        ) => {
+        regeneratePersonaNodes: async (ids: string[]) => {
           const personaNodes = get().nodes.filter(
             (node) => node.type === NodeType.Persona && ids.includes(node.id)
           );
@@ -538,10 +535,7 @@ export const useStore = create<RFState>()(
 
           get().updateNode(id, { data: { image, regeneratingImage: false } });
         },
-        regenerateProblemNodes: async (
-          ids: string[],
-          instructions?: string
-        ) => {
+        regenerateProblemNodes: async (ids: string[]) => {
           const problemNodes = get().nodes.filter(
             (node) => node.type === NodeType.Problem && ids.includes(node.id)
           );
@@ -709,7 +703,7 @@ export const useStore = create<RFState>()(
             data: { image, regeneratingImage: false }
           });
         },
-        regenerateSolutionNodes: async (ids, instructions) => {
+        regenerateSolutionNodes: async (ids) => {
           const solutionNodes = get().nodes.filter(
             (node) => node.type === NodeType.Solution && ids.includes(node.id)
           );

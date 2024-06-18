@@ -15,7 +15,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   );
   const [showImage, setShowImage] = useState(false);
 
-  const { dimensions, regenerating, outOfSync, storyboard } = props.data;
+  const { regenerating, outOfSync, storyboard } = props.data;
 
   const { regenerateStoryboardNode } = useStore();
 

@@ -4,8 +4,7 @@ import ReactFlow, {
   Controls,
   SelectionMode,
   Panel,
-  Node,
-  useReactFlow
+  Node
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { NodeType, edgeTypes, nodeTypes } from './rf-components';
@@ -27,7 +26,6 @@ import { useDisclosure } from '@mantine/hooks';
 import { PersonaNodeData, ProblemNodeData } from './types';
 
 export default function App() {
-  const rf = useReactFlow();
   const {
     nodes,
     selectedNodes,
