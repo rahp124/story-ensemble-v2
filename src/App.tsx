@@ -7,8 +7,9 @@ import ReactFlow, {
   Node
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { NodeType, edgeTypes, nodeTypes } from './rf-components';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
@@ -62,16 +63,8 @@ export default function App() {
   } = useStore();
   const { undo, redo } = useStore.temporal.getState();
 
-  useEffect(() => {
-    document.addEventListener('keydown', (event) => {
-      if (event.ctrlKey && event.key === 'z') {
-        undo();
-      }
-      if (event.ctrlKey && event.key === 'y') {
-        redo();
-      }
-    });
-  });
+  useHotkeys('mod+z', () => undo(1), { preventDefault: true });
+  useHotkeys('mod+y', () => redo(1), { preventDefault: true });
 
   const { updateRfCursorPosition } = useRfCursorPosition();
 
@@ -223,9 +216,9 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
               <Switch
                 size="sm"
                 checked={globalShowImage}
-                onChange={(event) =>
-                  setGlobalShowImage(event.currentTarget.checked)
-                }
+                onChange={(event) => {
+                  setGlobalShowImage(event.currentTarget.checked);
+                }}
                 onLabel={<ImageIcon className="w-3 h-3" />}
                 offLabel={<ImageOff className="w-3 h-3" />}
               />

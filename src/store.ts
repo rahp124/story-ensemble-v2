@@ -46,6 +46,7 @@ import { NodeType } from './rf-components';
 import { generateProblem, generateProblemDimensions } from './api/problems';
 import { generateIllustrativeImage } from './api/images';
 import debounce from 'lodash/debounce';
+import { isEqual } from 'lodash';
 
 const indexDbStorage: StateStorage = {
   getItem: async (name) => {
@@ -950,8 +951,22 @@ export const useStore = create<RFState>()(
         }
       }),
       {
-        limit: 100,
-        handleSet: (handleSet) => debounce(handleSet, 1000)
+        partialize: (state) => ({
+          nodes: state.nodes,
+          edges: state.edges,
+          personaDimensions: state.personaDimensions,
+          problemDimensions: state.problemDimensions,
+          solutionDimensions: state.solutionDimensions,
+          storyboardDimensions: state.storyboardDimensions
+        }),
+        equality: (objA, objB) => {
+          const same = isEqual(objA, objB);
+          return same;
+        },
+        handleSet: (handleSet) =>
+          debounce<typeof handleSet>((state) => {
+            handleSet(state);
+          }, 200)
       }
     ),
     {
