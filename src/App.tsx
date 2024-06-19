@@ -61,7 +61,9 @@ export default function App() {
     pinStoryboardDimension,
     undo,
     redo,
-    selectedNodes
+    selectedNodes,
+    copy,
+    paste
   } = useStore(
     useShallow((state) => ({
       nodes: state.nodes,
@@ -95,12 +97,16 @@ export default function App() {
       pinStoryboardDimension: state.pinStoryboardDimension,
       undo: state.undo,
       redo: state.redo,
-      selectedNodes: state.nodes.filter(({ selected }) => selected)
+      selectedNodes: state.nodes.filter(({ selected }) => selected),
+      copy: state.copy,
+      paste: state.paste
     }))
   );
 
   useHotkeys('mod+z', () => undo(), { preventDefault: true });
   useHotkeys('mod+y', () => redo(), { preventDefault: true });
+  useHotkeys('mod+c', () => copy(), { preventDefault: true });
+  useHotkeys('mod+v', () => paste(), { preventDefault: true });
 
   const { updateRfCursorPosition } = useRfCursorPosition();
 

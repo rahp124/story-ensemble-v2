@@ -144,6 +144,10 @@ type RFState = {
   undo: () => void;
   redo: () => void;
   takeSnapshot: () => void;
+
+  copiedNodeIds: string[];
+  copy: () => void;
+  paste: () => void;
 };
 
 function partialize(state: RFState): Partial<RFState> {
@@ -1024,6 +1028,56 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     set({
       pastStates: [...get().pastStates, snapshotWithoutLoading],
       futureStates: []
+    });
+  },
+
+  copiedNodeIds: [],
+  copy: () => {
+    console.log('copy');
+    set({
+      copiedNodeIds: get()
+        .nodes.filter(({ selected }) => selected)
+        .map(({ id }) => id)
+    });
+    console.log(get().copiedNodeIds);
+  },
+  paste: () => {
+    const { copiedNodeIds } = get();
+    if (copiedNodeIds.length === 0) return;
+
+    const newIdByOldId = new Map<string, string>();
+    for (const id of copiedNodeIds) {
+      // Strip 21 character nanoid and dash from end and add a new one
+      const newId = id.slice(0, -22) + '-' + nanoid();
+      newIdByOldId.set(id, newId);
+    }
+
+    const newNodes = get()
+      .nodes.filter(({ id }) => copiedNodeIds.includes(id))
+      .map((node) => ({
+        ...node,
+        id: newIdByOldId.get(node.id)!
+      }));
+    const newEdges = get()
+      .edges.filter(
+        ({ source, target }) =>
+          copiedNodeIds.includes(source) && copiedNodeIds.includes(target)
+      )
+      .map((edge) => ({
+        ...edge,
+        source: newIdByOldId.get(edge.source)!,
+        target: newIdByOldId.get(edge.target)!
+      }));
+
+    // TODO Adjust the position of the paste to cursor or current viewport
+
+    get().takeSnapshot();
+    set({
+      nodes: [
+        ...get().nodes.map((node) => ({ ...node, selected: false })),
+        ...newNodes.map((node) => ({ ...node, selected: true }))
+      ],
+      edges: [...get().edges, ...newEdges]
     });
   }
 });
