@@ -7,6 +7,7 @@ import {
   AspectRatio,
   Card,
   Input,
+  Skeleton,
   Switch,
   Tooltip
 } from '@mantine/core';
@@ -40,7 +41,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   );
   const [showImage, setShowImage] = useState(false);
 
-  const { regenerating, outOfSync, storyboard } = props.data;
+  const { regenerating, regeneratingImage, outOfSync, storyboard } = props.data;
 
   const { globalShowImage, regenerateStoryboardNode } = useStore();
 
@@ -74,7 +75,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
             <ActionIcon
               variant="subtle"
               size="sm"
-              loading={regenerating}
+              loading={regenerating || regeneratingImage}
               onClick={() => regenerateStoryboardNode(props.id)}
             >
               <RefreshCw />
@@ -107,26 +108,28 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 <p className="font-bold text-sm">
                   Frame {idx + 1} - {frameTypeText(frame.frameType)}
                 </p>
-                <ActionIcon.Group>
-                  <Tooltip
-                    w={300}
-                    multiline
-                    label={
-                      <div>
-                        <p>
-                          <b>Prompt:</b> {frame.imagePrompt}
-                        </p>
-                        <p>
-                          <b>Negative prompt:</b> {frame.imageNegativePrompt}
-                        </p>
-                      </div>
-                    }
-                  >
-                    <ActionIcon variant="default" size="sm">
-                      <Info />
-                    </ActionIcon>
-                  </Tooltip>
-                </ActionIcon.Group>
+                {!regenerating && (
+                  <ActionIcon.Group>
+                    <Tooltip
+                      w={300}
+                      multiline
+                      label={
+                        <div>
+                          <p>
+                            <b>Prompt:</b> {frame.imagePrompt}
+                          </p>
+                          <p>
+                            <b>Negative prompt:</b> {frame.imageNegativePrompt}
+                          </p>
+                        </div>
+                      }
+                    >
+                      <ActionIcon variant="default" size="sm">
+                        <Info />
+                      </ActionIcon>
+                    </Tooltip>
+                  </ActionIcon.Group>
+                )}
               </div>
 
               <div
@@ -136,14 +139,22 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               >
                 <AspectRatio ratio={1}>
                   {showImage || globalShowImage ? (
-                    <img src={frame.image} />
+                    <>
+                      {regenerating || regeneratingImage ? (
+                        <Skeleton />
+                      ) : (
+                        <img src={frame.image} />
+                      )}
+                    </>
                   ) : (
-                    <p className="p-2">{frame.description}</p>
+                    <p className="p-2">
+                      {!regenerating ? frame.description : 'Loading...'}
+                    </p>
                   )}
                 </AspectRatio>
               </div>
 
-              <p>{frame.caption}</p>
+              <p>{!regenerating ? frame.caption : 'Loading...'}</p>
             </div>
           ))}
         </div>

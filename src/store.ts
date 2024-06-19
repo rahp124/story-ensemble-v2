@@ -966,6 +966,8 @@ const createStore: StateCreator<RFState> = (set, get) => ({
       ?.data.storyboard.outline;
     if (!outline) return;
 
+    get().updateNode(id, { data: { regeneratingImage: true } });
+
     const images = await Promise.all(
       outline.map(async (frame) => {
         const image = await generateImage({
@@ -979,6 +981,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
       })
     );
 
+    get().updateNode(id, { data: { regeneratingImage: false } });
     get().takeSnapshot();
     get().updateNode(id, { data: { storyboard: { outline: images } } });
   },
