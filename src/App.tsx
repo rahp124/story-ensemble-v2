@@ -100,7 +100,8 @@ export default function App() {
       redo: state.redo,
       selectedNodes: state.nodes.filter(({ selected }) => selected),
       copy: state.copy,
-      paste: state.paste
+      paste: state.paste,
+      viewport: state.viewport
     }))
   );
 
@@ -255,6 +256,8 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
         onSelectionEnd={() => {
           setCurrentlySelecting(false);
         }}
+        // Track viewport
+        onMoveEnd={(_, viewport) => useStore.setState({ viewport })}
       >
         <Panel position="top-left" className="w-[500px] max-h-[90vh]">
           <div className="border border-slate-500 bg-white rounded-lg p-0.5">
