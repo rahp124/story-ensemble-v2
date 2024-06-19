@@ -1050,32 +1050,37 @@ const createStore: StateCreator<RFState> = (set, get) => ({
       newIdByOldId.set(id, newId);
     }
 
-    const newNodes = get()
-      .nodes.filter(({ id }) => copiedNodeIds.includes(id))
-      .map((node) => ({
-        ...node,
-        id: newIdByOldId.get(node.id)!,
-        position: {
-          ...node.position,
-          x: node.position.x + 50,
-          y: node.position.y + 50
-        },
-        data: {
-          ...node.data,
-          regenerating: false,
-          regeneratingImage: false
-        }
-      }));
-    const newEdges = get()
-      .edges.filter(
-        ({ source, target }) =>
-          copiedNodeIds.includes(source) && copiedNodeIds.includes(target)
-      )
-      .map((edge) => ({
-        ...edge,
-        source: newIdByOldId.get(edge.source)!,
-        target: newIdByOldId.get(edge.target)!
-      }));
+    const newNodes = cloneDeep(
+      get()
+        .nodes.filter(({ id }) => copiedNodeIds.includes(id))
+        .map((node) => ({
+          ...node,
+          id: newIdByOldId.get(node.id)!,
+          position: {
+            ...node.position,
+            x: node.position.x + 50,
+            y: node.position.y + 50
+          },
+          data: {
+            ...node.data,
+            regenerating: false,
+            regeneratingImage: false
+          }
+        }))
+    );
+    const newEdges = cloneDeep(
+      get()
+        .edges.filter(
+          ({ source, target }) =>
+            copiedNodeIds.includes(source) && copiedNodeIds.includes(target)
+        )
+        .map((edge) => ({
+          ...edge,
+          id: `edge-${nanoid()}`,
+          source: newIdByOldId.get(edge.source)!,
+          target: newIdByOldId.get(edge.target)!
+        }))
+    );
 
     // TODO Adjust the position of the paste to cursor or current viewport
 

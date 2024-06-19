@@ -4,12 +4,13 @@ import ReactFlow, {
   Controls,
   SelectionMode,
   Panel,
-  Node
+  Node,
+  useReactFlow
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { NodeType, edgeTypes, nodeTypes } from './rf-components';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
@@ -206,6 +207,12 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
   const [currentlySelecting, setCurrentlySelecting] = useState(false);
   const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
 
+  const { fitView } = useReactFlow();
+  const hydrated = useStore.persist.hasHydrated();
+  useEffect(() => {
+    if (hydrated) fitView();
+  }, [fitView, hydrated]);
+
   return (
     <div className="h-[100vh] w-[100vw]">
       <ReactFlow
@@ -229,7 +236,7 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
           y: 0,
           zoom: 1
         }}
-        minZoom={0.3}
+        minZoom={0.1}
         proOptions={{ hideAttribution: true }}
         // Click and drop nodes
         onPaneClick={placeCursorNode}
