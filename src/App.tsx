@@ -59,12 +59,13 @@ export default function App() {
     storyboardDimensions,
     generateStoryboardDimensions,
     generateStoryboardNode,
-    pinStoryboardDimension
+    pinStoryboardDimension,
+    undo,
+    redo
   } = useStore();
-  const { undo, redo } = useStore.temporal.getState();
 
-  useHotkeys('mod+z', () => undo(1), { preventDefault: true });
-  useHotkeys('mod+y', () => redo(1), { preventDefault: true });
+  useHotkeys('mod+z', () => undo(), { preventDefault: true });
+  useHotkeys('mod+y', () => redo(), { preventDefault: true });
 
   const { updateRfCursorPosition } = useRfCursorPosition();
 

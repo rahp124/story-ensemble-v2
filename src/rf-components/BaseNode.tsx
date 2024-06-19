@@ -90,6 +90,70 @@ export default function BaseNode(props: BaseNodeProps) {
     setNodeDimensions(newDimensions);
   };
 
+  function cardContent() {
+    if (globalShowImage || showImage) {
+      if (regenerating || regeneratingImage || !image) {
+        return <Skeleton className="h-full w-full" />;
+      } else {
+        return (
+          <div className="relative">
+            <Tooltip
+              variant=""
+              label="Illustrative image to visualize the node"
+            >
+              <ActionIcon
+                className="absolute top-1 right-1"
+                radius="xl"
+                size="sm"
+                color="gray"
+              >
+                <Info className="w-full h-full" />
+              </ActionIcon>
+            </Tooltip>
+            <Image src={image} className="h-full object-cover" />
+          </div>
+        );
+      }
+    } else {
+      return (
+        <>
+          <textarea
+            className={`block w-full resize-none p-2 text-md flex-grow ${props.textAreaBackgroundClass}`}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onBlur={() => {
+              if (content !== props.content) props.onUpdateContent(content);
+            }}
+          />
+          <div className="mt-2">
+            <div className="flex justify-between mt-4 mb-2">
+              <h3 className="text-sm font-bold">Dimensions</h3>
+              <ActionIcon variant="subtle" size="sm" onClick={open}>
+                <Settings className="w-5 h-5" />
+              </ActionIcon>
+            </div>
+            <ScrollArea className="w-full h-[80px]">
+              {dimensions.map((dimension) => (
+                <Badge
+                  key={dimension.id}
+                  variant="default"
+                  styles={{
+                    label: { textTransform: 'none' }
+                  }}
+                >
+                  <span>
+                    <b>{dimension.name}</b>:{' '}
+                    {dimension.currentValues.join(', ')}
+                  </span>
+                </Badge>
+              ))}
+            </ScrollArea>
+          </div>
+        </>
+      );
+    }
+  }
+
   return (
     <>
       <NodeResizer
@@ -154,61 +218,7 @@ export default function BaseNode(props: BaseNodeProps) {
           </div>
         </div>
         <div className="w-full flex-grow flex flex-col overflow-hidden">
-          {(showImage || globalShowImage) && image ? (
-            <div className="relative">
-              <Tooltip
-                variant=""
-                label="Illustrative image to visualize the node"
-              >
-                <ActionIcon
-                  className="absolute top-1 right-1"
-                  radius="xl"
-                  size="sm"
-                  color="gray"
-                >
-                  <Info className="w-full h-full" />
-                </ActionIcon>
-              </Tooltip>
-              <Image src={image} className="h-full object-cover" />
-            </div>
-          ) : (showImage || globalShowImage) && !image ? (
-            <Skeleton className="h-full w-full" />
-          ) : (
-            <>
-              <textarea
-                className={`block w-full resize-none p-2 text-md flex-grow ${props.textAreaBackgroundClass}`}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                onBlur={() => {
-                  if (content !== props.content) props.onUpdateContent(content);
-                }}
-              />
-              <div className="mt-2">
-                <div className="flex justify-between mt-4 mb-2">
-                  <h3 className="text-sm font-bold">Dimensions</h3>
-                  <ActionIcon variant="subtle" size="sm" onClick={open}>
-                    <Settings className="w-5 h-5" />
-                  </ActionIcon>
-                </div>
-                <ScrollArea className="w-full h-[80px]">
-                  {dimensions.map((dimension) => (
-                    <Badge
-                      key={dimension.id}
-                      variant="default"
-                      styles={{
-                        label: { textTransform: 'none' }
-                      }}
-                    >
-                      <span>
-                        <b>{dimension.name}</b>:{' '}
-                        {dimension.currentValues.join(', ')}
-                      </span>
-                    </Badge>
-                  ))}
-                </ScrollArea>
-              </div>
-            </>
-          )}
+          {cardContent()}
         </div>
       </div>
       {props.targetHandle && <TargetHandle />}
