@@ -7,6 +7,7 @@ export interface SelectionToolbarProps {
   onMergePersonas: () => void;
   onGenerateProblems: () => void;
   onGenerateSolutions: () => void;
+  onGenerateStoryboard: () => void;
 }
 export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
   const showMergePersonas =
@@ -18,9 +19,6 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
   const showGenerateSolutions = props.selectedNodes.some(
     (node) => node.type === NodeType.Problem
   );
-  // const showGenerateStoryboards = props.selectedNodes.some(
-  //   (node) => node.type === NodeType.Solution
-  // );
 
   return (
     <NodeToolbar
@@ -52,6 +50,13 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
             Generate solutions
           </Button>
         )}
+        <Button
+          variant="outline"
+          size="xs"
+          onClick={props.onGenerateStoryboard}
+        >
+          Generate storyboard
+        </Button>
       </Button.Group>
     </NodeToolbar>
   );

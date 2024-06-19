@@ -116,9 +116,9 @@ export default function App() {
   const selectedProblemNodes: Node<ProblemNodeData>[] = selectedNodes.filter(
     (node) => node.type === NodeType.Problem
   );
-  // const selectedSolutionNodes = selectedNodes.filter(
-  //   (node) => node.type === NodeType.Solution
-  // );
+  const selectedSolutionNodes = selectedNodes.filter(
+    (node) => node.type === NodeType.Solution
+  );
 
   /* Instructions Modal */
   const [instructionsModalTitle, setInstructionsModalTitle] = useState('');
@@ -618,6 +618,16 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
                 );
               }, `Instructions for solution generation (${selectedProblemNodes.length} problems selected)`)
             }
+            onGenerateStoryboard={() => {
+              triggerInstructionsModal(async (instruction) => {
+                await generateStoryboardNode(
+                  instruction,
+                  selectedPersonaNodes.map((node) => node.id),
+                  selectedProblemNodes.map((node) => node.id),
+                  selectedSolutionNodes.map((node) => node.id)
+                );
+              }, `Instructions for storyboard generation`);
+            }}
           />
         )}
       </ReactFlow>

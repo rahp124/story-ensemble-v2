@@ -1033,13 +1033,11 @@ const createStore: StateCreator<RFState> = (set, get) => ({
 
   copiedNodeIds: [],
   copy: () => {
-    console.log('copy');
     set({
       copiedNodeIds: get()
         .nodes.filter(({ selected }) => selected)
         .map(({ id }) => id)
     });
-    console.log(get().copiedNodeIds);
   },
   paste: () => {
     const { copiedNodeIds } = get();
@@ -1056,7 +1054,17 @@ const createStore: StateCreator<RFState> = (set, get) => ({
       .nodes.filter(({ id }) => copiedNodeIds.includes(id))
       .map((node) => ({
         ...node,
-        id: newIdByOldId.get(node.id)!
+        id: newIdByOldId.get(node.id)!,
+        position: {
+          ...node.position,
+          x: node.position.x + 50,
+          y: node.position.y + 50
+        },
+        data: {
+          ...node.data,
+          regenerating: false,
+          regeneratingImage: false
+        }
       }));
     const newEdges = get()
       .edges.filter(
