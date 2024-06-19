@@ -100,8 +100,7 @@ export default function App() {
       redo: state.redo,
       selectedNodes: state.nodes.filter(({ selected }) => selected),
       copy: state.copy,
-      paste: state.paste,
-      viewport: state.viewport
+      paste: state.paste
     }))
   );
 
@@ -208,7 +207,7 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
   const [currentlySelecting, setCurrentlySelecting] = useState(false);
   const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
 
-  const { fitView } = useReactFlow();
+  const { fitView, screenToFlowPosition } = useReactFlow();
   const hydrated = useStore.persist.hasHydrated();
   useEffect(() => {
     if (hydrated) fitView();
@@ -257,7 +256,13 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
           setCurrentlySelecting(false);
         }}
         // Track viewport
-        onMoveEnd={(_, viewport) => useStore.setState({ viewport })}
+        onMoveEnd={() => {
+          const centerPosition = screenToFlowPosition({
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2
+          });
+          useStore.setState({ centerPosition });
+        }}
       >
         <Panel position="top-left" className="w-[500px] max-h-[90vh]">
           <div className="border border-slate-500 bg-white rounded-lg p-0.5">

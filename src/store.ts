@@ -17,8 +17,7 @@ import {
   applyEdgeChanges,
   XYPosition,
   OnConnectStart,
-  OnConnectEnd,
-  Viewport
+  OnConnectEnd
 } from 'reactflow';
 import {
   generateStoryboardDimensions,
@@ -67,7 +66,7 @@ type RFState = {
   onConnect: OnConnect;
   updateNode: (id: string, data: Partial<Node>) => void;
 
-  viewport: Viewport;
+  centerPosition: XYPosition;
 
   personaDimensions: Dimension[];
   problemDimensions: Dimension[];
@@ -268,7 +267,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     }));
   },
 
-  viewport: { x: 0, y: 0, zoom: 1 },
+  centerPosition: { x: 0, y: 0 },
 
   personaDimensions: [],
   problemDimensions: [],
