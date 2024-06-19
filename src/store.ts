@@ -16,7 +16,6 @@ import {
   applyNodeChanges,
   applyEdgeChanges,
   XYPosition,
-  OnSelectionChangeFunc,
   OnConnectStart,
   OnConnectEnd
 } from 'reactflow';
@@ -61,12 +60,10 @@ const indexDbStorage: StateStorage = {
 
 type RFState = {
   nodes: Node[];
-  selectedNodes: Node[];
   edges: Edge[];
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
-  onSelectionChange: OnSelectionChangeFunc;
   updateNode: (id: string, data: Partial<Node>) => void;
 
   personaDimensions: Dimension[];
@@ -165,7 +162,6 @@ let positionChangeTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 const createStore: StateCreator<RFState> = (set, get) => ({
   nodes: [],
-  selectedNodes: [],
   edges: [],
   onNodesChange: (changes: NodeChange[]) => {
     const isRemoveChange = changes.some(({ type }) => type === 'remove');
@@ -243,11 +239,6 @@ const createStore: StateCreator<RFState> = (set, get) => ({
         }
         return node;
       })
-    });
-  },
-  onSelectionChange: ({ nodes }) => {
-    set({
-      selectedNodes: nodes
     });
   },
   updateNode: (id: string, data: Partial<Node>) => {

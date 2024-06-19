@@ -25,19 +25,18 @@ import {
   Textarea
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { useShallow } from 'zustand/react/shallow';
 import { PersonaNodeData, ProblemNodeData } from './types';
 
 export default function App() {
   const {
     nodes,
-    selectedNodes,
     onNodesChange,
     edges,
     onEdgesChange,
     onConnect,
     onConnectStart,
     onConnectEnd,
-    onSelectionChange,
     cursorNode,
     updateCursorNodePosition,
     placeCursorNode,
@@ -61,8 +60,44 @@ export default function App() {
     generateStoryboardNode,
     pinStoryboardDimension,
     undo,
-    redo
-  } = useStore();
+    redo,
+    selectedNodes
+  } = useStore(
+    useShallow((state) => ({
+      nodes: state.nodes,
+      onNodesChange: state.onNodesChange,
+      edges: state.edges,
+      onEdgesChange: state.onEdgesChange,
+      onConnect: state.onConnect,
+      onConnectStart: state.onConnectStart,
+      onConnectEnd: state.onConnectEnd,
+      cursorNode: state.cursorNode,
+      updateCursorNodePosition: state.updateCursorNodePosition,
+      placeCursorNode: state.placeCursorNode,
+      globalShowImage: state.globalShowImage,
+      setGlobalShowImage: state.setGlobalShowImage,
+      personaDimensions: state.personaDimensions,
+      pinPersonaDimension: state.pinPersonaDimension,
+      generatePersonaDimensions: state.generatePersonaDimensions,
+      generatePersonaNodes: state.generatePersonaNodes,
+      mergePersonaNodes: state.mergePersonaNodes,
+      problemDimensions: state.problemDimensions,
+      pinProblemDimension: state.pinProblemDimension,
+      generateProblemDimensions: state.generateProblemDimensions,
+      generateProblemNodes: state.generateProblemNodes,
+      solutionDimensions: state.solutionDimensions,
+      pinSolutionDimension: state.pinSolutionDimension,
+      generateSolutionDimensions: state.generateSolutionDimensions,
+      generateSolutionNodes: state.generateSolutionNodes,
+      storyboardDimensions: state.storyboardDimensions,
+      generateStoryboardDimensions: state.generateStoryboardDimensions,
+      generateStoryboardNode: state.generateStoryboardNode,
+      pinStoryboardDimension: state.pinStoryboardDimension,
+      undo: state.undo,
+      redo: state.redo,
+      selectedNodes: state.nodes.filter(({ selected }) => selected)
+    }))
+  );
 
   useHotkeys('mod+z', () => undo(), { preventDefault: true });
   useHotkeys('mod+y', () => redo(), { preventDefault: true });
@@ -177,7 +212,6 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
         onConnect={onConnect}
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
-        onSelectionChange={onSelectionChange}
         // Viewport
         panOnScroll
         selectionOnDrag={!cursorNode}
