@@ -45,6 +45,11 @@ import { generateProblem, generateProblemDimensions } from './api/problems';
 import { generateIllustrativeImage } from './api/images';
 import debounce from 'lodash/debounce';
 import { cloneDeep } from 'lodash';
+import {
+  generatePersonaFeedback,
+  generateProblemFeedback,
+  generateSolutionFeedback
+} from './api/feedback';
 
 const indexDbStorage: StateStorage = {
   getItem: async (name) => {
@@ -102,6 +107,7 @@ type RFState = {
     personaNodes: Node<PersonaNodeData>[],
     instructions?: string
   ) => Promise<void>;
+  generatePersonaFeedback: (id: string) => Promise<void>;
 
   // Problem
   pinProblemDimension: (id: string, currentValue: string[]) => void;
@@ -113,6 +119,7 @@ type RFState = {
   generateProblemImage: (id: string) => Promise<void>;
   regenerateProblemNodes: (ids: string[]) => void;
   updateProblemNode: (id: string, text: string) => void;
+  generateProblemFeedback: (id: string) => Promise<void>;
   // mergeProblemNodes: (ids: string[]) => Promise<void>;
 
   // Solution
@@ -125,6 +132,7 @@ type RFState = {
   generateSolutionImage: (id: string) => Promise<void>;
   regenerateSolutionNodes: (ids: string[]) => void;
   updateSolutionNode: (id: string, text: string) => void;
+  generateSolutionFeedback: (id: string) => Promise<void>;
   // mergeSolutionNodes: (ids: string[]) => Promise<void>;
 
   // Storyboards
@@ -439,7 +447,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     if (!personaNode || personaNode.type !== NodeType.Persona) return;
 
     get().takeSnapshot();
-    get().updateNode(id, { data: { persona } });
+    get().updateNode(id, { data: { persona, feedbackOutOfSync: true } });
 
     // Update dependencies
     const dependencyIds = get()
@@ -487,6 +495,20 @@ const createStore: StateCreator<RFState> = (set, get) => ({
 
     get().takeSnapshot();
     set({ nodes: [...get().nodes, personaNode] });
+  },
+  generatePersonaFeedback: async (id) => {
+    const persona = get().nodes.find(
+      (node) => node.id === id && node.type === NodeType.Persona
+    )?.data.persona;
+    if (!persona) return;
+
+    get().updateNode(id, { data: { generatingFeedback: true } });
+
+    const feedback = await generatePersonaFeedback(persona);
+
+    get().updateNode(id, { data: { generatingFeedback: false } });
+    get().takeSnapshot();
+    get().updateNode(id, { data: { feedback, feedbackOutOfSync: false } });
   },
 
   pinProblemDimension: (id: string, currentValue: string[]) => {
@@ -626,7 +648,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     if (!problemNode) return;
 
     get().takeSnapshot();
-    get().updateNode(id, { data: { problem } });
+    get().updateNode(id, { data: { problem, feedbackOutOfSync: true } });
 
     // Update dependencies
     const dependencyIds = get()
@@ -647,6 +669,20 @@ const createStore: StateCreator<RFState> = (set, get) => ({
         return node;
       })
     });
+  },
+  generateProblemFeedback: async (id: string) => {
+    const problem = get().nodes.find(
+      (node) => node.id === id && node.type === NodeType.Problem
+    )?.data.problem;
+    if (!problem) return;
+
+    get().updateNode(id, { data: { generatingFeedback: true } });
+
+    const feedback = await generateProblemFeedback(problem);
+
+    get().updateNode(id, { data: { generatingFeedback: false } });
+    get().takeSnapshot();
+    get().updateNode(id, { data: { feedback, feedbackOutOfSync: false } });
   },
 
   pinSolutionDimension: (id: string, currentValue: string[]) => {
@@ -786,7 +822,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
   },
   updateSolutionNode: (id: string, solution: string) => {
     get().takeSnapshot();
-    get().updateNode(id, { data: { solution } });
+    get().updateNode(id, { data: { solution, feedbackOutOfSync: true } });
 
     const dependencyIds = get()
       .edges.filter((edge) => edge.source === id)
@@ -806,6 +842,20 @@ const createStore: StateCreator<RFState> = (set, get) => ({
         return node;
       })
     });
+  },
+  generateSolutionFeedback: async (id: string) => {
+    const solution = get().nodes.find(
+      (node) => node.id === id && node.type === NodeType.Solution
+    )?.data.solution;
+    if (!solution) return;
+
+    get().updateNode(id, { data: { generatingFeedback: true } });
+
+    const feedback = await generateSolutionFeedback(solution);
+
+    get().updateNode(id, { data: { generatingFeedback: false } });
+    get().takeSnapshot();
+    get().updateNode(id, { data: { feedback, feedbackOutOfSync: false } });
   },
 
   generateStoryboardDimensions: async (context: string) => {

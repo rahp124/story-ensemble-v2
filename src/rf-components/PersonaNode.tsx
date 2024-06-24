@@ -9,7 +9,8 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
     updatePersonaNode,
     regeneratePersonaNodes,
     generatePersonaImage,
-    updateNode
+    updateNode,
+    generatePersonaFeedback
   } = useStore();
 
   return (
@@ -34,6 +35,7 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
           }
         });
       }}
+      onGenerateFeedback={() => generatePersonaFeedback(props.id)}
       allDimensions={personaDimensions}
       targetHandle={false}
       sourceHandle={true}

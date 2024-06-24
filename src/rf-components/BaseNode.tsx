@@ -5,20 +5,26 @@ import { useStore } from '@/store';
 import { Dimension, NodeData } from '@/types';
 import {
   ActionIcon,
-  ScrollArea,
   Tooltip,
   Image,
   Skeleton,
-  Badge,
   Modal,
   MultiSelect,
   Button,
   Switch,
   Divider,
-  ScrollAreaAutosize
+  ScrollAreaAutosize,
+  Loader
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { RefreshCw, Settings, ImageIcon, ImageOff, Info } from 'lucide-react';
+import {
+  RefreshCw,
+  ImageIcon,
+  ImageOff,
+  Info,
+  TagsIcon,
+  BellIcon
+} from 'lucide-react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 
@@ -42,6 +48,7 @@ export interface BaseNodeProps {
   onRegenerateContent: () => void;
   onRegenerateImage: () => void;
   onUpdateDimensions: (dimensions: Dimension[]) => void;
+  onGenerateFeedback: () => void;
 
   allDimensions: Dimension[];
 
@@ -55,11 +62,20 @@ export default function BaseNode(props: BaseNodeProps) {
   }, [props.content]);
 
   const { nodeProps } = props;
-  const { dimensions, image, regenerating, regeneratingImage, outOfSync } =
-    nodeProps.data;
+  const {
+    dimensions,
+    image,
+    regenerating,
+    regeneratingImage,
+    outOfSync,
+    feedback,
+    feedbackOutOfSync,
+    generatingFeedback
+  } = nodeProps.data;
   const [showImage, setShowImage] = useState(false);
 
   const [modalOpened, { open, close }] = useDisclosure(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const initialNodeDimensions = useMemo(
     () =>
       props.allDimensions.map((dimension) => {
@@ -125,30 +141,6 @@ export default function BaseNode(props: BaseNodeProps) {
               if (content !== props.content) props.onUpdateContent(content);
             }}
           />
-          <div className="mt-2">
-            <div className="flex justify-between mt-4 mb-2">
-              <h3 className="text-sm font-bold">Dimensions</h3>
-              <ActionIcon variant="subtle" size="sm" onClick={open}>
-                <Settings className="w-5 h-5" />
-              </ActionIcon>
-            </div>
-            <ScrollArea className="w-full h-[80px]">
-              {dimensions.map((dimension) => (
-                <Badge
-                  key={dimension.id}
-                  variant="default"
-                  styles={{
-                    label: { textTransform: 'none' }
-                  }}
-                >
-                  <span>
-                    <b>{dimension.name}</b>:{' '}
-                    {dimension.currentValues.join(', ')}
-                  </span>
-                </Badge>
-              ))}
-            </ScrollArea>
-          </div>
         </>
       );
     }
@@ -183,6 +175,23 @@ export default function BaseNode(props: BaseNodeProps) {
               onLabel={<ImageIcon className="w-3 h-3" />}
               offLabel={<ImageOff className="w-3 h-3" />}
             />
+            <ActionIcon variant="subtle" size="sm" onClick={open}>
+              <TagsIcon className="w-5 h-5" />
+            </ActionIcon>
+            <ActionIcon
+              variant="subtle"
+              size="sm"
+              onClick={() => {
+                setFeedbackOpen(!feedbackOpen);
+
+                if ((!feedback || feedbackOutOfSync) && !generatingFeedback) {
+                  props.onGenerateFeedback();
+                }
+              }}
+            >
+              <BellIcon className="w-5 h-5" />
+              {feedback && feedbackOutOfSync && <NotificationDot />}
+            </ActionIcon>
             <Tooltip label="Regenerate illustrative image">
               <ActionIcon
                 variant="subtle"
@@ -272,6 +281,40 @@ export default function BaseNode(props: BaseNodeProps) {
             </Button>
           </div>
         </form>
+      </Modal>
+      <Modal
+        opened={feedbackOpen}
+        onClose={() => {
+          setFeedbackOpen(false);
+        }}
+        title={<b>Node content</b>}
+        classNames={{
+          root: 'h-full',
+          content: 'flex flex-col',
+          body: 'flex flex-col h-full overflow-hidden p-0'
+        }}
+      >
+        <div className="px-4 pb-4">
+          <p className="">{content}</p>
+        </div>
+        <p className="px-4 pb-1">
+          <b>💬 Feedback</b>
+        </p>
+        {generatingFeedback ? (
+          <div className="px-4 pb-4 flex justify-center">
+            <Loader />
+          </div>
+        ) : (
+          <ScrollAreaAutosize>
+            <ul className="px-4 pb-4 flex flex-col gap-2">
+              {feedback?.map((idea, idx) => (
+                <li key={idx} className="list-disc list-inside">
+                  {idea}
+                </li>
+              ))}
+            </ul>
+          </ScrollAreaAutosize>
+        )}
       </Modal>
     </>
   );

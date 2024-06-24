@@ -9,7 +9,8 @@ export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
     updateSolutionNode,
     regenerateSolutionNodes,
     generateSolutionImage,
-    updateNode
+    updateNode,
+    generateSolutionFeedback
   } = useStore();
 
   return (
@@ -34,6 +35,7 @@ export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
           }
         });
       }}
+      onGenerateFeedback={() => generateSolutionFeedback(props.id)}
       allDimensions={solutionDimensions}
       targetHandle={true}
       sourceHandle={true}
