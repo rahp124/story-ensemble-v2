@@ -49,11 +49,11 @@ export async function generateSolutionFeedback(node: string) {
 Brainstorm questions to evaluate this solution being used for design thinking.
 
 - Consider if any information that is missing, but could be useful.
-  - Example: If we know a salesperson is struggling to find qualified leads, it may be useful to know what strategies they have tried.
+  - Example: If we want to create a networking mobile app, what are the key features of the app?
 - Consider the accuracy and consistency of the solution
-  - Example: If a salesperson struggles to make connection, but can find qualified leads, this may be incorrect since qualified leads require connections.
+  - Example: A high-tech drone solution to deliver food to low-income families may be infeasible as the solution may be too expensive.
 - Consider alternative or related solutions which may be useful
-  - Example: If a salesperson struggles to find qualified leads, they may also struggle with finding leads in general.
+  - Example: If our solutions helps a salesperson find leads, it may be useful to also have a solution for qualifying those leads.
 
 Solution: """
 ${node}
