@@ -26,6 +26,7 @@ export type NodeData = {
   regeneratingImage?: boolean;
   dimensions: Dimension[];
   image?: string;
+  content: string;
 
   // Feedback
   generatingFeedback?: boolean;
@@ -53,15 +54,6 @@ export const storyboardOutlineSchema = z.object({
 });
 export type StoryboardOutline = z.infer<typeof storyboardOutlineSchema>;
 
-export type PersonaNodeData = NodeData & {
-  persona: string;
-};
-export type ProblemNodeData = NodeData & {
-  problem: string;
-};
-export type SolutionNodeData = NodeData & {
-  solution: string;
-};
 export type StoryboardNodeData = NodeData & {
   storyboard: {
     title: string;

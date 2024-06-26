@@ -5,12 +5,14 @@ import ReactFlow, {
   SelectionMode,
   Panel,
   Node,
-  useReactFlow
+  useReactFlow,
+  MiniMap
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { NodeType, edgeTypes, nodeTypes } from './rf-components';
 import { useEffect, useState } from 'react';
+import pluralize from 'pluralize';
 import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
@@ -18,7 +20,10 @@ import { useRfCursorPosition } from './lib/useRfCursorPosition';
 import { ImageIcon, ImageOff, Plus } from 'lucide-react';
 import {
   Accordion,
+  Breadcrumbs,
   Button,
+  Card,
+  Drawer,
   Modal,
   MultiSelect,
   ScrollArea,
@@ -27,7 +32,9 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useShallow } from 'zustand/react/shallow';
-import { PersonaNodeData, ProblemNodeData } from './types';
+import { NodeData } from './types';
+import { useNodeGroups } from './lib/useNodeGroups';
+import { useGroupFeedback } from './lib/useGroupFeedback';
 
 export default function App() {
   const {
@@ -64,7 +71,8 @@ export default function App() {
     redo,
     selectedNodes,
     copy,
-    paste
+    paste,
+    selectNodes
   } = useStore(
     useShallow((state) => ({
       nodes: state.nodes,
@@ -100,7 +108,8 @@ export default function App() {
       redo: state.redo,
       selectedNodes: state.nodes.filter(({ selected }) => selected),
       copy: state.copy,
-      paste: state.paste
+      paste: state.paste,
+      selectNodes: state.selectNodes
     }))
   );
 
@@ -111,10 +120,10 @@ export default function App() {
 
   const { updateRfCursorPosition } = useRfCursorPosition();
 
-  const selectedPersonaNodes: Node<PersonaNodeData>[] = selectedNodes.filter(
+  const selectedPersonaNodes: Node<NodeData>[] = selectedNodes.filter(
     (node) => node.type === NodeType.Persona
   );
-  const selectedProblemNodes: Node<ProblemNodeData>[] = selectedNodes.filter(
+  const selectedProblemNodes: Node<NodeData>[] = selectedNodes.filter(
     (node) => node.type === NodeType.Problem
   );
   const selectedSolutionNodes = selectedNodes.filter(
@@ -212,6 +221,11 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
   useEffect(() => {
     if (hydrated) fitView();
   }, [fitView, hydrated]);
+
+  const { groupIdToNodeIds, groupIdToEdges } = useNodeGroups();
+  const { groupFeedback } = useGroupFeedback(groupIdToNodeIds, groupIdToEdges);
+
+  const [feedbackDrawerOpened, setFeedbackDrawerOpened] = useState(false);
 
   return (
     <div className="h-[100vh] w-[100vw]">
@@ -591,7 +605,28 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
             </Accordion>
           </div>
         </Panel>
+        <Panel position="top-right">
+          <Button onClick={() => setFeedbackDrawerOpened(true)}>
+            View feedback
+          </Button>
+        </Panel>
         <Controls />
+        <MiniMap
+          pannable
+          zoomable
+          position="bottom-left"
+          nodeColor={(node) => {
+            if (node.type === NodeType.Persona) return '#fef9c3';
+            else if (node.type === NodeType.Problem) return '#fee2e2';
+            else if (node.type === NodeType.Solution) return '#dbeafe';
+            else return '#e2e2e2';
+          }}
+          nodeStrokeColor={(node) => {
+            if (node.selected) return '#ADD8E6';
+            else return 'transparent';
+          }}
+          nodeStrokeWidth={20}
+        />
         <Background variant={BackgroundVariant.Dots} />
         {instructionsModal}
         {showSelectionTooltip && (
@@ -608,7 +643,7 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
             onGenerateProblems={() =>
               triggerInstructionsModal(async (instruction) => {
                 const personaContext = selectedPersonaNodes
-                  .map((node) => node.data.persona)
+                  .map((node) => node.data.content)
                   .join('\n');
 
                 const context = `${personaContext}\n\n${problemContext}\n\n${instruction}`;
@@ -622,7 +657,7 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
             onGenerateSolutions={() =>
               triggerInstructionsModal(async (instruction) => {
                 const problemContext = selectedProblemNodes
-                  .map((node) => node.data.problem)
+                  .map((node) => node.data.content)
                   .join('\n');
 
                 const context = `${problemContext}\n\n${solutionContext}\n\n${instruction}`;
@@ -646,6 +681,130 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
           />
         )}
       </ReactFlow>
+      <Drawer
+        opened={feedbackDrawerOpened}
+        onClose={() => setFeedbackDrawerOpened(false)}
+        title="Feedback"
+        position="right"
+        withOverlay={false}
+      >
+        <ScrollArea.Autosize>
+          {Object.entries(groupIdToNodeIds).map(([groupId, nodeIds], idx) => {
+            const nodeIdsArr = [...nodeIds];
+
+            return (
+              <Card key={groupId} withBorder>
+                <h3
+                  className="font-bold text-md mb-2 cursor-pointer"
+                  onClick={() => {
+                    selectNodes(nodeIdsArr);
+                    fitView({
+                      nodes: [...nodeIds].map((id) => ({ id })),
+                      duration: 1000,
+                      padding: 1.1
+                    });
+                  }}
+                >
+                  Group {idx + 1}
+                </h3>
+                <NodeCountDisplayer nodeIds={nodeIdsArr} />
+
+                {groupFeedback[groupId] && (
+                  <Accordion className="mt-4">
+                    {groupFeedback[groupId].map((feedback, idx) => (
+                      <Accordion.Item key={idx} value={`${idx}`}>
+                        <Accordion.Control>
+                          {feedback.feedbackSummary}
+                        </Accordion.Control>
+                        <Accordion.Panel>
+                          <NodeCountDisplayer
+                            nodeIds={feedback.affectedNodes}
+                          />
+
+                          <p className="mt-4">{feedback.feedback}</p>
+
+                          <Button
+                            className="mt-2"
+                            onClick={() => {
+                              selectNodes(nodeIdsArr);
+                              return fitView({
+                                nodes: [...feedback.affectedNodes].map(
+                                  (id) => ({ id })
+                                ),
+                                duration: 1000,
+                                padding: 1.1
+                              });
+                            }}
+                          >
+                            Go to nodes
+                          </Button>
+                        </Accordion.Panel>
+                      </Accordion.Item>
+                    ))}
+                  </Accordion>
+                )}
+              </Card>
+            );
+          })}
+        </ScrollArea.Autosize>
+      </Drawer>
     </div>
+  );
+}
+
+function countNodes(nodeIds: string[]) {
+  const numPersonaNodes = nodeIds.filter((id) =>
+    id.startsWith('persona-')
+  ).length;
+  const numProblemNodes = nodeIds.filter((id) =>
+    id.startsWith('problem-')
+  ).length;
+  const numSolutionNodes = nodeIds.filter((id) =>
+    id.startsWith('solution-')
+  ).length;
+  const numStoryboardNodes = nodeIds.filter((id) =>
+    id.startsWith('storyboard-')
+  ).length;
+
+  return {
+    numPersonaNodes,
+    numProblemNodes,
+    numSolutionNodes,
+    numStoryboardNodes
+  };
+}
+
+function NodeCountDisplayer({ nodeIds }: { nodeIds: string[] }) {
+  const {
+    numPersonaNodes,
+    numProblemNodes,
+    numSolutionNodes,
+    numStoryboardNodes
+  } = countNodes(nodeIds);
+
+  return (
+    <Breadcrumbs separator="•">
+      {numPersonaNodes > 0 && (
+        <p className="whitespace-nowrap">
+          👤 <b>{numPersonaNodes}</b> {pluralize('Persona', numPersonaNodes)}
+        </p>
+      )}
+      {numProblemNodes > 0 && (
+        <p className="whitespace-nowrap">
+          🚨 <b>{numProblemNodes}</b> {pluralize('Problem', numProblemNodes)}
+        </p>
+      )}
+      {numSolutionNodes > 0 && (
+        <p className="whitespace-nowrap">
+          💡 <b>{numSolutionNodes}</b> {pluralize('Solution', numSolutionNodes)}
+        </p>
+      )}
+      {numStoryboardNodes > 0 && (
+        <p className="whitespace-nowrap">
+          🎞 <b>{numStoryboardNodes}</b>{' '}
+          {pluralize('Storyboard', numStoryboardNodes)}
+        </p>
+      )}
+    </Breadcrumbs>
   );
 }

@@ -25,14 +25,7 @@ import {
 } from './api/storyboards';
 import { generateImage } from './api/stableDiffusion';
 import { generateSolution, generateSolutionDimensions } from './api/solutions';
-import {
-  Dimension,
-  FrameOutline,
-  PersonaNodeData,
-  ProblemNodeData,
-  SolutionNodeData,
-  StoryboardNodeData
-} from './types';
+import { Dimension, FrameOutline, NodeData, StoryboardNodeData } from './types';
 import { generateRandomAssignments } from './lib';
 import {
   generatePersona,
@@ -70,6 +63,7 @@ type RFState = {
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
   updateNode: (id: string, data: Partial<Node>) => void;
+  selectNodes: (ids: string[]) => void;
 
   centerPosition: XYPosition;
 
@@ -104,7 +98,7 @@ type RFState = {
   regeneratePersonaNodes: (ids: string[]) => void;
   updatePersonaNode: (id: string, text: string) => Promise<void>;
   mergePersonaNodes: (
-    personaNodes: Node<PersonaNodeData>[],
+    personaNodes: Node<NodeData>[],
     instructions?: string
   ) => Promise<void>;
   generatePersonaFeedback: (id: string) => Promise<void>;
@@ -274,6 +268,14 @@ const createStore: StateCreator<RFState> = (set, get) => ({
       })
     }));
   },
+  selectNodes: (ids: string[]) => {
+    set({
+      nodes: get().nodes.map((node) => ({
+        ...node,
+        selected: ids.includes(node.id)
+      }))
+    });
+  },
 
   centerPosition: { x: 0, y: 0 },
 
@@ -383,7 +385,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
 
     const ids = await Promise.all(
       dimensionPermutations.map(async (permutation, idx) => {
-        const node: Node<PersonaNodeData> = {
+        const node: Node<NodeData> = {
           id: `persona-${nanoid()}`,
           type: NodeType.Persona,
           position: { x: 100 + idx * 350, y: 200 },
@@ -392,7 +394,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
             height: 300
           },
           data: {
-            persona: await generatePersona(permutation, context),
+            content: await generatePersona(permutation, context),
             dimensions: permutation
           }
         };
@@ -417,7 +419,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     get().updateNode(id, { data: { regeneratingImage: true } });
 
     const image = await generateIllustrativeImage(
-      `Illustrate persona: ${node.data.persona}`
+      `Illustrate persona: ${node.data.content}`
     );
 
     get().updateNode(id, { data: { regeneratingImage: false } });
@@ -447,7 +449,9 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     if (!personaNode || personaNode.type !== NodeType.Persona) return;
 
     get().takeSnapshot();
-    get().updateNode(id, { data: { persona, feedbackOutOfSync: true } });
+    get().updateNode(id, {
+      data: { content: persona, feedbackOutOfSync: true }
+    });
 
     // Update dependencies
     const dependencyIds = get()
@@ -470,16 +474,16 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     });
   },
   mergePersonaNodes: async (personaNodes, instructions) => {
-    const peronas = personaNodes.map((node) => node.data.persona);
+    const personas = personaNodes.map((node) => node.data.content);
     const personaDimensions = get().personaDimensions;
 
     const { mergedPersona, mergedDimensions } = await mergePersonas(
-      peronas,
+      personas,
       personaDimensions,
       instructions || ''
     );
 
-    const personaNode: Node<PersonaNodeData> = {
+    const personaNode: Node<NodeData> = {
       id: `persona-${nanoid()}`,
       type: NodeType.Persona,
       position: { x: -200, y: 200 },
@@ -488,7 +492,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
         height: 300
       },
       data: {
-        persona: mergedPersona,
+        content: mergedPersona,
         dimensions: mergedDimensions
       }
     };
@@ -499,7 +503,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
   generatePersonaFeedback: async (id) => {
     const persona = get().nodes.find(
       (node) => node.id === id && node.type === NodeType.Persona
-    )?.data.persona;
+    )?.data.content;
     if (!persona) return;
 
     get().updateNode(id, { data: { generatingFeedback: true } });
@@ -555,12 +559,12 @@ const createStore: StateCreator<RFState> = (set, get) => ({
       .nodes.filter(
         (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
       )
-      .map((node) => node.data.persona)
+      .map((node) => node.data.content)
       .join('\n');
 
     const ids = await Promise.all(
       dimensionPermutations.map(async (permutation, idx) => {
-        const node: Node<ProblemNodeData> = {
+        const node: Node<NodeData> = {
           id: `problem-${nanoid()}`,
           type: NodeType.Problem,
           position: { x: 100 + idx * 350, y: 600 },
@@ -569,7 +573,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
             height: 300
           },
           data: {
-            problem: await generateProblem(
+            content: await generateProblem(
               permutation,
               context + personaContext
             ),
@@ -597,7 +601,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     return ids;
   },
   generateProblemImage: async (id: string) => {
-    const node = get().nodes.find(
+    const node: Node<NodeData> | undefined = get().nodes.find(
       (node) => node.id === id && node.type === NodeType.Problem
     );
     if (!node) return;
@@ -605,7 +609,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     get().updateNode(id, { data: { regeneratingImage: true } });
 
     const image = await generateIllustrativeImage(
-      `Illustrate problem: ${node.data.problem}`
+      `Illustrate problem: ${node.data.content}`
     );
 
     get().updateNode(id, { data: { regeneratingImage: false } });
@@ -631,7 +635,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
           (node) =>
             personaIds.includes(node.id) && node.type === NodeType.Persona
         )
-        .map((node) => node.data.persona);
+        .map((node) => node.data.content);
       const context = `Personas: ${personas}`;
 
       const newProblem = await generateProblem(node.data.dimensions, context);
@@ -648,7 +652,9 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     if (!problemNode) return;
 
     get().takeSnapshot();
-    get().updateNode(id, { data: { problem, feedbackOutOfSync: true } });
+    get().updateNode(id, {
+      data: { content: problem, feedbackOutOfSync: true }
+    });
 
     // Update dependencies
     const dependencyIds = get()
@@ -671,9 +677,9 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     });
   },
   generateProblemFeedback: async (id: string) => {
-    const problem = get().nodes.find(
+    const problem: string | undefined = get().nodes.find(
       (node) => node.id === id && node.type === NodeType.Problem
-    )?.data.problem;
+    )?.data.content;
     if (!problem) return;
 
     get().updateNode(id, { data: { generatingFeedback: true } });
@@ -729,12 +735,12 @@ const createStore: StateCreator<RFState> = (set, get) => ({
       .nodes.filter(
         (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
       )
-      .map((node) => node.data.problem)
+      .map((node) => node.data.content)
       .join('\n');
 
     const ids = await Promise.all(
       dimensionPermutations.map(async (permutation, idx) => {
-        const node: Node<SolutionNodeData> = {
+        const node: Node<NodeData> = {
           id: `solution-${nanoid()}`,
           type: NodeType.Solution,
           position: { x: 100 + idx * 350, y: 1000 },
@@ -743,7 +749,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
             height: 300
           },
           data: {
-            solution: await generateSolution(
+            content: await generateSolution(
               permutation,
               context + problemContext
             ),
@@ -780,7 +786,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     get().updateNode(node.id, { data: { regeneratingImage: true } });
 
     const image = await generateIllustrativeImage(
-      `Illustrate solution: ${node.data.solution}`
+      `Illustrate solution: ${node.data.content}`
     );
 
     get().updateNode(node.id, { data: { regeneratingImage: false } });
@@ -808,7 +814,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
           (node) =>
             problemIds.includes(node.id) && node.type === NodeType.Problem
         )
-        .map((node) => node.data.persona);
+        .map((node) => node.data.content);
       const context = `Problems: ${problems}`;
 
       const newSolution = await generateSolution(node.data.dimensions, context);
@@ -822,7 +828,9 @@ const createStore: StateCreator<RFState> = (set, get) => ({
   },
   updateSolutionNode: (id: string, solution: string) => {
     get().takeSnapshot();
-    get().updateNode(id, { data: { solution, feedbackOutOfSync: true } });
+    get().updateNode(id, {
+      data: { content: solution, feedbackOutOfSync: true }
+    });
 
     const dependencyIds = get()
       .edges.filter((edge) => edge.source === id)
@@ -846,7 +854,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
   generateSolutionFeedback: async (id: string) => {
     const solution = get().nodes.find(
       (node) => node.id === id && node.type === NodeType.Solution
-    )?.data.solution;
+    )?.data.content;
     if (!solution) return;
 
     get().updateNode(id, { data: { generatingFeedback: true } });
@@ -896,13 +904,13 @@ const createStore: StateCreator<RFState> = (set, get) => ({
       .nodes.filter(
         (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
       )
-      .map((node) => node.data.persona)
+      .map((node) => node.data.content)
       .join('\n');
     const problems = get()
       .nodes.filter(
         (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
       )
-      .map((node) => node.data.persona)
+      .map((node) => node.data.content)
       .join('\n');
     const solutions = get().nodes.filter(
       (node) => node.type === NodeType.Solution && solutionIds.includes(node.id)
@@ -929,6 +937,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
         height: 600
       },
       data: {
+        content: '',
         storyboard: storyboardData,
         dimensions: dimensionPermutation
       }
@@ -964,7 +973,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
       .nodes.filter(
         (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
       )
-      .map((node) => node.data.persona)
+      .map((node) => node.data.content)
       .join('\n');
 
     const problemIds = get()
@@ -976,7 +985,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
       .nodes.filter(
         (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
       )
-      .map((node) => node.data.problem)
+      .map((node) => node.data.content)
       .join('\n');
 
     const solutionIds = get()
@@ -989,7 +998,7 @@ const createStore: StateCreator<RFState> = (set, get) => ({
         (node) =>
           node.type === NodeType.Solution && solutionIds.includes(node.id)
       )
-      .map((node) => node.data.solution)
+      .map((node) => node.data.content)
       .join('\n');
 
     const fullContext = `Personas: ${personas}\n\nProblems: ${problems}\n\nSolutions: ${solutions}`;

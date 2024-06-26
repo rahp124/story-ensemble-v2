@@ -1,9 +1,9 @@
 import { NodeProps } from 'reactflow';
-import { PersonaNodeData } from '@/types';
+import { NodeData } from '@/types';
 import { useStore } from '@/store';
 import BaseNode from './BaseNode';
 
-export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
+export default function PersonaNode(props: NodeProps<NodeData>) {
   const {
     personaDimensions,
     updatePersonaNode,
@@ -23,7 +23,7 @@ export default function PersonaNode(props: NodeProps<PersonaNodeData>) {
       nodeProps={props}
       nodeBackgroundClass="bg-yellow-100"
       textAreaBackgroundClass="bg-yellow-50"
-      content={props.data.persona}
+      content={props.data.content}
       onUpdateContent={(content) => updatePersonaNode(props.id, content)}
       onRegenerateImage={() => generatePersonaImage(props.id)}
       onRegenerateContent={() => regeneratePersonaNodes([props.id])}

@@ -62,3 +62,37 @@ ${node}
   const { feedback } = await generateStructured(feedbackSchema, prompt);
   return feedback;
 }
+
+const connectedFeedbackSchema = z.object({
+  feedbacks: z
+    .object({
+      feedbackSummary: z.string(),
+      affectedNodes: z.string().array(),
+      feedback: z.string()
+    })
+    .array()
+});
+export type ConnectedFeedback = z.infer<
+  typeof connectedFeedbackSchema
+>['feedbacks'];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function generateConnectedFeedback(nodes: any, edges: any) {
+  const prompt = `You are an UX designer given a list of nodes and the edges between these nodes.
+Each node represents a persona, problem, or solution idea used in design thinking.
+
+Come up with some helpful feedback on groups of nodes.
+
+Nodes: """
+${JSON.stringify(nodes)}
+"""
+
+Edges: """
+${JSON.stringify(edges)}
+"""`;
+
+  const { feedbacks } = await generateStructured(
+    connectedFeedbackSchema,
+    prompt
+  );
+  return feedbacks;
+}

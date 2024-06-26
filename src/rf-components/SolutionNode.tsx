@@ -1,9 +1,9 @@
 import { NodeProps } from 'reactflow';
-import { SolutionNodeData } from '@/types';
+import { NodeData } from '@/types';
 import { useStore } from '@/store';
 import BaseNode from './BaseNode';
 
-export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
+export default function SolutionNode(props: NodeProps<NodeData>) {
   const {
     solutionDimensions,
     updateSolutionNode,
@@ -23,7 +23,7 @@ export default function SolutionNode(props: NodeProps<SolutionNodeData>) {
       nodeProps={props}
       nodeBackgroundClass="bg-blue-100"
       textAreaBackgroundClass="bg-blue-50"
-      content={props.data.solution}
+      content={props.data.content}
       onUpdateContent={(content) => updateSolutionNode(props.id, content)}
       onRegenerateContent={() => regenerateSolutionNodes([props.id])}
       onRegenerateImage={() => generateSolutionImage(props.id)}

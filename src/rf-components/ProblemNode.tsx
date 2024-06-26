@@ -1,9 +1,9 @@
 import { NodeProps } from 'reactflow';
-import { ProblemNodeData } from '@/types';
+import { NodeData } from '@/types';
 import { useStore } from '@/store';
 import BaseNode from './BaseNode';
 
-export default function ProblemNode(props: NodeProps<ProblemNodeData>) {
+export default function ProblemNode(props: NodeProps<NodeData>) {
   const {
     problemDimensions,
     updateProblemNode,
@@ -23,7 +23,7 @@ export default function ProblemNode(props: NodeProps<ProblemNodeData>) {
       nodeProps={props}
       nodeBackgroundClass="bg-red-100"
       textAreaBackgroundClass="bg-red-50"
-      content={props.data.problem}
+      content={props.data.content}
       onUpdateContent={(content) => updateProblemNode(props.id, content)}
       onRegenerateContent={() => regenerateProblemNodes([props.id])}
       onRegenerateImage={() => generateProblemImage(props.id)}
