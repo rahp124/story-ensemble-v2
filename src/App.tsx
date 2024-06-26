@@ -300,7 +300,7 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
             View feedback
           </Button>
         </Panel>
-        <Controls />
+        <Controls position="bottom-right" />
         <MiniMap
           pannable
           zoomable

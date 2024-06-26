@@ -140,7 +140,7 @@ type RFState = {
     personaIds: string[],
     problemIds: string[],
     solutionIds: string[]
-  ) => Promise<void>;
+  ) => Promise<string[]>;
   regenerateStoryboardNode: (id: string) => Promise<void>;
   generateStoryboardImages: (id: string) => Promise<void>;
 
@@ -385,13 +385,9 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     });
   },
   generatePersonaNodes: async (context: string) => {
-    if (get().personaDimensions.length === 0) {
-      await get().generatePersonaDimensions(context);
-    }
-
     const dimensionPermutations = generateRandomAssignments(
       get().personaDimensions,
-      5
+      3
     );
 
     const ids = await Promise.all(
@@ -967,7 +963,9 @@ const createStore: StateCreator<RFState> = (set, get) => ({
       edges: [...get().edges, ...edges]
     });
 
-    await get().generateStoryboardImages(node.id);
+    get().generateStoryboardImages(node.id);
+
+    return [node.id];
   },
   regenerateStoryboardNode: async (id) => {
     const storyboardNode = get().nodes.find((node) => node.id === id);
