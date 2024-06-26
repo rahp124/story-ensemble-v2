@@ -679,6 +679,10 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
                 );
               }, `Instructions for storyboard generation`);
             }}
+            onDuplicate={() => {
+              copy();
+              paste();
+            }}
           />
         )}
       </ReactFlow>
@@ -689,8 +693,8 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
         position="right"
         withOverlay={false}
       >
-        <ScrollArea.Autosize>
-          <div className="flex flex-col gap-4">
+        <ScrollArea.Autosize scrollbars="y" maw="100%">
+          <div className="flex flex-col gap-4 w-full">
             <Button
               loading={generatingFeedback}
               onClick={async () => {
@@ -796,7 +800,15 @@ function NodeCountDisplayer({ nodeIds }: { nodeIds: string[] }) {
   } = countNodes(nodeIds);
 
   return (
-    <Breadcrumbs separator="•">
+    <Breadcrumbs
+      separator="•"
+      styles={{
+        root: {
+          rowGap: '10px',
+          flexWrap: 'wrap'
+        }
+      }}
+    >
       {numPersonaNodes > 0 && (
         <p className="whitespace-nowrap">
           👤 <b>{numPersonaNodes}</b> {pluralize('Persona', numPersonaNodes)}
