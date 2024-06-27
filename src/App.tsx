@@ -29,6 +29,7 @@ import { useGroupFeedback } from './lib/useGroupFeedback';
 import { GenerationModal } from './components/GenerationModal';
 import { DependentGenerationModal } from './components/DependentGenerationModal';
 import { NodeCountDisplayer } from './components/NodeCountDisplayer';
+import { ApiKeyModal } from './components/ApiKeyModal';
 
 export default function App() {
   const {
@@ -312,6 +313,7 @@ export default function App() {
           </div>
         </ScrollArea.Autosize>
       </Drawer>
+      <ApiKeyModal />
     </div>
   );
 }

@@ -1,6 +1,5 @@
+import { getStabilityAiKey } from '@/lib/envUtils';
 import { blobToDataUrl } from '../lib/blobToDataUrl';
-
-const STABLE_DIFFUSION_API = import.meta.env.VITE_STABILITY_API_KEY;
 
 export async function generateImageFromSketch(sketch: Blob, prompt: string) {
   const formData = new FormData();
@@ -16,7 +15,7 @@ export async function generateImageFromSketch(sketch: Blob, prompt: string) {
       method: 'POST',
       body: formData,
       headers: {
-        Authorization: `Bearer ${STABLE_DIFFUSION_API}`,
+        Authorization: `Bearer ${getStabilityAiKey()}`,
         Accept: 'image/*'
       }
     }
@@ -47,7 +46,7 @@ export async function generateImage({
       method: 'POST',
       body: formData,
       headers: {
-        Authorization: `Bearer ${STABLE_DIFFUSION_API}`,
+        Authorization: `Bearer ${getStabilityAiKey()}`,
         Accept: 'application/json'
       }
     }
@@ -56,8 +55,4 @@ export async function generateImage({
   const { image } = await response.json();
 
   return `data:image/webp;base64,${image}`;
-
-  // const blob = await response.blob();
-  // const dataUrl = await blobToDataUrl(blob);
-  // return dataUrl;
 }

@@ -1,9 +1,10 @@
+import { getOpenAiKey } from '@/lib/envUtils';
 import OpenAI from 'openai';
 import { z } from 'zod';
 import zodToJsonSchema from 'zod-to-json-schema';
 
-export const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+const openai = new OpenAI({
+  apiKey: getOpenAiKey(),
   dangerouslyAllowBrowser: true
 });
 
@@ -22,6 +23,7 @@ export async function generateStructured<
   """
   `;
 
+  openai.apiKey = getOpenAiKey();
   const response = await openai.chat.completions
     .create({
       // model: 'gpt-3.5-turbo-0125',
@@ -46,6 +48,7 @@ export async function generateStructured<
 }
 
 export async function generateString(prompt: string) {
+  openai.apiKey = getOpenAiKey();
   const response = await openai.chat.completions
     .create({
       model: 'gpt-4o-2024-05-13',
