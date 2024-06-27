@@ -52,8 +52,8 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
           .map(({ label, onClick }, idx) => (
             <Button
               key={idx}
-              variant="light"
-              size="compact-md"
+              variant="outline"
+              size="compact-sm"
               onClick={onClick}
             >
               {label}

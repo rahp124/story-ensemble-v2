@@ -4,37 +4,31 @@ import ReactFlow, {
   Controls,
   SelectionMode,
   Panel,
-  Node,
   useReactFlow,
   MiniMap
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { NodeType, edgeTypes, nodeTypes } from './rf-components';
-import { useEffect, useState } from 'react';
-import pluralize from 'pluralize';
+import { useCallback, useEffect, useState } from 'react';
 import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
-import { useRfCursorPosition } from './lib/useRfCursorPosition';
-import { ImageIcon, ImageOff, Plus } from 'lucide-react';
+import { ImageIcon, ImageOff } from 'lucide-react';
 import {
   Accordion,
-  Breadcrumbs,
   Button,
   Card,
   Drawer,
-  Modal,
-  MultiSelect,
   ScrollArea,
-  Switch,
-  Textarea
+  Switch
 } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { useShallow } from 'zustand/react/shallow';
-import { NodeData } from './types';
 import { useNodeGroups } from './lib/useNodeGroups';
 import { useGroupFeedback } from './lib/useGroupFeedback';
+import { GenerationModal } from './components/GenerationModal';
+import { DependentGenerationModal } from './components/DependentGenerationModal';
+import { NodeCountDisplayer } from './components/NodeCountDisplayer';
 
 export default function App() {
   const {
@@ -45,34 +39,18 @@ export default function App() {
     onConnect,
     onConnectStart,
     onConnectEnd,
-    cursorNode,
-    updateCursorNodePosition,
-    placeCursorNode,
+
     globalShowImage,
     setGlobalShowImage,
-    personaDimensions,
-    pinPersonaDimension,
-    generatePersonaDimensions,
-    generatePersonaNodes,
-    mergePersonaNodes,
-    problemDimensions,
-    pinProblemDimension,
-    generateProblemDimensions,
-    generateProblemNodes,
-    solutionDimensions,
-    pinSolutionDimension,
-    generateSolutionDimensions,
-    generateSolutionNodes,
-    storyboardDimensions,
-    generateStoryboardDimensions,
-    generateStoryboardNode,
-    pinStoryboardDimension,
+
     undo,
     redo,
+
     selectedNodes,
+    selectNodes,
+
     copy,
-    paste,
-    selectNodes
+    paste
   } = useStore(
     useShallow((state) => ({
       nodes: state.nodes,
@@ -82,34 +60,18 @@ export default function App() {
       onConnect: state.onConnect,
       onConnectStart: state.onConnectStart,
       onConnectEnd: state.onConnectEnd,
-      cursorNode: state.cursorNode,
-      updateCursorNodePosition: state.updateCursorNodePosition,
-      placeCursorNode: state.placeCursorNode,
+
       globalShowImage: state.globalShowImage,
       setGlobalShowImage: state.setGlobalShowImage,
-      personaDimensions: state.personaDimensions,
-      pinPersonaDimension: state.pinPersonaDimension,
-      generatePersonaDimensions: state.generatePersonaDimensions,
-      generatePersonaNodes: state.generatePersonaNodes,
-      mergePersonaNodes: state.mergePersonaNodes,
-      problemDimensions: state.problemDimensions,
-      pinProblemDimension: state.pinProblemDimension,
-      generateProblemDimensions: state.generateProblemDimensions,
-      generateProblemNodes: state.generateProblemNodes,
-      solutionDimensions: state.solutionDimensions,
-      pinSolutionDimension: state.pinSolutionDimension,
-      generateSolutionDimensions: state.generateSolutionDimensions,
-      generateSolutionNodes: state.generateSolutionNodes,
-      storyboardDimensions: state.storyboardDimensions,
-      generateStoryboardDimensions: state.generateStoryboardDimensions,
-      generateStoryboardNode: state.generateStoryboardNode,
-      pinStoryboardDimension: state.pinStoryboardDimension,
+
       undo: state.undo,
       redo: state.redo,
+
       selectedNodes: state.nodes.filter(({ selected }) => selected),
+      selectNodes: state.selectNodes,
+
       copy: state.copy,
-      paste: state.paste,
-      selectNodes: state.selectNodes
+      paste: state.paste
     }))
   );
 
@@ -117,101 +79,6 @@ export default function App() {
   useHotkeys('mod+y', () => redo(), { preventDefault: true });
   useHotkeys('mod+c', () => copy(), { preventDefault: true });
   useHotkeys('mod+v', () => paste(), { preventDefault: true });
-
-  const { updateRfCursorPosition } = useRfCursorPosition();
-
-  const selectedPersonaNodes: Node<NodeData>[] = selectedNodes.filter(
-    (node) => node.type === NodeType.Persona
-  );
-  const selectedProblemNodes: Node<NodeData>[] = selectedNodes.filter(
-    (node) => node.type === NodeType.Problem
-  );
-  const selectedSolutionNodes = selectedNodes.filter(
-    (node) => node.type === NodeType.Solution
-  );
-
-  /* Instructions Modal */
-  const [instructionsModalTitle, setInstructionsModalTitle] = useState('');
-  const [instructions, setInstructions] = useState('');
-  const [onSubmitInstructions, setOnSubmitInstructions] = useState<
-    (instruction: string) => Promise<void>
-  >(async () => {});
-  const [instructionsModalOpened, setInstructionsModalOpened] =
-    useDisclosure(false);
-
-  const triggerInstructionsModal = (
-    callback: (instruction: string) => Promise<void>,
-    title?: string
-  ) => {
-    setOnSubmitInstructions(() => callback);
-    setInstructionsModalTitle(title || 'Instructions for generation');
-    setInstructionsModalOpened.open();
-  };
-
-  const instructionsModal = (
-    <Modal
-      title={<span className="font-bold">{instructionsModalTitle}</span>}
-      opened={instructionsModalOpened}
-      onClose={() => {
-        setInstructionsModalOpened.close();
-        setInstructions('');
-      }}
-    >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          onSubmitInstructions(instructions);
-          setInstructionsModalOpened.close();
-        }}
-      >
-        <Textarea
-          label="Instructions (optional)"
-          value={instructions}
-          onChange={(e) => setInstructions(e.target.value)}
-        />
-        <Button type="submit" mt="md">
-          Generate
-        </Button>
-      </form>
-    </Modal>
-  );
-
-  /* Personas */
-  const [personaContext, setPersonaContext] = useState(
-    'Tech salesperson responsible for finding leads and making sales at in-person events.'
-  );
-  const [generatingPersonaNodes, setGeneratingPersonaNodes] = useState(false);
-  const [generatingPersonaDimensions, setGeneratingPersonaDimensions] =
-    useState(false);
-
-  /* Problems */
-  const [problemContext, setProblemContext] = useState(
-    'Tech salesperson struggles to find qualified leads at crowded conferences.'
-  );
-  const [generatingProblemNodes, setGeneratingProblemNodes] = useState(false);
-  const [generatingProblemDimensions, setGeneratingProblemDimensions] =
-    useState(false);
-
-  /* Solutions */
-  const [solutionContext, setSolutionContext] = useState(
-    'Solutions for tech conferences organizers to improve networking experience.'
-  );
-  const [generatingSolutionNodes, setGeneratingSolutionNodes] = useState(false);
-  const [generatingSolutionDimensions, setGeneratingSolutionDimensions] =
-    useState(false);
-
-  /* Storyboard */
-  const [storyboardContext, setStoryboardContext] =
-    useState(`Problem: Tech salesperson struggles to find qualified leads at crowded conferences.
-
-Solution: Solutions for tech conferences organizers to improve networking experience.
-Organizers create an event engagement app that encourages people to register to connect at in-person events.
-
-Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for the app. Makes meaningful connections leading to sales.`);
-  const [generatingStoryboardDimensions, setGeneratingStoryboardDimensions] =
-    useState(false);
-  const [generatingStoryboardNodes, setGeneratingStoryboardNodes] =
-    useState(false);
 
   const [currentlySelecting, setCurrentlySelecting] = useState(false);
   const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
@@ -227,6 +94,24 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
   const [generatingFeedback, setGeneratingFeedback] = useState(false);
 
   const [feedbackDrawerOpened, setFeedbackDrawerOpened] = useState(false);
+  const [showGenerationModal, setShowGenerationModal] = useState(false);
+
+  const [showDependentGenerationModal, setShowDependentGenerationModal] =
+    useState(false);
+  const [nodeToGenerate, setNodeToGenerate] = useState<
+    'problem' | 'solution' | 'storyboard'
+  >('problem');
+
+  const updateCenterPosition = useCallback(() => {
+    const centerPosition = screenToFlowPosition({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2
+    });
+    useStore.setState({ centerPosition });
+  }, [screenToFlowPosition]);
+  useEffect(() => {
+    updateCenterPosition();
+  }, [updateCenterPosition]);
 
   return (
     <div className="h-[100vh] w-[100vw]">
@@ -240,9 +125,23 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
         onConnect={onConnect}
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
+        isValidConnection={({ source, target }) => {
+          if (!source || !target) return false;
+
+          const isPersonaToProblem =
+            source.startsWith('persona-') && target.startsWith('problem-');
+          const isProblemToSolution =
+            source.startsWith('problem-') && target.startsWith('solution-');
+          const isToStoryboard =
+            target.startsWith('storyboard-') &&
+            !source.startsWith('storyboard-');
+
+          return isPersonaToProblem || isProblemToSolution || isToStoryboard;
+        }}
         // Viewport
         panOnScroll
-        selectionOnDrag={!cursorNode}
+        selectionOnDrag
+        nodeOrigin={[0.5, 0.5]}
         panOnDrag={false}
         selectionMode={SelectionMode.Partial}
         snapToGrid={true}
@@ -253,16 +152,6 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
         }}
         minZoom={0.1}
         proOptions={{ hideAttribution: true }}
-        // Click and drop nodes
-        onPaneClick={placeCursorNode}
-        onNodeClick={placeCursorNode}
-        onMouseMove={(event) => {
-          // Get cursor position directly for performance
-          const position = updateRfCursorPosition(event);
-
-          if (!cursorNode) return;
-          updateCursorNodePosition(position);
-        }}
         // Selection menu logic
         onSelectionStart={() => {
           setCurrentlySelecting(true);
@@ -271,339 +160,22 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
           setCurrentlySelecting(false);
         }}
         // Track viewport
-        onMoveEnd={() => {
-          const centerPosition = screenToFlowPosition({
-            x: window.innerWidth / 2,
-            y: window.innerHeight / 2
-          });
-          useStore.setState({ centerPosition });
-        }}
+        onMoveEnd={updateCenterPosition}
       >
-        <Panel position="top-left" className="w-[500px] max-h-[90vh]">
-          <div className="border border-slate-500 bg-white rounded-lg p-0.5">
-            <div className="flex justify-between items-center px-4 py-2">
-              {' '}
-              <h3 className="font-bold text-md">StoryEnsemble</h3>
-              <Switch
-                size="sm"
-                checked={globalShowImage}
-                onChange={(event) => {
-                  setGlobalShowImage(event.currentTarget.checked);
-                }}
-                onLabel={<ImageIcon className="w-3 h-3" />}
-                offLabel={<ImageOff className="w-3 h-3" />}
-              />
-            </div>
-            <Accordion>
-              <Accordion.Item value="personas">
-                <Accordion.Control>
-                  <h3 className="font-bold text-sm">Personas</h3>
-                </Accordion.Control>
-                <Accordion.Panel>
-                  <div className="flex flex-col gap-6 py-2">
-                    <Textarea
-                      label="Persona context"
-                      autosize={true}
-                      minRows={2}
-                      maxRows={4}
-                      value={personaContext}
-                      onChange={(event) =>
-                        setPersonaContext(event.currentTarget.value)
-                      }
-                    />
-                    <Button.Group>
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        loading={generatingPersonaDimensions}
-                        onClick={async () => {
-                          if (generatingPersonaDimensions) return;
-
-                          setGeneratingPersonaDimensions(true);
-                          await generatePersonaDimensions(personaContext);
-                          setGeneratingPersonaDimensions(false);
-                        }}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Persona dimensions
-                      </Button>
-                      {personaDimensions.length > 0 && (
-                        <Button
-                          className="w-full"
-                          variant="outline"
-                          loading={generatingPersonaNodes}
-                          onClick={async () => {
-                            if (generatingPersonaNodes) return;
-
-                            setGeneratingPersonaNodes(true);
-                            await generatePersonaNodes(personaContext);
-                            setGeneratingPersonaNodes(false);
-                          }}
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Personas
-                        </Button>
-                      )}
-                    </Button.Group>
-                    <ScrollArea.Autosize mah={400}>
-                      <div className="flex flex-col gap-4">
-                        {personaDimensions.map((dimension) => (
-                          <MultiSelect
-                            key={dimension.id}
-                            label={dimension.name}
-                            description={dimension.description}
-                            placeholder="Pin dimension"
-                            data={dimension.values}
-                            value={dimension.currentValues}
-                            onChange={(value) =>
-                              pinPersonaDimension(dimension.id, value)
-                            }
-                            withCheckIcon={true}
-                            checkIconPosition="right"
-                          />
-                        ))}
-                      </div>
-                    </ScrollArea.Autosize>
-                  </div>
-                </Accordion.Panel>
-              </Accordion.Item>
-              <Accordion.Item value="problems">
-                <Accordion.Control>
-                  <span className="font-bold text-sm">Problems</span>
-                </Accordion.Control>
-                <Accordion.Panel>
-                  <div className="flex flex-col gap-6 py-2">
-                    <Textarea
-                      label="Problem context"
-                      autosize={true}
-                      minRows={2}
-                      maxRows={4}
-                      value={problemContext}
-                      onChange={(event) =>
-                        setProblemContext(event.currentTarget.value)
-                      }
-                    />
-                    <Button.Group>
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        loading={generatingProblemDimensions}
-                        onClick={async () => {
-                          if (generatingProblemDimensions) return;
-
-                          setGeneratingProblemDimensions(true);
-                          await generateProblemDimensions(problemContext);
-                          setGeneratingProblemDimensions(false);
-                        }}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Problem dimensions
-                      </Button>
-                      {problemDimensions.length > 0 && (
-                        <Button
-                          className="w-full"
-                          variant="outline"
-                          loading={generatingProblemNodes}
-                          onClick={async () => {
-                            if (generatingProblemNodes) return;
-
-                            setGeneratingProblemNodes(true);
-                            await generateProblemNodes(personaContext, []);
-                            setGeneratingProblemNodes(false);
-                          }}
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Problems
-                        </Button>
-                      )}
-                    </Button.Group>
-                    <ScrollArea.Autosize mah={400}>
-                      <div className="flex flex-col gap-4">
-                        {problemDimensions.map((dimension) => (
-                          <MultiSelect
-                            key={dimension.id}
-                            label={dimension.name}
-                            description={dimension.description}
-                            placeholder="Pin dimension"
-                            data={dimension.values}
-                            value={dimension.currentValues}
-                            onChange={(value) =>
-                              pinProblemDimension(dimension.id, value)
-                            }
-                            withCheckIcon={true}
-                            checkIconPosition="right"
-                          />
-                        ))}
-                      </div>
-                    </ScrollArea.Autosize>
-                  </div>
-                </Accordion.Panel>
-              </Accordion.Item>
-              <Accordion.Item value="solutions">
-                <Accordion.Control>
-                  <span className="font-bold text-sm">Solutions</span>
-                </Accordion.Control>
-                <Accordion.Panel>
-                  <div className="flex flex-col gap-6 py-2">
-                    <Textarea
-                      label="Solution context"
-                      autosize={true}
-                      minRows={2}
-                      maxRows={4}
-                      value={solutionContext}
-                      onChange={(event) =>
-                        setSolutionContext(event.currentTarget.value)
-                      }
-                    />
-                    <Button.Group>
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        loading={generatingSolutionDimensions}
-                        onClick={async () => {
-                          if (generatingSolutionDimensions) return;
-
-                          setGeneratingSolutionDimensions(true);
-                          await generateSolutionDimensions(solutionContext);
-                          setGeneratingSolutionDimensions(false);
-                        }}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Solution dimensions
-                      </Button>
-                      {solutionDimensions.length > 0 && (
-                        <Button
-                          className="w-full"
-                          variant="outline"
-                          loading={generatingSolutionNodes}
-                          onClick={async () => {
-                            if (generatingSolutionNodes) return;
-
-                            setGeneratingSolutionNodes(true);
-                            await generateSolutionNodes(solutionContext, []);
-                            setGeneratingSolutionNodes(false);
-                          }}
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Solutions
-                        </Button>
-                      )}
-                    </Button.Group>
-                    <ScrollArea.Autosize mah={400}>
-                      <div className="flex flex-col gap-4">
-                        {solutionDimensions.map((dimension) => (
-                          <MultiSelect
-                            key={dimension.id}
-                            label={dimension.name}
-                            description={dimension.description}
-                            placeholder="Pin dimension"
-                            data={dimension.values}
-                            value={dimension.currentValues}
-                            onChange={(value) =>
-                              pinSolutionDimension(dimension.id, value)
-                            }
-                            withCheckIcon={true}
-                            checkIconPosition="right"
-                          />
-                        ))}
-                      </div>
-                    </ScrollArea.Autosize>
-                  </div>
-                </Accordion.Panel>
-              </Accordion.Item>
-              <Accordion.Item value="storyboards" className="border-none">
-                <Accordion.Control>
-                  <span className="font-bold text-sm">Storyboards</span>
-                </Accordion.Control>
-                <Accordion.Panel>
-                  <div className="flex flex-col gap-6 py-2">
-                    <Textarea
-                      label="Storyboard context"
-                      autosize={true}
-                      minRows={2}
-                      maxRows={4}
-                      value={storyboardContext}
-                      onChange={(event) =>
-                        setStoryboardContext(event.currentTarget.value)
-                      }
-                    />
-                    <Button.Group>
-                      <Button
-                        className="w-full"
-                        variant="outline"
-                        loading={generatingStoryboardDimensions}
-                        onClick={async () => {
-                          if (generatingStoryboardDimensions) return;
-
-                          triggerInstructionsModal(
-                            async (instructions: string) => {
-                              setGeneratingStoryboardDimensions(true);
-                              await generateStoryboardDimensions(
-                                personaContext + instructions
-                              );
-                              setGeneratingStoryboardDimensions(false);
-                            },
-                            'Instructions for storyboard dimension generation'
-                          );
-                        }}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Storyboard dimensions
-                      </Button>
-                      <Button
-                        className="w-full"
-                        variant="outline"
-                        loading={generatingStoryboardNodes}
-                        onClick={async () => {
-                          if (generatingStoryboardNodes) return;
-
-                          triggerInstructionsModal(
-                            async (instructions: string) => {
-                              setGeneratingStoryboardNodes(true);
-                              await generateStoryboardNode(
-                                storyboardContext + instructions,
-                                [],
-                                [],
-                                []
-                              );
-                              setGeneratingStoryboardNodes(false);
-                            },
-                            'Instructions for storyboard generation'
-                          );
-                        }}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Generate storyboards
-                      </Button>
-                    </Button.Group>
-                    <ScrollArea.Autosize mah={400}>
-                      <div className="flex flex-col gap-4">
-                        {storyboardDimensions.map((dimension) => (
-                          <MultiSelect
-                            key={dimension.id}
-                            label={dimension.name}
-                            description={dimension.description}
-                            placeholder="Pin dimension"
-                            data={dimension.values}
-                            value={dimension.currentValues}
-                            onChange={(value) =>
-                              pinStoryboardDimension(dimension.id, value)
-                            }
-                            withCheckIcon={true}
-                            checkIconPosition="right"
-                          />
-                        ))}
-                        {storyboardDimensions.length === 0 && (
-                          <p className="text-sm">
-                            No storyboard dimensions generated.
-                          </p>
-                        )}
-                      </div>
-                    </ScrollArea.Autosize>
-                  </div>
-                </Accordion.Panel>
-              </Accordion.Item>
-            </Accordion>
+        <Panel position="top-left">
+          <div className="flex gap-4 items-center">
+            <Button onClick={() => setShowGenerationModal(true)}>
+              Start brainstorming
+            </Button>
+            <Switch
+              size="sm"
+              checked={globalShowImage}
+              onChange={(event) => {
+                setGlobalShowImage(event.currentTarget.checked);
+              }}
+              onLabel={<ImageIcon className="w-3 h-3" />}
+              offLabel={<ImageOff className="w-3 h-3" />}
+            />
           </div>
         </Panel>
         <Panel position="top-right">
@@ -611,7 +183,7 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
             View feedback
           </Button>
         </Panel>
-        <Controls />
+        <Controls position="bottom-right" />
         <MiniMap
           pannable
           zoomable
@@ -629,55 +201,21 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
           nodeStrokeWidth={20}
         />
         <Background variant={BackgroundVariant.Dots} />
-        {instructionsModal}
         {showSelectionTooltip && (
           <SelectionToolbar
             selectedNodes={selectedNodes}
-            onMergePersonas={() =>
-              triggerInstructionsModal(async (instruction) => {
-                await mergePersonaNodes(
-                  selectedPersonaNodes,
-                  personaContext + instruction
-                );
-              })
-            }
-            onGenerateProblems={() =>
-              triggerInstructionsModal(async (instruction) => {
-                const personaContext = selectedPersonaNodes
-                  .map((node) => node.data.content)
-                  .join('\n');
-
-                const context = `${personaContext}\n\n${problemContext}\n\n${instruction}`;
-
-                await generateProblemNodes(
-                  context,
-                  selectedPersonaNodes.map((node) => node.id)
-                );
-              }, `Instructions for problem generation (${selectedPersonaNodes.length} personas selected)`)
-            }
-            onGenerateSolutions={() =>
-              triggerInstructionsModal(async (instruction) => {
-                const problemContext = selectedProblemNodes
-                  .map((node) => node.data.content)
-                  .join('\n');
-
-                const context = `${problemContext}\n\n${solutionContext}\n\n${instruction}`;
-
-                await generateSolutionNodes(
-                  context,
-                  selectedProblemNodes.map((node) => node.id)
-                );
-              }, `Instructions for solution generation (${selectedProblemNodes.length} problems selected)`)
-            }
+            onMergePersonas={() => {}}
+            onGenerateProblems={() => {
+              setNodeToGenerate('problem');
+              setShowDependentGenerationModal(true);
+            }}
+            onGenerateSolutions={() => {
+              setNodeToGenerate('solution');
+              setShowDependentGenerationModal(true);
+            }}
             onGenerateStoryboard={() => {
-              triggerInstructionsModal(async (instruction) => {
-                await generateStoryboardNode(
-                  instruction,
-                  selectedPersonaNodes.map((node) => node.id),
-                  selectedProblemNodes.map((node) => node.id),
-                  selectedSolutionNodes.map((node) => node.id)
-                );
-              }, `Instructions for storyboard generation`);
+              setNodeToGenerate('storyboard');
+              setShowDependentGenerationModal(true);
             }}
             onDuplicate={() => {
               copy();
@@ -686,6 +224,15 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
           />
         )}
       </ReactFlow>
+      <GenerationModal
+        opened={showGenerationModal}
+        onClose={() => setShowGenerationModal(false)}
+      />
+      <DependentGenerationModal
+        opened={showDependentGenerationModal}
+        onClose={() => setShowDependentGenerationModal(false)}
+        nodeToGenerate={nodeToGenerate}
+      />
       <Drawer
         opened={feedbackDrawerOpened}
         onClose={() => setFeedbackDrawerOpened(false)}
@@ -766,70 +313,5 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
         </ScrollArea.Autosize>
       </Drawer>
     </div>
-  );
-}
-
-function countNodes(nodeIds: string[]) {
-  const numPersonaNodes = nodeIds.filter((id) =>
-    id.startsWith('persona-')
-  ).length;
-  const numProblemNodes = nodeIds.filter((id) =>
-    id.startsWith('problem-')
-  ).length;
-  const numSolutionNodes = nodeIds.filter((id) =>
-    id.startsWith('solution-')
-  ).length;
-  const numStoryboardNodes = nodeIds.filter((id) =>
-    id.startsWith('storyboard-')
-  ).length;
-
-  return {
-    numPersonaNodes,
-    numProblemNodes,
-    numSolutionNodes,
-    numStoryboardNodes
-  };
-}
-
-function NodeCountDisplayer({ nodeIds }: { nodeIds: string[] }) {
-  const {
-    numPersonaNodes,
-    numProblemNodes,
-    numSolutionNodes,
-    numStoryboardNodes
-  } = countNodes(nodeIds);
-
-  return (
-    <Breadcrumbs
-      separator="•"
-      styles={{
-        root: {
-          rowGap: '10px',
-          flexWrap: 'wrap'
-        }
-      }}
-    >
-      {numPersonaNodes > 0 && (
-        <p className="whitespace-nowrap">
-          👤 <b>{numPersonaNodes}</b> {pluralize('Persona', numPersonaNodes)}
-        </p>
-      )}
-      {numProblemNodes > 0 && (
-        <p className="whitespace-nowrap">
-          🚨 <b>{numProblemNodes}</b> {pluralize('Problem', numProblemNodes)}
-        </p>
-      )}
-      {numSolutionNodes > 0 && (
-        <p className="whitespace-nowrap">
-          💡 <b>{numSolutionNodes}</b> {pluralize('Solution', numSolutionNodes)}
-        </p>
-      )}
-      {numStoryboardNodes > 0 && (
-        <p className="whitespace-nowrap">
-          🎞 <b>{numStoryboardNodes}</b>{' '}
-          {pluralize('Storyboard', numStoryboardNodes)}
-        </p>
-      )}
-    </Breadcrumbs>
   );
 }
