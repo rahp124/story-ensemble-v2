@@ -42,11 +42,14 @@ const frameOutlineSchema = z.object({
     z.literal('resolution')
   ]),
   description: z.string(),
-  imagePrompt: z.string(),
-  imageNegativePrompt: z.string(),
   caption: z.string()
 });
 export type FrameOutline = z.infer<typeof frameOutlineSchema>;
+
+export const frameImagePromptSchema = z.object({
+  prompt: z.string(),
+  negativePrompt: z.string()
+});
 
 export const storyboardOutlineSchema = z.object({
   title: z.string(),
@@ -59,6 +62,10 @@ export type StoryboardNodeData = NodeData & {
     title: string;
     outline: (FrameOutline & {
       image?: string;
+      imageOutOfSync?: boolean;
     })[];
+
+    numberOfFrames: number;
+    artStyle: string;
   };
 };

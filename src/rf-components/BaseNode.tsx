@@ -1,4 +1,5 @@
 import NotificationDot from '@/components/NotificationDot';
+import { RefreshImageIcon } from '@/components/RefreshImageIcon';
 import SourceHandle from '@/components/SourceHandle';
 import TargetHandle from '@/components/TargetHandle';
 import { useStore } from '@/store';
@@ -23,19 +24,10 @@ import {
   ImageOff,
   Info,
   TagsIcon,
-  BellIcon
+  MessageCircleQuestion
 } from 'lucide-react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { NodeProps, NodeResizer, useReactFlow } from 'reactflow';
-
-function RefreshImageIcon() {
-  return (
-    <span className="w-5 h-5 relative">
-      <RefreshCw className="w-5 h-5" />
-      <ImageIcon className="w-2.5 h-2.5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-    </span>
-  );
-}
 
 export interface BaseNodeProps {
   nodeProps: NodeProps<NodeData>;
@@ -56,11 +48,6 @@ export interface BaseNodeProps {
   sourceHandle: boolean;
 }
 export default function BaseNode(props: BaseNodeProps) {
-  const [content, setContent] = useState(props.content);
-  useEffect(() => {
-    setContent(props.content);
-  }, [props.content]);
-
   const { nodeProps } = props;
   const {
     dimensions,
@@ -136,10 +123,10 @@ export default function BaseNode(props: BaseNodeProps) {
         <>
           <textarea
             className={`block w-full resize-none p-2 text-md flex-grow ${props.textAreaBackgroundClass}`}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onBlur={() => {
-              if (content !== props.content) props.onUpdateContent(content);
+            defaultValue={props.content}
+            onBlur={(e) => {
+              if (e.currentTarget.value !== props.content)
+                props.onUpdateContent(e.currentTarget.value);
             }}
             onFocus={() =>
               fitView({
@@ -197,7 +184,7 @@ export default function BaseNode(props: BaseNodeProps) {
                 }
               }}
             >
-              <BellIcon className="w-5 h-5" />
+              <MessageCircleQuestion className="w-5 h-5" />
               {feedback && feedbackOutOfSync && <NotificationDot />}
             </ActionIcon>
             <Tooltip label="Regenerate illustrative image">
@@ -303,7 +290,7 @@ export default function BaseNode(props: BaseNodeProps) {
         }}
       >
         <div className="px-4 pb-4">
-          <p className="">{content}</p>
+          <p className="">{props.content}</p>
         </div>
         <p className="px-4 pb-1">
           <b>💬 Feedback</b>

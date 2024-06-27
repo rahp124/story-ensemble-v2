@@ -21,6 +21,7 @@ import {
 } from 'reactflow';
 import {
   generateStoryboardDimensions,
+  generateStoryboardImagePrompts,
   generateStoryboardOutline
 } from './api/storyboards';
 import { generateImage } from './api/stableDiffusion';
@@ -142,7 +143,7 @@ type RFState = {
     solutionIds: string[]
   ) => Promise<string[]>;
   regenerateStoryboardNode: (id: string) => Promise<void>;
-  generateStoryboardImages: (id: string) => Promise<void>;
+  generateStoryboardImages: (id: string) => Promise<Promise<number>[]>;
 
   pastStates: Partial<RFState>[];
   futureStates: Partial<RFState>[];
@@ -595,8 +596,6 @@ const createStore: StateCreator<RFState> = (set, get) => ({
                 }
               : get().centerPosition;
 
-          console.log(persona, position);
-
           const node: Node<NodeData> = {
             id: `problem-${nanoid()}`,
             type: NodeType.Problem,
@@ -1005,7 +1004,11 @@ const createStore: StateCreator<RFState> = (set, get) => ({
       position,
       data: {
         content: '',
-        storyboard: storyboardData,
+        storyboard: {
+          ...storyboardData,
+          numberOfFrames: storyboardData.outline.length,
+          artStyle: 'TODO'
+        },
         dimensions: dimensionPermutation
       }
     };
@@ -1030,8 +1033,6 @@ const createStore: StateCreator<RFState> = (set, get) => ({
   regenerateStoryboardNode: async (id) => {
     const storyboardNode = get().nodes.find((node) => node.id === id);
     if (!storyboardNode) return;
-
-    get().updateNode(id, { data: { regenerating: true } });
 
     const personaIds = get()
       .edges.filter(
@@ -1077,7 +1078,6 @@ const createStore: StateCreator<RFState> = (set, get) => ({
       fullContext
     );
 
-    get().updateNode(id, { data: { regenerating: false } });
     get().takeSnapshot();
     get().updateNode(id, {
       data: {
@@ -1089,29 +1089,37 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     await get().generateStoryboardImages(id);
   },
 
-  generateStoryboardImages: async (id) => {
-    const outline: FrameOutline[] = get().nodes.find((node) => node.id === id)
-      ?.data.storyboard.outline;
-    if (!outline) return;
+  async generateStoryboardImages(id) {
+    const outline: FrameOutline[] =
+      get().nodes.find((node) => node.id === id)?.data.storyboard.outline || [];
+    if (outline.length === 0) return [];
 
-    get().updateNode(id, { data: { regeneratingImage: true } });
-
-    const images = await Promise.all(
-      outline.map(async (frame) => {
-        const image = await generateImage({
-          prompt: frame.imagePrompt,
-          negativePrompt: frame.imageNegativePrompt
-        });
-        return {
-          ...frame,
-          image
-        };
-      })
+    const imagePrompts = await generateStoryboardImagePrompts(
+      get().storyboardDimensions,
+      outline
     );
 
-    get().updateNode(id, { data: { regeneratingImage: false } });
-    get().takeSnapshot();
-    get().updateNode(id, { data: { storyboard: { outline: images } } });
+    return imagePrompts.map(async (prompt, idx) => {
+      const image = await generateImage(prompt);
+
+      get().takeSnapshot();
+      get().updateNode(id, {
+        data: {
+          storyboard: {
+            outline: outline.map((frame, frameIdx) => {
+              if (frameIdx !== idx) return frame;
+              return {
+                ...frame,
+                image,
+                imageOutOfSync: false
+              };
+            })
+          }
+        }
+      });
+
+      return idx;
+    });
   },
 
   pastStates: [],
