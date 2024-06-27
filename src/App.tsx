@@ -125,6 +125,19 @@ export default function App() {
         onConnect={onConnect}
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
+        isValidConnection={({ source, target }) => {
+          if (!source || !target) return false;
+
+          const isPersonaToProblem =
+            source.startsWith('persona-') && target.startsWith('problem-');
+          const isProblemToSolution =
+            source.startsWith('problem-') && target.startsWith('solution-');
+          const isToStoryboard =
+            target.startsWith('storyboard-') &&
+            !source.startsWith('storyboard-');
+
+          return isPersonaToProblem || isProblemToSolution || isToStoryboard;
+        }}
         // Viewport
         panOnScroll
         selectionOnDrag
