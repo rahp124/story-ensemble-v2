@@ -387,19 +387,31 @@ const createStore: StateCreator<RFState> = (set, get) => ({
   generatePersonaNodes: async (context: string) => {
     const dimensionPermutations = generateRandomAssignments(
       get().personaDimensions,
-      3
+      1
     );
+
+    const width = 300;
+    const height = 300;
+    const gap = 50;
+    const numNodes = dimensionPermutations.length;
+
+    const center = get().centerPosition;
+    const startX =
+      center.x - (width * numNodes + (numNodes - 1) * gap) / 2 + width / 2;
+    const startY = center.y;
 
     const ids = await Promise.all(
       dimensionPermutations.map(async (permutation, idx) => {
         const node: Node<NodeData> = {
           id: `persona-${nanoid()}`,
           type: NodeType.Persona,
-          position: { x: 100 + idx * 350, y: 200 },
+          height,
+          width,
           style: {
-            width: 300,
-            height: 300
+            height,
+            width
           },
+          position: { x: startX + idx * (width + gap), y: startY },
           data: {
             content: await generatePersona(permutation, context),
             dimensions: permutation
@@ -551,59 +563,73 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     });
   },
   generateProblemNodes: async (context: string, personaIds: string[]) => {
-    if (get().problemDimensions.length === 0) {
-      await get().generateProblemDimensions(context);
+    if (personaIds.length === 0) {
+      personaIds = await get().generatePersonaNodes(context);
     }
     const dimensionPermutations = generateRandomAssignments(
       get().problemDimensions,
-      5
+      personaIds.length
     );
 
-    if (personaIds.length === 0) {
-      personaIds = [(await get().generatePersonaNodes(context))[0]];
-    }
-    const personaContext = get()
-      .nodes.filter(
-        (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
+    const [height, width, gap] = [300, 300, 100];
+
+    const ids = (
+      await Promise.all(
+        dimensionPermutations.flatMap(async (permutation, idx) => {
+          const persona: Node<NodeData> | undefined = get().nodes.find(
+            (node) =>
+              node.id === personaIds[idx] && node.type === NodeType.Persona
+          );
+          if (!persona) return;
+
+          const content = await generateProblem(
+            permutation,
+            context + persona.data.content
+          );
+
+          const position =
+            persona.height !== undefined && persona.height !== null
+              ? {
+                  x: persona.position.x,
+                  y: persona.position.y + persona.height / 2 + height / 2 + gap
+                }
+              : get().centerPosition;
+
+          console.log(persona, position);
+
+          const node: Node<NodeData> = {
+            id: `problem-${nanoid()}`,
+            type: NodeType.Problem,
+            height,
+            width,
+            style: {
+              height,
+              width
+            },
+            position,
+            data: {
+              content,
+              dimensions: permutation
+            }
+          };
+          const edge = {
+            id: `edge-${nanoid()}`,
+            source: persona.id,
+            target: node.id
+          };
+
+          get().takeSnapshot();
+          set({
+            nodes: [...get().nodes, node],
+            edges: [...get().edges, edge]
+          });
+
+          get().generateProblemImage(node.id);
+
+          return node.id;
+        })
       )
-      .map((node) => node.data.content)
-      .join('\n');
-
-    const ids = await Promise.all(
-      dimensionPermutations.map(async (permutation, idx) => {
-        const node: Node<NodeData> = {
-          id: `problem-${nanoid()}`,
-          type: NodeType.Problem,
-          position: { x: 100 + idx * 350, y: 600 },
-          style: {
-            width: 300,
-            height: 300
-          },
-          data: {
-            content: await generateProblem(
-              permutation,
-              context + personaContext
-            ),
-            dimensions: permutation
-          }
-        };
-        const edges = personaIds.map((personaId) => ({
-          id: `edge-${nanoid()}`,
-          source: personaId,
-          target: node.id
-        }));
-
-        get().takeSnapshot();
-        set({
-          nodes: [...get().nodes, node],
-          edges: [...get().edges, ...edges]
-        });
-
-        get().generateProblemImage(node.id);
-
-        return node.id;
-      })
-    );
+    ).filter((id) => id !== undefined);
 
     return ids;
   },
@@ -727,60 +753,72 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     });
   },
   generateSolutionNodes: async (context, problemIds) => {
-    if (get().solutionDimensions.length === 0) {
-      await get().generateSolutionDimensions(context);
+    if (problemIds.length === 0) {
+      problemIds = await get().generateProblemNodes(context, []);
     }
     const dimensionPermutations = generateRandomAssignments(
       get().solutionDimensions,
-      5
+      problemIds.length
     );
 
-    if (problemIds.length === 0) {
-      problemIds = [(await get().generateProblemNodes(context, []))[0]];
-    }
-    const problemContext = get()
-      .nodes.filter(
-        (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
+    const [height, width, gap] = [300, 300, 100];
+
+    const ids = (
+      await Promise.all(
+        dimensionPermutations.map(async (permutation, idx) => {
+          const problem: Node<NodeData> | undefined = get().nodes.find(
+            (node) =>
+              node.id === problemIds[idx] && node.type === NodeType.Problem
+          );
+          if (!problem) return;
+
+          const content = await generateSolution(
+            permutation,
+            context + problem.data.content
+          );
+
+          const position =
+            problem.height !== undefined && problem.height !== null
+              ? {
+                  x: problem.position.x,
+                  y: problem.position.y + problem.height / 2 + height / 2 + gap
+                }
+              : get().centerPosition;
+
+          const node: Node<NodeData> = {
+            id: `solution-${nanoid()}`,
+            type: NodeType.Solution,
+            height,
+            width,
+            style: {
+              height,
+              width
+            },
+            position,
+            data: {
+              content,
+              dimensions: permutation
+            }
+          };
+
+          const edge = {
+            id: `edge-${nanoid()}`,
+            source: problem.id,
+            target: node.id
+          };
+
+          get().takeSnapshot();
+          set({
+            nodes: [...get().nodes, node],
+            edges: [...get().edges, edge]
+          });
+
+          get().generateSolutionImage(node.id);
+
+          return node.id;
+        })
       )
-      .map((node) => node.data.content)
-      .join('\n');
-
-    const ids = await Promise.all(
-      dimensionPermutations.map(async (permutation, idx) => {
-        const node: Node<NodeData> = {
-          id: `solution-${nanoid()}`,
-          type: NodeType.Solution,
-          position: { x: 100 + idx * 350, y: 1000 },
-          style: {
-            width: 300,
-            height: 300
-          },
-          data: {
-            content: await generateSolution(
-              permutation,
-              context + problemContext
-            ),
-            dimensions: permutation
-          }
-        };
-
-        const edges = problemIds.map((problemId) => ({
-          id: `edge-${nanoid()}`,
-          source: problemId,
-          target: node.id
-        }));
-
-        get().takeSnapshot();
-        set({
-          nodes: [...get().nodes, node],
-          edges: [...get().edges, ...edges]
-        });
-
-        get().generateSolutionImage(node.id);
-
-        return node.id;
-      })
-    );
+    ).filter((id) => id !== undefined);
 
     return ids;
   },
@@ -907,21 +945,41 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     problemIds: string[],
     solutionIds: string[]
   ) => {
-    const personas = get()
-      .nodes.filter(
-        (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
-      )
-      .map((node) => node.data.content)
-      .join('\n');
-    const problems = get()
-      .nodes.filter(
-        (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
-      )
-      .map((node) => node.data.content)
-      .join('\n');
-    const solutions = get().nodes.filter(
+    const personaNodes = get().nodes.filter(
+      (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
+    );
+    const personas = personaNodes.map((node) => node.data.content).join('\n');
+
+    const problemNodes = get().nodes.filter(
+      (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
+    );
+    const problems = problemNodes.map((node) => node.data.content).join('\n');
+
+    const solutionNodes = get().nodes.filter(
       (node) => node.type === NodeType.Solution && solutionIds.includes(node.id)
     );
+    const solutions = solutionNodes.map((node) => node.data.content).join('\n');
+
+    const dependencyNodes = [
+      ...personaNodes,
+      ...problemNodes,
+      ...solutionNodes
+    ];
+    const dependencyBottomBoundary = Math.max(
+      ...dependencyNodes.map((node) => node.position.y + node.height! / 2)
+    );
+    const dependencyLeftBoundary = Math.min(
+      ...dependencyNodes.map((node) => node.position.x - node.width! / 2)
+    );
+    const dependencyRightBoundary = Math.max(
+      ...dependencyNodes.map((node) => node.position.x + node.width! / 2)
+    );
+
+    const [height, width, gap] = [600, 1200, 100];
+    const position = {
+      x: (dependencyRightBoundary + dependencyLeftBoundary) / 2,
+      y: dependencyBottomBoundary + gap + height / 2
+    };
 
     const dimensionPermutation = generateRandomAssignments(
       get().storyboardDimensions,
@@ -938,11 +996,13 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     const node: Node<StoryboardNodeData> = {
       id: `storyboard-${nanoid()}`,
       type: NodeType.Storyboard,
-      position: { x: 100, y: 1000 },
+      height,
+      width,
       style: {
         width: 1200,
         height: 600
       },
+      position,
       data: {
         content: '',
         storyboard: storyboardData,
@@ -1187,7 +1247,9 @@ const createStore: StateCreator<RFState> = (set, get) => ({
 
       if (sourceGroupId && targetGroupId) {
         if (sourceGroupId !== targetGroupId) {
-          nodeIdToGroupId[target] = sourceGroupId;
+          for (const nodeId of targetNodeIds) {
+            nodeIdToGroupId[nodeId] = sourceGroupId;
+          }
 
           groupIdToNodeIds[sourceGroupId] = new Set([
             ...sourceNodeIds,

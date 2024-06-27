@@ -11,7 +11,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { NodeType, edgeTypes, nodeTypes } from './rf-components';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import pluralize from 'pluralize';
 import SelectionToolbar from './components/SelectionToolbar';
 
@@ -230,6 +230,17 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
   const [feedbackDrawerOpened, setFeedbackDrawerOpened] = useState(false);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
 
+  const updateCenterPosition = useCallback(() => {
+    const centerPosition = screenToFlowPosition({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2
+    });
+    useStore.setState({ centerPosition });
+  }, [screenToFlowPosition]);
+  useEffect(() => {
+    updateCenterPosition();
+  }, [updateCenterPosition]);
+
   return (
     <div className="h-[100vh] w-[100vw]">
       <ReactFlow
@@ -244,6 +255,7 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
         onConnectEnd={onConnectEnd}
         // Viewport
         panOnScroll
+        nodeOrigin={[0.5, 0.5]}
         selectionOnDrag={!cursorNode}
         panOnDrag={false}
         selectionMode={SelectionMode.Partial}
@@ -273,13 +285,7 @@ Storyboard Outline: Salesperson is overwhelmed by the conference. Registers for 
           setCurrentlySelecting(false);
         }}
         // Track viewport
-        onMoveEnd={() => {
-          const centerPosition = screenToFlowPosition({
-            x: window.innerWidth / 2,
-            y: window.innerHeight / 2
-          });
-          useStore.setState({ centerPosition });
-        }}
+        onMoveEnd={updateCenterPosition}
       >
         <Panel position="top-left">
           <Button onClick={() => setShowGenerationModal(true)}>

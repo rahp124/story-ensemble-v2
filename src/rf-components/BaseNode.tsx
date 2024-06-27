@@ -112,7 +112,7 @@ export default function BaseNode(props: BaseNodeProps) {
         return <Skeleton className="h-full w-full" />;
       } else {
         return (
-          <div className="relative">
+          <div className="relative size-full">
             <Tooltip
               variant=""
               label="Illustrative image to visualize the node"

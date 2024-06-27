@@ -13,6 +13,7 @@ import {
 } from '@mantine/core';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { useReactFlow } from 'reactflow';
 import { useShallow } from 'zustand/react/shallow';
 
 export interface GenerationModalProps {
@@ -67,6 +68,7 @@ export function GenerationModal(props: GenerationModalProps) {
       selectNodes: state.selectNodes
     }))
   );
+  const { fitView } = useReactFlow();
 
   const [designPrompt, setDesignPrompt] = useState('');
   const [finalStep, setFinalStep] = useState<
@@ -154,6 +156,9 @@ export function GenerationModal(props: GenerationModalProps) {
 
     setGenerating(false);
 
+    fitView({
+      nodes: generatedNodeIds.map((id) => ({ id }))
+    });
     selectNodes(generatedNodeIds);
     props.onClose();
   };
