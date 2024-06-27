@@ -26,7 +26,7 @@ import {
   BellIcon
 } from 'lucide-react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
-import { NodeProps, NodeResizer } from 'reactflow';
+import { NodeProps, NodeResizer, useReactFlow } from 'reactflow';
 
 function RefreshImageIcon() {
   return (
@@ -87,6 +87,7 @@ export default function BaseNode(props: BaseNodeProps) {
   const [nodeDimensions, setNodeDimensions] = useState(initialNodeDimensions);
 
   const { globalShowImage } = useStore();
+  const { fitView } = useReactFlow();
 
   useEffect(() => {
     setNodeDimensions(initialNodeDimensions);
@@ -140,6 +141,13 @@ export default function BaseNode(props: BaseNodeProps) {
             onBlur={() => {
               if (content !== props.content) props.onUpdateContent(content);
             }}
+            onFocus={() =>
+              fitView({
+                nodes: [{ id: nodeProps.id }],
+                duration: 1000,
+                padding: 0.5
+              })
+            }
           />
         </>
       );
