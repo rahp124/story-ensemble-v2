@@ -35,9 +35,11 @@ export interface BaseNodeProps {
   nodeName: ReactNode;
   nodeBackgroundClass: string;
   textAreaBackgroundClass: string;
+
   content: string;
   onUpdateContent: (content: string) => void;
   onRegenerateContent: () => void;
+
   onRegenerateImage: () => void;
   onUpdateDimensions: (dimensions: Dimension[]) => void;
   onGenerateFeedback: () => void;
@@ -59,6 +61,12 @@ export default function BaseNode(props: BaseNodeProps) {
     feedbackOutOfSync,
     generatingFeedback
   } = nodeProps.data;
+
+  const [content, setContent] = useState(props.content);
+  useEffect(() => {
+    setContent(props.content);
+  }, [props.content]);
+
   const [showImage, setShowImage] = useState(false);
 
   const [modalOpened, { open, close }] = useDisclosure(false);
@@ -122,11 +130,13 @@ export default function BaseNode(props: BaseNodeProps) {
       return (
         <>
           <textarea
-            className={`block w-full resize-none p-2 text-md flex-grow ${props.textAreaBackgroundClass}`}
-            defaultValue={props.content}
-            onBlur={(e) => {
-              if (e.currentTarget.value !== props.content)
-                props.onUpdateContent(e.currentTarget.value);
+            className={`block w-full resize-none p-2 text-md flex-grow ${props.textAreaBackgroundClass} nodrag`}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onBlur={() => {
+              if (content !== props.content) {
+                props.onUpdateContent(content);
+              }
             }}
             onFocus={() =>
               fitView({
@@ -162,7 +172,7 @@ export default function BaseNode(props: BaseNodeProps) {
       >
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-bold text-sm">{props.nodeName}</h3>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center nodrag">
             <Switch
               size="sm"
               checked={showImage}

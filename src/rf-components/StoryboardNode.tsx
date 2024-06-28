@@ -20,13 +20,32 @@ import {
   RefreshCw,
   Settings
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 
 export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [showImage, setShowImage] = useState(false);
 
   const { outOfSync, storyboard } = props.data;
+
+  const [title, setTitle] = useState(storyboard.title);
+  useEffect(() => {
+    setTitle(storyboard.title);
+  }, [storyboard.title]);
+
+  const [descriptions, setDescriptions] = useState<string[]>(
+    storyboard.outline.map((frame) => frame.description)
+  );
+  useEffect(() => {
+    setDescriptions(storyboard.outline.map((frame) => frame.description));
+  }, [storyboard.outline]);
+
+  const [captions, setCaptions] = useState<string[]>(
+    storyboard.outline.map((frame) => frame.caption)
+  );
+  useEffect(() => {
+    setCaptions(storyboard.outline.map((frame) => frame.caption));
+  }, [storyboard.outline]);
 
   const [loadingMap, setLoadingMap] = useState<boolean[]>(
     Array(storyboard.outline.length).fill(false)
@@ -41,13 +60,17 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     regenerateStoryboardNode,
     updateNode,
     generateStoryboardImages
-  } = useStore();
+  } = useStore((state) => ({
+    globalShowImage: state.globalShowImage,
+    regenerateStoryboardNode: state.regenerateStoryboardNode,
+    updateNode: state.updateNode,
+    generateStoryboardImages: state.generateStoryboardImages
+  }));
 
   function handleTitleChange(nodeId: string, title: string) {
     updateNode(nodeId, {
       data: {
         storyboard: {
-          ...storyboard,
           title,
           outline: storyboard.outline.map((frame) => ({
             ...frame,
@@ -66,7 +89,6 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     updateNode(nodeId, {
       data: {
         storyboard: {
-          ...storyboard,
           outline: storyboard.outline.map((frame, idx) =>
             idx === frameIdx
               ? {
@@ -89,7 +111,6 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     updateNode(nodeId, {
       data: {
         storyboard: {
-          ...storyboard,
           outline: storyboard.outline.map((frame, idx) =>
             idx === frameIdx
               ? {
@@ -123,7 +144,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
           <p className="font-bold text-sm">
             <span className="mr-1">🎞</span> Storyboard
           </p>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center nodrag">
             <Switch
               size="sm"
               checked={showImage}
@@ -183,7 +204,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 loading={loading}
                 onClick={async () => {
                   setLoadingMap(Array(storyboard.outline.length).fill(true));
-                  regenerateStoryboardNode(props.id);
+                  await regenerateStoryboardNode(props.id);
                   setLoadingMap(Array(storyboard.outline.length).fill(false));
                 }}
               >
@@ -196,10 +217,14 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
         <div className="mb-4">
           <Input
             placeholder="Storyboard Title"
-            defaultValue={storyboard.title}
-            onBlur={(e) => {
-              if (e.currentTarget.value !== storyboard.title)
-                handleTitleChange(props.id, e.currentTarget.value);
+            className="nodrag"
+            disabled={loading}
+            value={title}
+            onChange={(e) => setTitle(e.currentTarget.value)}
+            onBlur={() => {
+              if (title !== storyboard.title) {
+                handleTitleChange(props.id, title);
+              }
             }}
             size="lg"
             styles={{
@@ -236,15 +261,24 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                     </>
                   ) : (
                     <textarea
-                      className="block size-full resize-none p-2 text-md flex-grow outline-none"
+                      className="block size-full resize-none p-2 text-md flex-grow outline-none nodrag"
                       disabled={loading}
-                      defaultValue={frame.description}
-                      onBlur={(e) => {
-                        handleDescriptionChange(
-                          props.id,
-                          frameIdx,
-                          e.target.value
+                      value={descriptions[frameIdx]}
+                      onChange={(e) => {
+                        setDescriptions(
+                          descriptions.map((d, i) =>
+                            i === frameIdx ? e.target.value : d
+                          )
                         );
+                      }}
+                      onBlur={() => {
+                        if (descriptions[frameIdx] !== frame.description) {
+                          handleDescriptionChange(
+                            props.id,
+                            frameIdx,
+                            descriptions[frameIdx]
+                          );
+                        }
                       }}
                     />
                   )}
@@ -252,11 +286,21 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               </div>
 
               <Textarea
+                className="nodrag"
                 autosize
                 disabled={loading}
-                defaultValue={frame.caption}
-                onBlur={(e) => {
-                  handleCaptionChange(props.id, frameIdx, e.target.value);
+                value={captions[frameIdx]}
+                onChange={(e) => {
+                  setCaptions(
+                    captions.map((c, i) =>
+                      i === frameIdx ? e.target.value : c
+                    )
+                  );
+                }}
+                onBlur={() => {
+                  if (captions[frameIdx] !== frame.caption) {
+                    handleCaptionChange(props.id, frameIdx, captions[frameIdx]);
+                  }
                 }}
               />
             </div>
