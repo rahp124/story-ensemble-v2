@@ -136,6 +136,8 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
   } = nodeToMapGenerationMap[props.nodeToGenerate];
 
   const handleGenerate = async () => {
+    if (generating) return;
+
     setGenerating(true);
     const generatedNodeIds = await generateFunc();
     setGenerating(false);

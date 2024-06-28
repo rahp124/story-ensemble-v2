@@ -124,6 +124,7 @@ export function GenerationModal(props: GenerationModalProps) {
   ];
 
   const handleGenerate = async () => {
+    if (generating) return;
     setGenerating(true);
 
     const generatedNodeIds: string[] = [];
