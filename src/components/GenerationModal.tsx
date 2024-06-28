@@ -249,15 +249,18 @@ export function GenerationModal(props: GenerationModalProps) {
     >
       <div className="relative">
         <LoadingOverlay visible={generating} />
-        <div className="mb-8">
-          <h2 className="text-md font-bold mb-2">Selected input nodes:</h2>
-          <NodeCountDisplayer nodeIds={dependentNodes.map(({ id }) => id)} />
-        </div>
+        {dependentNodeToGenerate && (
+          <div className="mb-8">
+            <h2 className="text-md font-bold mb-2">Selected input nodes:</h2>
+            <NodeCountDisplayer nodeIds={dependentNodes.map(({ id }) => id)} />
+          </div>
+        )}
         <div className="mb-8">
           <h2 className="text-lg font-bold mb-2">Design Prompt</h2>
           <p className="text-sm mb-6">
             Enter a design prompt to start generating ideas and select which
-            type of ideas you want to generate up to.
+            type of ideas you want to generate up to. This prompt will be used
+            to generate ideas and dimensions.
           </p>
           <Textarea
             label="Design prompt"
@@ -288,7 +291,8 @@ export function GenerationModal(props: GenerationModalProps) {
         <div className="mb-4">
           <h2 className="text-lg font-bold mb-2">Dimensions (optional)</h2>
           <p className="text-sm mb-4">
-            Generate and select dimensions to steer idea generation.
+            Generate dimensions based on your design prompt to explore ideas.
+            Selected dimensions will be used to steer the generation of ideas.
           </p>
         </div>
 
