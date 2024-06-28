@@ -27,7 +27,6 @@ import { useShallow } from 'zustand/react/shallow';
 import { useNodeGroups } from './lib/useNodeGroups';
 import { useGroupFeedback } from './lib/useGroupFeedback';
 import { GenerationModal } from './components/GenerationModal';
-import { DependentGenerationModal } from './components/DependentGenerationModal';
 import { NodeCountDisplayer } from './components/NodeCountDisplayer';
 import { ApiKeyModal } from './components/ApiKeyModal';
 
@@ -96,12 +95,9 @@ export default function App() {
 
   const [feedbackDrawerOpened, setFeedbackDrawerOpened] = useState(false);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
-
-  const [showDependentGenerationModal, setShowDependentGenerationModal] =
-    useState(false);
-  const [nodeToGenerate, setNodeToGenerate] = useState<
-    'problem' | 'solution' | 'storyboard'
-  >('problem');
+  const [dependentNodeToGenerate, setDependentNodeToGenerate] = useState<
+    'problem' | 'solution' | 'storyboard' | null
+  >(null);
 
   const updateCenterPosition = useCallback(() => {
     const centerPosition = screenToFlowPosition({
@@ -165,7 +161,12 @@ export default function App() {
       >
         <Panel position="top-left">
           <div className="flex gap-4 items-center">
-            <Button onClick={() => setShowGenerationModal(true)}>
+            <Button
+              onClick={() => {
+                setDependentNodeToGenerate(null);
+                setShowGenerationModal(true);
+              }}
+            >
               Start brainstorming
             </Button>
             <Switch
@@ -207,16 +208,16 @@ export default function App() {
             selectedNodes={selectedNodes}
             onMergePersonas={() => {}}
             onGenerateProblems={() => {
-              setNodeToGenerate('problem');
-              setShowDependentGenerationModal(true);
+              setDependentNodeToGenerate('problem');
+              setShowGenerationModal(true);
             }}
             onGenerateSolutions={() => {
-              setNodeToGenerate('solution');
-              setShowDependentGenerationModal(true);
+              setDependentNodeToGenerate('solution');
+              setShowGenerationModal(true);
             }}
             onGenerateStoryboard={() => {
-              setNodeToGenerate('storyboard');
-              setShowDependentGenerationModal(true);
+              setDependentNodeToGenerate('storyboard');
+              setShowGenerationModal(true);
             }}
             onDuplicate={() => {
               copy();
@@ -228,11 +229,7 @@ export default function App() {
       <GenerationModal
         opened={showGenerationModal}
         onClose={() => setShowGenerationModal(false)}
-      />
-      <DependentGenerationModal
-        opened={showDependentGenerationModal}
-        onClose={() => setShowDependentGenerationModal(false)}
-        nodeToGenerate={nodeToGenerate}
+        dependentNodeToGenerate={dependentNodeToGenerate}
       />
       <Drawer
         opened={feedbackDrawerOpened}
