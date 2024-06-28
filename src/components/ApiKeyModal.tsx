@@ -2,16 +2,67 @@ import {
   getOpenAiKey,
   getStabilityAiKey,
   setOpenAiKey,
-  setStabilityAiKey
+  setStabilityAiKey,
+  validateOpenAiKey,
+  validateStabilityAiKey
 } from '@/lib/envUtils';
 import { Button, Modal, PasswordInput } from '@mantine/core';
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 
 export function ApiKeyModal() {
   const [show, setShow] = useState(!getOpenAiKey() || !getStabilityAiKey());
 
-  const [_openApiKey, _setOpenApiKey] = useState('');
-  const [_stabilityApiKey, _setStabilityApiKey] = useState('');
+  const [_openAiKey, _setOpenAiKey] = useState('');
+  const [openAiError, setOpenAiError] = useState('');
+  const [_stabilityAiKey, _setStabilityAiKey] = useState('');
+  const [stabilityAiError, setStabilityAiError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (submitting) return;
+
+    setSubmitting(true);
+    setOpenAiError('');
+    setStabilityAiError('');
+
+    const errors = await Promise.all([
+      await validateOpenAiKey(_openAiKey).then(({ error }) => {
+        if (error) {
+          setOpenAiError(
+            'Invalid OpenAI API key. Please double check your key.'
+          );
+        }
+        return error;
+      }),
+      await validateStabilityAiKey(_stabilityAiKey).then(
+        (validationResponse) => {
+          if (validationResponse.error === 'INVALID_API_KEY') {
+            setStabilityAiError(
+              'Invalid Stability AI API key. Please double check your key.'
+            );
+          } else if (validationResponse.error === 'INSUFFICIENT_CREDITS') {
+            setStabilityAiError(
+              `Insufficient credits: ${validationResponse.credits}. Please top up your credits and try again.`
+            );
+          }
+
+          return !!validationResponse.error;
+        }
+      )
+    ]);
+
+    const isErrors = errors.some((isError) => isError);
+
+    if (!isErrors) {
+      setOpenAiKey(_openAiKey);
+      setStabilityAiKey(_stabilityAiKey);
+
+      setShow(false);
+    }
+
+    setSubmitting(false);
+  };
 
   return (
     <Modal opened={show} onClose={() => {}} withCloseButton={false}>
@@ -20,29 +71,22 @@ export function ApiKeyModal() {
         Enter your OpenAI API key and Stability AI API key to get started.
       </p>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-
-          setOpenAiKey(_openApiKey);
-          setStabilityAiKey(_stabilityApiKey);
-
-          setShow(false);
-        }}
-      >
+      <form onSubmit={handleSubmit}>
         <PasswordInput
           label="OpenAI API key"
           className="mb-4"
           required
-          value={_openApiKey}
-          onChange={(e) => _setOpenApiKey(e.target.value)}
+          value={_openAiKey}
+          onChange={(e) => _setOpenAiKey(e.target.value)}
+          error={openAiError}
         />
         <PasswordInput
           label="Stability AI API key"
           className="mb-4"
           required
-          value={_stabilityApiKey}
-          onChange={(e) => _setStabilityApiKey(e.target.value)}
+          value={_stabilityAiKey}
+          onChange={(e) => _setStabilityAiKey(e.target.value)}
+          error={stabilityAiError}
         />
         <Button type="submit">Get started</Button>
       </form>
