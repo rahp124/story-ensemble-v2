@@ -38,11 +38,11 @@ export interface BaseNodeProps {
 
   content: string;
   onUpdateContent: (content: string) => void;
-  onRegenerateContent: () => void;
+  onRegenerateContent: () => Promise<void>;
 
-  onRegenerateImage: () => void;
+  onRegenerateImage: () => Promise<void>;
   onUpdateDimensions: (dimensions: Dimension[]) => void;
-  onGenerateFeedback: () => void;
+  onGenerateFeedback: () => Promise<void>;
 
   allDimensions: Dimension[];
 
@@ -54,13 +54,14 @@ export default function BaseNode(props: BaseNodeProps) {
   const {
     dimensions,
     image,
-    regenerating,
-    regeneratingImage,
+    imageOutOfSync,
     outOfSync,
     feedback,
-    feedbackOutOfSync,
-    generatingFeedback
+    feedbackOutOfSync
   } = nodeProps.data;
+
+  const [regenerating, setRegenerating] = useState(false);
+  const [generatingFeedback, setGeneratingFeedback] = useState(false);
 
   const [content, setContent] = useState(props.content);
   useEffect(() => {
@@ -104,7 +105,7 @@ export default function BaseNode(props: BaseNodeProps) {
 
   function cardContent() {
     if (globalShowImage || showImage) {
-      if (regenerating || regeneratingImage || !image) {
+      if (regenerating || !image) {
         return <Skeleton className="h-full w-full" />;
       } else {
         return (
@@ -131,6 +132,7 @@ export default function BaseNode(props: BaseNodeProps) {
         <>
           <textarea
             className={`block w-full resize-none p-2 text-md flex-grow ${props.textAreaBackgroundClass} nodrag`}
+            disabled={regenerating}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onBlur={() => {
@@ -186,11 +188,13 @@ export default function BaseNode(props: BaseNodeProps) {
             <ActionIcon
               variant="subtle"
               size="sm"
-              onClick={() => {
+              onClick={async () => {
                 setFeedbackOpen(!feedbackOpen);
 
                 if ((!feedback || feedbackOutOfSync) && !generatingFeedback) {
-                  props.onGenerateFeedback();
+                  setGeneratingFeedback(true);
+                  await props.onGenerateFeedback();
+                  setGeneratingFeedback(false);
                 }
               }}
             >
@@ -201,12 +205,17 @@ export default function BaseNode(props: BaseNodeProps) {
               <ActionIcon
                 variant="subtle"
                 size="sm"
-                loading={regenerating || regeneratingImage}
-                onClick={() => {
-                  props.onRegenerateImage();
+                loading={regenerating}
+                onClick={async () => {
+                  if (regenerating) return;
+
+                  setRegenerating(true);
+                  await props.onRegenerateImage();
+                  setRegenerating(false);
                 }}
               >
                 <RefreshImageIcon />
+                {imageOutOfSync && <NotificationDot />}
               </ActionIcon>
             </Tooltip>
             <Tooltip
@@ -221,8 +230,12 @@ export default function BaseNode(props: BaseNodeProps) {
                 variant="subtle"
                 size="sm"
                 loading={regenerating}
-                onClick={() => {
-                  props.onRegenerateContent();
+                onClick={async () => {
+                  if (regenerating) return;
+
+                  setRegenerating(true);
+                  await props.onRegenerateContent();
+                  setRegenerating(false);
                 }}
               >
                 <RefreshCw className="w-5 h-5" />

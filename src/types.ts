@@ -22,14 +22,14 @@ export type Dimension = {
 
 export type NodeData = {
   outOfSync?: boolean;
-  regenerating?: boolean;
-  regeneratingImage?: boolean;
+
   dimensions: Dimension[];
-  image?: string;
+
   content: string;
 
-  // Feedback
-  generatingFeedback?: boolean;
+  image?: string;
+  imageOutOfSync?: boolean;
+
   feedbackOutOfSync?: boolean;
   feedback?: string[];
 };
