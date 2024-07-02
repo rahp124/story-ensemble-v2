@@ -98,7 +98,7 @@ type RFState = {
   generatePersonaDimensions: (context: string) => Promise<void>;
   generatePersonaNodes: (context: string) => Promise<string[]>;
   generatePersonaImage: (id: string) => Promise<void>;
-  regeneratePersonaNodes: (ids: string[]) => Promise<void>;
+  regeneratePersonaNode: (id: string, instructions: string) => Promise<void>;
   updatePersonaNode: (id: string, text: string) => Promise<void>;
   mergePersonaNodes: (
     personaNodes: Node<NodeData>[],
@@ -443,20 +443,29 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     get().takeSnapshot();
     get().updateNode(node.id, { data: { image, imageOutOfSync: false } });
   },
-  regeneratePersonaNodes: async (ids: string[]) => {
-    const personaNodes = get().nodes.filter(
-      (node) => node.type === NodeType.Persona && ids.includes(node.id)
+  regeneratePersonaNode: async (id: string, instructions: string) => {
+    const personaNode = get().nodes.find(
+      (node) => node.id === id && node.type === NodeType.Persona
     );
-    if (!personaNodes.length) return;
+    if (!personaNode) return;
 
-    await Promise.all(
-      personaNodes.map(async (node) => {
-        const newPersona = await generatePersona(node.data.dimensions, '');
-        get().updatePersonaNode(node.id, newPersona); // Takes snapshot
+    const context = `Regenerate the existing persona using the following feedback and instructions.
 
-        await get().generatePersonaImage(node.id);
-      })
+Current persona: """
+${personaNode.data.content}
+"""
+
+Instructions/Feedback: """
+${instructions}
+"""`;
+
+    const newPersona = await generatePersona(
+      personaNode.data.dimensions,
+      context
     );
+    get().updatePersonaNode(id, newPersona); // Takes snapshot
+
+    await get().generatePersonaImage(id);
   },
   updatePersonaNode: async (id: string, persona: string) => {
     const personaNode = get().nodes.find((node) => node.id === id);

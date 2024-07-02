@@ -7,7 +7,7 @@ export default function PersonaNode(props: NodeProps<NodeData>) {
   const {
     personaDimensions,
     updatePersonaNode,
-    regeneratePersonaNodes,
+    regeneratePersonaNode,
     generatePersonaImage,
     updateNode,
     generatePersonaFeedback
@@ -26,7 +26,9 @@ export default function PersonaNode(props: NodeProps<NodeData>) {
       content={props.data.content}
       onUpdateContent={(content) => updatePersonaNode(props.id, content)}
       onRegenerateImage={() => generatePersonaImage(props.id)}
-      onRegenerateContent={() => regeneratePersonaNodes([props.id])}
+      onRegenerateContent={async (instructions) =>
+        regeneratePersonaNode(props.id, instructions)
+      }
       onUpdateDimensions={(newDimensions) => {
         updateNode(props.id, {
           data: {
