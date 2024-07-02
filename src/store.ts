@@ -114,7 +114,7 @@ type RFState = {
     personaIds: string[]
   ) => Promise<string[]>;
   generateProblemImage: (id: string) => Promise<void>;
-  regenerateProblemNodes: (ids: string[]) => Promise<void>;
+  regenerateProblemNode: (id: string, instructions: string) => Promise<void>;
   updateProblemNode: (id: string, text: string) => void;
   generateProblemFeedback: (id: string) => Promise<void>;
   // mergeProblemNodes: (ids: string[]) => Promise<void>;
@@ -127,7 +127,7 @@ type RFState = {
     problemIds: string[]
   ) => Promise<string[]>;
   generateSolutionImage: (id: string) => Promise<void>;
-  regenerateSolutionNodes: (ids: string[]) => Promise<void>;
+  regenerateSolutionNode: (id: string, instructions: string) => Promise<void>;
   updateSolutionNode: (id: string, text: string) => void;
   generateSolutionFeedback: (id: string) => Promise<void>;
   // mergeSolutionNodes: (ids: string[]) => Promise<void>;
@@ -648,34 +648,45 @@ ${instructions}
     get().takeSnapshot();
     get().updateNode(id, { data: { image, imageOutOfSync: false } });
   },
-  regenerateProblemNodes: async (ids: string[]) => {
-    const problemNodes = get().nodes.filter(
-      (node) => node.type === NodeType.Problem && ids.includes(node.id)
+  regenerateProblemNode: async (id: string, instructions: string) => {
+    const problemNode = get().nodes.find(
+      (node) => node.id === id && node.type === NodeType.Problem
     );
-    if (!problemNodes.length) return;
+    if (!problemNode) return;
 
-    await Promise.all(
-      problemNodes.map(async (node) => {
-        const personaIds = get()
-          .edges.filter(
-            (edge) =>
-              edge.target === node.id && edge.source.startsWith('persona')
-          )
-          .map((edge) => edge.source);
-        const personas: string[] = get()
-          .nodes.filter(
-            (node) =>
-              personaIds.includes(node.id) && node.type === NodeType.Persona
-          )
-          .map((node) => node.data.content);
-        const context = `Personas: ${personas}`;
+    const personaIds = get()
+      .edges.filter(
+        (edge) => edge.target === id && edge.source.startsWith('persona')
+      )
+      .map((edge) => edge.source);
+    const personas: string[] = get()
+      .nodes.filter(
+        (node) => personaIds.includes(node.id) && node.type === NodeType.Persona
+      )
+      .map((node) => node.data.content);
 
-        const newProblem = await generateProblem(node.data.dimensions, context);
-        get().updateProblemNode(node.id, newProblem); // Takes snapshot
+    const context = `Regenerate the existing persona using the following dependencies, feedback, and instructions.
+    
+Personas (dependencies): """
+${personas.join('\n')}
+"""
 
-        await get().generateProblemImage(node.id);
-      })
+Current problem: """
+${problemNode.data.content}
+"""
+
+Instructions/Feedback: """
+${instructions}
+"""`;
+
+    const newProblem = await generateProblem(
+      problemNode.data.dimensions,
+      context
     );
+    get().updateProblemNode(id, newProblem); // Takes snapshot
+    get().updateNode(id, { data: { outOfSync: false } });
+
+    await get().generateProblemImage(id);
   },
   updateProblemNode: (id: string, problem: string) => {
     const problemNode = get().nodes.find((node) => node.id === id);
@@ -832,39 +843,42 @@ ${instructions}
     get().takeSnapshot();
     get().updateNode(node.id, { data: { image, imageOutOfSync: false } });
   },
-  regenerateSolutionNodes: async (ids) => {
-    const solutionNodes = get().nodes.filter(
-      (node) => node.type === NodeType.Solution && ids.includes(node.id)
+  regenerateSolutionNode: async (id, instructions) => {
+    const node = get().nodes.find(
+      (node) => node.id === id && node.type === NodeType.Solution
     );
-    if (!solutionNodes.length) return;
+    if (!node) return;
 
-    await Promise.all(
-      solutionNodes.map(async (node) => {
-        const problemIds = get()
-          .edges.filter(
-            (edge) =>
-              edge.target === node.id && edge.source.startsWith('problem')
-          )
-          .map((edge) => edge.source);
-        const problems: string[] = get()
-          .nodes.filter(
-            (node) =>
-              problemIds.includes(node.id) && node.type === NodeType.Problem
-          )
-          .map((node) => node.data.content);
-        const context = `Problems: ${problems}`;
+    const problemIds = get()
+      .edges.filter(
+        (edge) => edge.target === node.id && edge.source.startsWith('problem')
+      )
+      .map((edge) => edge.source);
+    const problems: string[] = get()
+      .nodes.filter(
+        (node) => problemIds.includes(node.id) && node.type === NodeType.Problem
+      )
+      .map((node) => node.data.content);
+    const context = `Regenerate the existing persona using the following dependencies, feedback, and instructions.
 
-        const newSolution = await generateSolution(
-          node.data.dimensions,
-          context
-        );
+Problems (dependencies): """
+${problems.join('\n')}
+"""
 
-        get().updateSolutionNode(node.id, newSolution); // Takes snapshot
-        get().updateNode(node.id, { data: { outOfSync: false } });
+Current solution: """
+${node.data.content}
+"""
 
-        await get().generateSolutionImage(node.id);
-      })
-    );
+Instructions/Feedback: """
+${instructions}
+"""`;
+
+    const newSolution = await generateSolution(node.data.dimensions, context);
+
+    get().updateSolutionNode(node.id, newSolution); // Takes snapshot
+    get().updateNode(node.id, { data: { outOfSync: false } });
+
+    await get().generateSolutionImage(node.id);
   },
   updateSolutionNode: (id: string, solution: string) => {
     get().takeSnapshot();

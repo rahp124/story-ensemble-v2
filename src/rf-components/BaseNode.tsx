@@ -241,6 +241,7 @@ export default function BaseNode(props: BaseNodeProps) {
         label="Edit instructions"
         description="Provide instructions for how to update this node, provide feedback, or respond to feedback."
         className="mb-4"
+        required={true}
         value={editInstructions}
         onChange={(e) => setEditInstructions(e.target.value)}
       />
@@ -319,7 +320,7 @@ export default function BaseNode(props: BaseNodeProps) {
       onClick: () => {
         if (outOfSync) {
           setEditInstructions(
-            'Update node taking into account updated dependencies (personas, problems, solutions).'
+            'Update the node taking into account the updated dependencies.'
           );
         }
 
