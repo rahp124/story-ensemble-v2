@@ -17,7 +17,8 @@ import {
   applyEdgeChanges,
   XYPosition,
   OnConnectStart,
-  OnConnectEnd
+  OnConnectEnd,
+  EdgeRemoveChange
 } from 'reactflow';
 import {
   generateStoryboardDimensions,
@@ -220,9 +221,31 @@ const createStore: StateCreator<RFState> = (set, get) => ({
     });
   },
   onEdgesChange: (changes: EdgeChange[]) => {
-    const isRemoveChange = changes.some(({ type }) => type === 'remove');
+    const removeChanges = changes.filter(
+      ({ type }) => type === 'remove'
+    ) as EdgeRemoveChange[];
+    const isRemoveChange = removeChanges.length;
     if (isRemoveChange) {
       get().takeSnapshot();
+
+      const edgesIdsToRemove = removeChanges.map(({ id }) => id);
+      const disconnectedNodeIds = get()
+        .edges.filter((edge) => edgesIdsToRemove.includes(edge.id))
+        .map((edge) => edge.target);
+      set({
+        nodes: get().nodes.map((node) => {
+          if (disconnectedNodeIds.includes(node.id)) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                outOfSync: true
+              }
+            };
+          }
+          return node;
+        })
+      });
     }
 
     set({
