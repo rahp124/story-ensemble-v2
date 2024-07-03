@@ -5,7 +5,8 @@ import ReactFlow, {
   SelectionMode,
   Panel,
   useReactFlow,
-  MiniMap
+  MiniMap,
+  ControlButton
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -14,7 +15,7 @@ import { useCallback, useEffect, useState } from 'react';
 import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
-import { ImageIcon, ImageOff } from 'lucide-react';
+import { ImageIcon, ImageOff, Redo, Trash, Undo } from 'lucide-react';
 import {
   Accordion,
   Button,
@@ -180,12 +181,32 @@ export default function App() {
             />
           </div>
         </Panel>
-        {/* <Panel position="top-right">
+        <Panel position="top-right">
           <Button onClick={() => setFeedbackDrawerOpened(true)}>
             View feedback
           </Button>
-        </Panel> */}
-        <Controls position="bottom-right" />
+        </Panel>
+        <Controls position="bottom-right" showInteractive={false}>
+          <ControlButton onClick={() => undo()}>
+            <Undo />
+          </ControlButton>
+          <ControlButton onClick={() => redo()}>
+            <Redo />
+          </ControlButton>
+          <ControlButton
+            onClick={() => {
+              const confirmation = confirm(
+                'Are you want to reset the canvas? All work will be lost.'
+              );
+              if (confirmation) {
+                useStore.persist.clearStorage();
+                window.location.reload();
+              }
+            }}
+          >
+            <Trash />
+          </ControlButton>
+        </Controls>
         <MiniMap
           pannable
           zoomable

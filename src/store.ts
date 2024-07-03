@@ -508,6 +508,9 @@ ${instructions}
         context
       );
       get().updatePersonaNode(id, newPersona); // Takes snapshot
+      updateNode(id, (draft) => {
+        draft.data.outOfSync = false;
+      });
 
       await get().generatePersonaImage(id);
     },
@@ -1416,11 +1419,32 @@ ${instructions}
           const nodeContent = nodeIds
             .map((nodeId) => nodes.find((node) => node.id === nodeId))
             .filter((node) => node !== undefined)
-            .map((node) => ({
-              id: node.id,
-              type: node.type,
-              content: node.data.content
-            }));
+            .map((node) => {
+              if (node.type === NodeType.Storyboard) {
+                const storyboard: StoryboardNodeData['storyboard'] =
+                  node.data.storyboard;
+                const sanitizedStoryboard = {
+                  title: storyboard.title,
+                  outline: storyboard.outline.map((frame) => ({
+                    frameType: frame.frameType,
+                    description: frame.description,
+                    caption: frame.caption
+                  }))
+                };
+
+                return {
+                  id: node.id,
+                  type: node.type,
+                  content: JSON.stringify(sanitizedStoryboard)
+                };
+              } else {
+                return {
+                  id: node.id,
+                  type: node.type,
+                  content: node.data.content
+                };
+              }
+            });
           const edges = groupIdToEdges[groupId];
 
           const feedbacks = await generateConnectedFeedback(
