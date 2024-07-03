@@ -180,11 +180,11 @@ export default function App() {
             />
           </div>
         </Panel>
-        <Panel position="top-right">
+        {/* <Panel position="top-right">
           <Button onClick={() => setFeedbackDrawerOpened(true)}>
             View feedback
           </Button>
-        </Panel>
+        </Panel> */}
         <Controls position="bottom-right" />
         <MiniMap
           pannable
