@@ -138,9 +138,8 @@ export default function App() {
         }}
         // Viewport
         panOnScroll
-        selectionOnDrag
+        panOnDrag
         nodeOrigin={[0.5, 0.5]}
-        panOnDrag={false}
         selectionMode={SelectionMode.Partial}
         snapToGrid={true}
         defaultViewport={{
