@@ -9,7 +9,7 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
     updateProblemNode,
     regenerateProblemNode,
     generateProblemImage,
-    updateNode,
+    updateNodeDimensions,
     generateProblemFeedback
   } = useStore();
 
@@ -30,12 +30,7 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
       }
       onRegenerateImage={() => generateProblemImage(props.id)}
       onUpdateDimensions={(newDimensions) => {
-        updateNode(props.id, {
-          data: {
-            dimensions: newDimensions,
-            outOfSync: true
-          }
-        });
+        updateNodeDimensions(props.id, newDimensions);
       }}
       onGenerateFeedback={() => generateProblemFeedback(props.id)}
       allDimensions={problemDimensions}

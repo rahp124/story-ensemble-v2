@@ -63,6 +63,19 @@ ${node}
   return feedback;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function generateStoryboardFeedback(storyboard: any) {
+  const prompt = `You are an UX designer given a storyboard.
+Brainstorm questions to evaluate this storyboard being used for design thinking.
+
+Storyboard: """
+${JSON.stringify(storyboard, null, 2)}
+"""`;
+
+  const { feedback } = await generateStructured(feedbackSchema, prompt);
+  return feedback;
+}
+
 const connectedFeedbackSchema = z.object({
   feedbacks: z
     .object({

@@ -32,7 +32,7 @@ import {
   MessageSquareIcon
 } from 'lucide-react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
-import { NodeProps, NodeResizer, useReactFlow } from 'reactflow';
+import { NodeProps, NodeResizer } from 'reactflow';
 
 export interface BaseNodeProps {
   nodeProps: NodeProps<NodeData>;
@@ -93,7 +93,6 @@ export default function BaseNode(props: BaseNodeProps) {
   const [editingNode, setEditingNode] = useState(false);
 
   const { globalShowImage } = useStore();
-  const { fitView } = useReactFlow();
 
   useEffect(() => {
     setNodeDimensions(initialNodeDimensions);
@@ -150,13 +149,6 @@ export default function BaseNode(props: BaseNodeProps) {
                 props.onUpdateContent(content);
               }
             }}
-            onFocus={() =>
-              fitView({
-                nodes: [{ id: nodeProps.id }],
-                duration: 1000,
-                padding: 0.5
-              })
-            }
           />
         </>
       );
@@ -211,6 +203,7 @@ export default function BaseNode(props: BaseNodeProps) {
     setEditInstructions('');
     setEditFeedback(null);
 
+    setModalOpen(false);
     setEditingNode(false);
   };
 
@@ -293,11 +286,11 @@ export default function BaseNode(props: BaseNodeProps) {
       icon: <RefreshImageIcon />,
       notification: imageOutOfSync,
       loading: regenerating,
-      onClick: () => {
+      onClick: async () => {
         if (regenerating) return;
 
         setRegenerating(true);
-        props.onRegenerateImage();
+        await props.onRegenerateImage();
         setRegenerating(false);
       }
     },
