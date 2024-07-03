@@ -1,7 +1,6 @@
 import { StateCreator, create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import * as indexDbKv from 'idb-keyval';
-import mergeWith from 'lodash/mergeWith';
 import { immer } from 'zustand/middleware/immer';
 
 import {
@@ -69,7 +68,6 @@ type RFState = {
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
-  updateNode: (id: string, data: Partial<Node>) => void;
   selectNodes: (ids: string[]) => void;
 
   centerPosition: XYPosition;
@@ -315,24 +313,6 @@ const createStore: StateCreator<
           }
           return node;
         })
-      });
-    },
-    updateNode: (id: string, data: Partial<Node>) => {
-      set((state) => {
-        const index = state.nodes.findIndex((node) => node.id === id);
-        if (index === -1) return;
-
-        mergeWith(state.nodes[index], data, (objValue, srcValue, key, obj) => {
-          // Allow setting an undefined value
-          if (objValue !== srcValue && typeof srcValue === 'undefined') {
-            obj[key] = srcValue;
-          }
-          // Allow setting an empty array
-          if (Array.isArray(srcValue)) {
-            obj[key] = srcValue;
-            obj[key].length = srcValue.length;
-          }
-        });
       });
     },
     selectNodes: (ids: string[]) => {
