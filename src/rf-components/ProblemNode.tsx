@@ -7,9 +7,9 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
   const {
     problemDimensions,
     updateProblemNode,
-    regenerateProblemNodes,
+    regenerateProblemNode,
     generateProblemImage,
-    updateNode,
+    updateNodeDimensions,
     generateProblemFeedback
   } = useStore();
 
@@ -25,15 +25,12 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
       textAreaBackgroundClass="bg-red-50"
       content={props.data.content}
       onUpdateContent={(content) => updateProblemNode(props.id, content)}
-      onRegenerateContent={() => regenerateProblemNodes([props.id])}
+      onRegenerateContent={(instructions) =>
+        regenerateProblemNode(props.id, instructions)
+      }
       onRegenerateImage={() => generateProblemImage(props.id)}
       onUpdateDimensions={(newDimensions) => {
-        updateNode(props.id, {
-          data: {
-            dimensions: newDimensions,
-            outOfSync: true
-          }
-        });
+        updateNodeDimensions(props.id, newDimensions);
       }}
       onGenerateFeedback={() => generateProblemFeedback(props.id)}
       allDimensions={problemDimensions}

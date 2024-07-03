@@ -6,46 +6,53 @@ import { StoryboardNodeData } from '@/types';
 import {
   ActionIcon,
   AspectRatio,
+  Button,
   Card,
+  Collapse,
   Input,
+  InputLabel,
+  Loader,
+  LoadingOverlay,
+  Modal,
+  MultiSelect,
   Skeleton,
   Switch,
+  Table,
+  Tabs,
   Textarea,
   Tooltip
 } from '@mantine/core';
 import {
+  ChevronDown,
   ImageIcon,
   ImageOff,
-  MessageCircleQuestion,
-  RefreshCw,
-  Settings
+  MessageSquareIcon,
+  MessageSquareShare,
+  Pencil,
+  X
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 
 export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [showImage, setShowImage] = useState(false);
 
-  const { outOfSync, storyboard } = props.data;
+  const { outOfSync, storyboard, feedback, feedbackOutOfSync, dimensions } =
+    props.data;
 
   const [title, setTitle] = useState(storyboard.title);
-  useEffect(() => {
-    setTitle(storyboard.title);
-  }, [storyboard.title]);
-
   const [descriptions, setDescriptions] = useState<string[]>(
     storyboard.outline.map((frame) => frame.description)
   );
-  useEffect(() => {
-    setDescriptions(storyboard.outline.map((frame) => frame.description));
-  }, [storyboard.outline]);
-
   const [captions, setCaptions] = useState<string[]>(
     storyboard.outline.map((frame) => frame.caption)
   );
+
   useEffect(() => {
+    setTitle(storyboard.title);
+    setDescriptions(storyboard.outline.map((frame) => frame.description));
     setCaptions(storyboard.outline.map((frame) => frame.caption));
-  }, [storyboard.outline]);
+  }, [storyboard.title, storyboard.outline]);
 
   const [loadingMap, setLoadingMap] = useState<boolean[]>(
     Array(storyboard.outline.length).fill(false)
@@ -58,72 +65,258 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const {
     globalShowImage,
     regenerateStoryboardNode,
-    updateNode,
-    generateStoryboardImages
+    updateNodeDimensions,
+    generateStoryboardImages,
+    storyboardDimensions,
+    generateStoryboardFeedback,
+    updateStoryboardTitle,
+    updateStoryboardDescription,
+    updateStoryboardCaption
   } = useStore((state) => ({
     globalShowImage: state.globalShowImage,
     regenerateStoryboardNode: state.regenerateStoryboardNode,
-    updateNode: state.updateNode,
-    generateStoryboardImages: state.generateStoryboardImages
+    updateNodeDimensions: state.updateNodeDimensions,
+    generateStoryboardImages: state.generateStoryboardImages,
+    storyboardDimensions: state.storyboardDimensions,
+    generateStoryboardFeedback: state.generateStoryboardFeedback,
+    updateStoryboardTitle: state.updateStoryboardTitle,
+    updateStoryboardDescription: state.updateStoryboardDescription,
+    updateStoryboardCaption: state.updateStoryboardCaption
   }));
 
-  function handleTitleChange(nodeId: string, title: string) {
-    updateNode(nodeId, {
-      data: {
-        storyboard: {
-          title,
-          outline: storyboard.outline.map((frame) => ({
-            ...frame,
-            imageOutOfSync: true
-          }))
-        }
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string | null>('feedback');
+  const [generatingFeedback, setGeneratingFeedback] = useState(false);
+
+  const initialNodeDimensions = useMemo(
+    () =>
+      storyboardDimensions.map((dimension) => {
+        const pinnedDimension = dimensions.find((d) => d.id === dimension.id);
+        return pinnedDimension ? pinnedDimension : dimension;
+      }),
+    [dimensions, storyboardDimensions]
+  );
+  const [nodeDimensions, setNodeDimensions] = useState(initialNodeDimensions);
+  const [editInstructions, setEditInstructions] = useState('');
+  const [editFeedback, setEditFeedback] = useState<string | null>(null);
+  const [dimensionsOpen, setDimensionsOpen] = useState(false);
+  const [editingNode, setEditingNode] = useState(false);
+
+  useEffect(() => {
+    setNodeDimensions(initialNodeDimensions);
+  }, [initialNodeDimensions]);
+
+  const handleNodeDimensionChange = (dimensionId: string, values: string[]) => {
+    const newDimensions = nodeDimensions.map((dimension) => {
+      if (dimension.id === dimensionId) {
+        return {
+          ...dimension,
+          currentValues: values
+        };
       }
+      return dimension;
     });
+
+    setNodeDimensions(newDimensions);
+  };
+
+  const handleEditSubmit = async () => {
+    if (editingNode) return;
+
+    setEditingNode(true);
+
+    updateNodeDimensions(props.id, nodeDimensions);
+
+    const instructions = editFeedback
+      ? `Feedback: ${editFeedback}\nResponse: ${editInstructions}`
+      : editInstructions;
+
+    await regenerateStoryboardNode(props.id, instructions);
+
+    setEditInstructions('');
+    setEditFeedback(null);
+
+    setModalOpen(false);
+    setEditingNode(false);
+  };
+
+  const editForm = (
+    <form
+      className="pt-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleEditSubmit();
+      }}
+    >
+      {editFeedback && (
+        <div className="mb-4 flex justify-between items-center gap-4">
+          <div>
+            <InputLabel>Feedback to incorporate</InputLabel>
+            <p className="italic text-md">{editFeedback}</p>
+          </div>
+          <ActionIcon
+            variant="subtle"
+            color="red"
+            onClick={() => setEditFeedback(null)}
+          >
+            <X />
+          </ActionIcon>
+        </div>
+      )}
+      <Textarea
+        label="Edit instructions"
+        description="Provide instructions for how to update this node, provide feedback, or respond to feedback."
+        className="mb-4"
+        required={true}
+        value={editInstructions}
+        onChange={(e) => setEditInstructions(e.target.value)}
+      />
+
+      <div className="mb-4">
+        <Button
+          fullWidth
+          variant="subtle"
+          rightSection={<ChevronDown />}
+          onClick={() => {
+            setDimensionsOpen(!dimensionsOpen);
+          }}
+        >
+          Dimensions
+        </Button>
+        <Collapse in={dimensionsOpen}>
+          {nodeDimensions.map((dimension) => (
+            <MultiSelect
+              key={dimension.id}
+              label={dimension.name}
+              data={dimension.values}
+              value={dimension.currentValues}
+              onChange={(value) =>
+                handleNodeDimensionChange(dimension.id, value)
+              }
+              withCheckIcon={true}
+              checkIconPosition="right"
+            />
+          ))}
+        </Collapse>
+      </div>
+
+      <Button type="submit">Edit</Button>
+    </form>
+  );
+
+  const feedbackTable = (
+    <Table>
+      <Table.Tbody>
+        {generatingFeedback ? (
+          <div className="px-4 pb-4 flex justify-center">
+            <Loader className="m-4" />
+          </div>
+        ) : (
+          feedback?.map((idea, idx) => (
+            <Table.Tr key={idx}>
+              <Table.Td>{idea}</Table.Td>
+
+              <Table.Td>
+                <Tooltip label="Incorporate feedback">
+                  <ActionIcon
+                    variant="subtle"
+                    size="sm"
+                    onClick={() => {
+                      setEditFeedback(idea);
+                      setActiveTab('edit');
+                    }}
+                  >
+                    <MessageSquareShare />
+                  </ActionIcon>
+                </Tooltip>
+              </Table.Td>
+            </Table.Tr>
+          ))
+        )}
+      </Table.Tbody>
+    </Table>
+  );
+
+  async function generateFeedbackIfNeeded() {
+    if ((!feedback || feedbackOutOfSync) && !generatingFeedback) {
+      setGeneratingFeedback(true);
+      await generateStoryboardFeedback(props.id);
+      setGeneratingFeedback(false);
+    }
   }
 
-  function handleDescriptionChange(
-    nodeId: string,
-    frameIdx: number,
-    description: string
-  ) {
-    updateNode(nodeId, {
-      data: {
-        storyboard: {
-          outline: storyboard.outline.map((frame, idx) =>
-            idx === frameIdx
-              ? {
-                  ...frame,
-                  description,
-                  imageOutOfSync: true
-                }
-              : frame
-          )
-        }
-      }
-    });
-  }
+  const icons = [
+    {
+      key: 'regenerate',
+      tooltip: 'Regenerate images',
+      icon: <RefreshImageIcon />,
+      notification: imagesOutOfSync,
+      loading,
+      onClick: async () => {
+        setLoadingMap(Array(storyboard.outline.length).fill(true));
 
-  function handleCaptionChange(
-    nodeId: string,
-    frameIdx: number,
-    caption: string
-  ) {
-    updateNode(nodeId, {
-      data: {
-        storyboard: {
-          outline: storyboard.outline.map((frame, idx) =>
-            idx === frameIdx
-              ? {
-                  ...frame,
-                  caption,
-                  imageOutOfSync: true
-                }
-              : frame
-          )
-        }
+        generateStoryboardImages(props.id).then((imagePromises) => {
+          imagePromises.forEach((imagePromise) => {
+            imagePromise.then((idx) => {
+              setLoadingMap(
+                loadingMap.map((regenerating, i) =>
+                  i === idx ? false : regenerating
+                )
+              );
+            });
+          });
+        });
       }
-    });
-  }
+    },
+    {
+      key: 'feedback',
+      tooltip: 'Feedback',
+      icon: <MessageSquareIcon />,
+      notification: !feedback || feedbackOutOfSync,
+      onClick: () => {
+        setActiveTab('feedback');
+        setModalOpen(true);
+        generateFeedbackIfNeeded();
+      }
+    },
+    {
+      key: 'edit',
+      tooltip: outOfSync ? 'Dependencies updated. Update node' : 'Edit',
+      icon: <Pencil />,
+      notification: outOfSync,
+      onClick: () => {
+        if (outOfSync) {
+          setEditInstructions(
+            'Update the node taking into account the updated dependencies.'
+          );
+        }
+
+        setActiveTab('edit');
+        setModalOpen(true);
+      }
+    }
+  ].map(({ key, tooltip, icon, notification, loading, onClick }) => {
+    const iconElement = (
+      <ActionIcon
+        key={key}
+        variant="subtle"
+        size="sm"
+        loading={loading}
+        onClick={onClick}
+      >
+        {icon}
+        {notification && <NotificationDot />}
+      </ActionIcon>
+    );
+
+    return tooltip ? (
+      <Tooltip key={key} label={tooltip}>
+        {iconElement}
+      </Tooltip>
+    ) : (
+      iconElement
+    );
+  });
 
   return (
     <>
@@ -152,66 +345,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               onLabel={<ImageIcon className="w-3 h-3" />}
               offLabel={<ImageOff className="w-3 h-3" />}
             />
-            <ActionIcon
-              variant="subtle"
-              size="sm"
-              onClick={() => {
-                alert('Not implemented yet');
-              }}
-            >
-              <Settings className="w-5 h-5" />
-            </ActionIcon>
-            <ActionIcon
-              variant="subtle"
-              size="sm"
-              loading={loading}
-              onClick={() => {
-                alert('Not implemented yet');
-              }}
-            >
-              <MessageCircleQuestion className="w-5 h-5" />
-              {/* {feedback && feedbackOutOfSync && <NotificationDot />} */}
-            </ActionIcon>
-            <Tooltip label="Regenerate images">
-              <ActionIcon
-                variant="subtle"
-                size="sm"
-                loading={loading}
-                onClick={async () => {
-                  setLoadingMap(Array(storyboard.outline.length).fill(true));
-
-                  generateStoryboardImages(props.id).then((imagePromises) => {
-                    imagePromises.forEach((imagePromise) => {
-                      imagePromise.then((idx) => {
-                        setLoadingMap(
-                          loadingMap.map((regenerating, i) =>
-                            i === idx ? false : regenerating
-                          )
-                        );
-                      });
-                    });
-                  });
-                }}
-              >
-                <RefreshImageIcon />
-                {imagesOutOfSync && <NotificationDot />}
-              </ActionIcon>
-            </Tooltip>
-            <Tooltip label="Regenerate">
-              <ActionIcon
-                variant="subtle"
-                size="sm"
-                loading={loading}
-                onClick={async () => {
-                  setLoadingMap(Array(storyboard.outline.length).fill(true));
-                  await regenerateStoryboardNode(props.id);
-                  setLoadingMap(Array(storyboard.outline.length).fill(false));
-                }}
-              >
-                <RefreshCw />
-                {outOfSync && <NotificationDot />}
-              </ActionIcon>
-            </Tooltip>
+            {icons}
           </div>
         </div>
         <div className="mb-4">
@@ -223,7 +357,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
             onChange={(e) => setTitle(e.currentTarget.value)}
             onBlur={() => {
               if (title !== storyboard.title) {
-                handleTitleChange(props.id, title);
+                updateStoryboardTitle(props.id, title);
               }
             }}
             size="lg"
@@ -273,7 +407,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                       }}
                       onBlur={() => {
                         if (descriptions[frameIdx] !== frame.description) {
-                          handleDescriptionChange(
+                          updateStoryboardDescription(
                             props.id,
                             frameIdx,
                             descriptions[frameIdx]
@@ -299,7 +433,11 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 }}
                 onBlur={() => {
                   if (captions[frameIdx] !== frame.caption) {
-                    handleCaptionChange(props.id, frameIdx, captions[frameIdx]);
+                    updateStoryboardCaption(
+                      props.id,
+                      frameIdx,
+                      captions[frameIdx]
+                    );
                   }
                 }}
               />
@@ -308,6 +446,44 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
         </div>
       </Card>
       <TargetHandle />
+      <Modal
+        title={<b>Node content</b>}
+        size="lg"
+        opened={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+        }}
+      >
+        <Tabs
+          value={activeTab}
+          onChange={(value) => {
+            setActiveTab(value);
+            if (value === 'feedback') {
+              generateFeedbackIfNeeded();
+            }
+          }}
+        >
+          <Tabs.List>
+            <Tabs.Tab value="feedback">
+              Feedback
+              {(!feedback || feedbackOutOfSync) && <NotificationDot />}
+            </Tabs.Tab>
+            <Tabs.Tab value="edit">Edit</Tabs.Tab>
+          </Tabs.List>
+
+          <Tabs.Panel value="feedback">
+            {generatingFeedback ? (
+              <div className="p-4 flex justify-center">
+                <Loader />
+              </div>
+            ) : (
+              feedbackTable
+            )}
+          </Tabs.Panel>
+          <Tabs.Panel value="edit">{editForm}</Tabs.Panel>
+        </Tabs>
+        <LoadingOverlay visible={editingNode} />
+      </Modal>
     </>
   );
 }

@@ -7,9 +7,9 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
   const {
     solutionDimensions,
     updateSolutionNode,
-    regenerateSolutionNodes,
+    regenerateSolutionNode,
     generateSolutionImage,
-    updateNode,
+    updateNodeDimensions,
     generateSolutionFeedback
   } = useStore();
 
@@ -25,15 +25,12 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
       textAreaBackgroundClass="bg-blue-50"
       content={props.data.content}
       onUpdateContent={(content) => updateSolutionNode(props.id, content)}
-      onRegenerateContent={() => regenerateSolutionNodes([props.id])}
+      onRegenerateContent={(instructions) =>
+        regenerateSolutionNode(props.id, instructions)
+      }
       onRegenerateImage={() => generateSolutionImage(props.id)}
       onUpdateDimensions={(newDimensions) => {
-        updateNode(props.id, {
-          data: {
-            dimensions: newDimensions,
-            outOfSync: true
-          }
-        });
+        updateNodeDimensions(props.id, newDimensions);
       }}
       onGenerateFeedback={() => generateSolutionFeedback(props.id)}
       allDimensions={solutionDimensions}
