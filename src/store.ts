@@ -429,7 +429,7 @@ const createStore: StateCreator<
     generatePersonaNodes: async (context: string) => {
       const dimensionPermutations = generateRandomAssignments(
         get().personaDimensions,
-        1
+        5
       );
 
       const width = 300;
@@ -628,7 +628,8 @@ ${instructions}
 
       const ids = (
         await Promise.all(
-          dimensionPermutations.flatMap(async (permutation, idx) => {
+          dimensionPermutations.map(async (permutation, idx) => {
+            console.log({ idx });
             const persona: Node<NodeData> | undefined = get().nodes.find(
               (node) =>
                 node.id === personaIds[idx] && node.type === NodeType.Persona

@@ -80,7 +80,7 @@ export function GenerationModal(props: GenerationModalProps) {
   const [designPrompt, setDesignPrompt] = useState('');
   const [finalStep, setFinalStep] = useState<
     'Persona' | 'Problem' | 'Solution' | 'Storyboard'
-  >('Storyboard');
+  >('Persona');
 
   const generatingPersonaDimension = useState(false);
   const generatingProblemDimension = useState(false);
@@ -193,14 +193,6 @@ export function GenerationModal(props: GenerationModalProps) {
         }
       }
     } else {
-      if (dependentNodeToGenerate === 'problem') {
-        const problemIds = await generateProblemNodes(
-          designPrompt,
-          selectedPersonaNodes.map(({ id }) => id)
-        );
-        nodesToFocus.push(...problemIds);
-      }
-
       const generatedNodeIds =
         dependentNodeToGenerate === 'problem'
           ? await generateProblemNodes(
