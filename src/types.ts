@@ -1,29 +1,7 @@
 import { z } from 'zod';
 
-export const newDimensionsSchema = z.object({
-  newDimensions: z
-    .object({
-      name: z.string(),
-      description: z.string(),
-      values: z
-        .array(z.string())
-        .refine((items) => new Set(items).size === items.length)
-    })
-    .array()
-});
-
-export type Dimension = {
-  id: string;
-  name: string;
-  description: string;
-  values: string[];
-  currentValues: string[];
-};
-
 export type NodeData = {
   outOfSync?: boolean;
-
-  dimensions: Dimension[];
 
   content: string;
 

@@ -21,18 +21,16 @@ import {
   EdgeRemoveChange
 } from 'reactflow';
 import {
-  generateStoryboardDimensions,
   generateStoryboardImagePrompts,
   generateStoryboardOutline
 } from './api/storyboards';
 import { generateImage } from './api/stableDiffusion';
-import { generateSolution, generateSolutionDimensions } from './api/solutions';
-import { Dimension, FrameOutline, NodeData, StoryboardNodeData } from './types';
-import { generateRandomAssignments } from './lib';
+import { generateSolutions, regenerateSolutions } from './api/solutions';
+import { FrameOutline, NodeData, StoryboardNodeData } from './types';
 import { generatePersonas, regeneratePersonas } from './api/personas';
 import { nanoid } from 'nanoid';
 import { NodeType } from './rf-components';
-import { generateProblem, generateProblemDimensions } from './api/problems';
+import { generateProblems, regenerateProblems } from './api/problems';
 import { generateIllustrativeImage } from './api/images';
 import debounce from 'lodash/debounce';
 import { cloneDeep } from 'lodash';
@@ -45,6 +43,10 @@ import {
   generateStoryboardFeedback
 } from './api/feedback';
 import { WritableDraft } from 'immer';
+import {
+  calculateDependentCenter,
+  calculateNodePositionAttributesWithParent
+} from './lib/positioningUtils';
 
 const indexDbStorage: StateStorage = {
   getItem: async (name) => {
@@ -72,20 +74,9 @@ type RFState = {
 
   centerPosition: XYPosition;
 
-  problemDimensions: Dimension[];
-  solutionDimensions: Dimension[];
-  storyboardDimensions: Dimension[];
-
-  updateNodeDimensions: (id: string, dimensions: Dimension[]) => void;
-
   connectionInProgress: boolean;
   onConnectStart: OnConnectStart;
   onConnectEnd: OnConnectEnd;
-
-  cursorNode: Node | null;
-  swapCursorNode: (cursorNode: Node | null) => void;
-  updateCursorNodePosition: (position: XYPosition) => void;
-  placeCursorNode: () => void;
 
   globalShowImage: boolean;
   setGlobalShowImage: (show: boolean) => void;
@@ -107,36 +98,39 @@ type RFState = {
 
   generatePersonaFeedback: (id: string) => Promise<void>;
 
-  // Problem
-  pinProblemDimension: (id: string, currentValue: string[]) => void;
-  generateProblemDimensions: (context: string) => Promise<void>;
+  /* Problems */
   generateProblemNodes: (
     context: string,
-    personaIds: string[]
+    personaIds: string[],
+    numberOfNodes?: number
   ) => Promise<string[]>;
-  generateProblemImage: (id: string) => Promise<void>;
-  regenerateProblemNode: (id: string, instructions: string) => Promise<void>;
+  regenerateProblemNodes: (
+    problemIds: string[],
+    context: string
+  ) => Promise<void>;
   updateProblemNode: (id: string, text: string) => void;
-  generateProblemFeedback: (id: string) => Promise<void>;
-  // mergeProblemNodes: (ids: string[]) => Promise<void>;
 
-  // Solution
-  pinSolutionDimension: (id: string, currentValue: string[]) => void;
-  generateSolutionDimensions: (context: string) => Promise<void>;
+  generateProblemImage: (id: string) => Promise<void>;
+
+  generateProblemFeedback: (id: string) => Promise<void>;
+
+  /* Solutions */
   generateSolutionNodes: (
     context: string,
-    problemIds: string[]
+    problemIds: string[],
+    numberOfNodes?: number
   ) => Promise<string[]>;
-  generateSolutionImage: (id: string) => Promise<void>;
-  regenerateSolutionNode: (id: string, instructions: string) => Promise<void>;
+  regenerateSolutionNodes: (
+    solutionIds: string[],
+    context: string
+  ) => Promise<void>;
   updateSolutionNode: (id: string, text: string) => void;
+
+  generateSolutionImage: (id: string) => Promise<void>;
+
   generateSolutionFeedback: (id: string) => Promise<void>;
-  // mergeSolutionNodes: (ids: string[]) => Promise<void>;
 
-  // Storyboards
-  generateStoryboardDimensions: (context: string) => Promise<void>;
-  pinStoryboardDimension: (id: string, currentValue: string[]) => void;
-
+  /* Storyboards */
   generateStoryboardNode: (
     context: string,
     personaIds: string[],
@@ -144,8 +138,6 @@ type RFState = {
     solutionIds: string[]
   ) => Promise<string[]>;
   regenerateStoryboardNode: (id: string, instructions: string) => Promise<void>;
-  generateStoryboardImages: (id: string) => Promise<Promise<number>[]>;
-  generateStoryboardFeedback: (id: string) => Promise<void>;
   updateStoryboardTitle: (id: string, title: string) => void;
   updateStoryboardDescription: (
     id: string,
@@ -157,6 +149,9 @@ type RFState = {
     frameIdx: number,
     caption: string
   ) => void;
+
+  generateStoryboardImages: (id: string) => Promise<Promise<number>[]>;
+  generateStoryboardFeedback: (id: string) => Promise<void>;
 
   pastStates: Partial<RFState>[];
   futureStates: Partial<RFState>[];
@@ -182,10 +177,7 @@ type RFState = {
 function partialize(state: RFState): Partial<RFState> {
   return {
     nodes: state.nodes,
-    edges: state.edges,
-    problemDimensions: state.problemDimensions,
-    solutionDimensions: state.solutionDimensions,
-    storyboardDimensions: state.storyboardDimensions
+    edges: state.edges
   };
 }
 
@@ -328,65 +320,9 @@ const createStore: StateCreator<
 
     centerPosition: { x: 0, y: 0 },
 
-    problemDimensions: [],
-    solutionDimensions: [],
-    storyboardDimensions: [],
-
-    updateNodeDimensions: (id: string, dimensions: Dimension[]) => {
-      get().takeSnapshot();
-      updateNode(id, (draft) => {
-        draft.data.dimensions = dimensions;
-        draft.data.outOfSync = true;
-      });
-    },
-
     connectionInProgress: false,
     onConnectStart: () => set({ connectionInProgress: true }),
     onConnectEnd: () => set({ connectionInProgress: false }),
-
-    cursorNode: null,
-    swapCursorNode: (cursorNode: Node | null) => {
-      const oldState = get();
-      if (!cursorNode) {
-        set({
-          nodes: oldState.nodes.filter(
-            (node) => node.id !== oldState.cursorNode?.id
-          ),
-          cursorNode
-        });
-      } else {
-        set({
-          nodes: [
-            ...oldState.nodes.filter(
-              (node) => node.id !== oldState.cursorNode?.id
-            ),
-            cursorNode
-          ],
-          cursorNode
-        });
-      }
-    },
-    updateCursorNodePosition: (position: XYPosition) => {
-      const oldState = get();
-      if (!oldState.cursorNode) return;
-
-      set({
-        nodes: oldState.nodes.map((node) => {
-          if (node.id === oldState.cursorNode?.id) {
-            return {
-              ...node,
-              position
-            };
-          }
-          return node;
-        }),
-        cursorNode: {
-          ...oldState.cursorNode!,
-          position
-        }
-      });
-    },
-    placeCursorNode: () => set({ cursorNode: null }),
 
     globalShowImage: false,
     setGlobalShowImage: (showImage: boolean) => {
@@ -403,23 +339,23 @@ const createStore: StateCreator<
       const personas = await generatePersonas(context, numberOfNodes);
       numberOfNodes = personas.length;
 
-      const [width, height, paddingX, paddingY] = [300, 300, 50, 25];
       const center = get().centerPosition;
-
-      const parentHeight = height + paddingY * 2;
-      const parentWidth =
-        width * numberOfNodes + paddingX * (numberOfNodes + 1);
+      const { parentPositionAttributes, nodesPositionAttributes } =
+        calculateNodePositionAttributesWithParent(
+          numberOfNodes,
+          {
+            width: 300,
+            height: 300,
+            padding: 50,
+            parentPadding: 25
+          },
+          center
+        );
 
       const parentNode: Node = {
         id: `persona-parent-${nanoid()}`,
         type: 'group',
-        position: center,
-        width: parentWidth,
-        height: parentHeight,
-        style: {
-          width: parentWidth,
-          height: parentHeight
-        },
+        ...parentPositionAttributes,
         data: {}
       };
 
@@ -428,20 +364,9 @@ const createStore: StateCreator<
           id: `persona-${nanoid()}`,
           type: NodeType.Persona,
           parentId: parentNode.id,
-          extent: 'parent',
-          height,
-          width,
-          style: {
-            height,
-            width
-          },
-          position: {
-            x: paddingX + width / 2 + idx * (width + paddingX),
-            y: parentHeight / 2
-          },
+          ...nodesPositionAttributes[idx],
           data: {
-            content: persona,
-            dimensions: []
+            content: persona
           }
         };
         return node;
@@ -461,35 +386,8 @@ const createStore: StateCreator<
       const newPersonas = await regeneratePersonas(personas, context);
 
       get().takeSnapshot();
-      set({
-        nodes: get().nodes.map((node) => {
-          if (personaIds.includes(node.id)) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                content: newPersonas[personaIds.indexOf(node.id)]
-              }
-            };
-          }
-          return node;
-        })
-      });
-    },
-    generatePersonaImage: async (id: string) => {
-      const node = get().nodes.find(
-        (node) => node.id === id && node.type === NodeType.Persona
-      );
-      if (!node) return;
-
-      const image = await generateIllustrativeImage(
-        `Illustrate persona: ${node.data.content}`
-      );
-
-      get().takeSnapshot();
-      updateNode(node.id, (draft) => {
-        draft.data.image = image;
-        draft.data.imageOutOfSync = false;
+      personaIds.forEach((id, idx) => {
+        get().updatePersonaNode(id, newPersonas[idx]);
       });
     },
     updatePersonaNode: async (id: string, persona: string) => {
@@ -523,6 +421,22 @@ const createStore: StateCreator<
         })
       });
     },
+    generatePersonaImage: async (id: string) => {
+      const node = get().nodes.find(
+        (node) => node.id === id && node.type === NodeType.Persona
+      );
+      if (!node) return;
+
+      const image = await generateIllustrativeImage(
+        `Illustrate persona: ${node.data.content}`
+      );
+
+      get().takeSnapshot();
+      updateNode(node.id, (draft) => {
+        draft.data.image = image;
+        draft.data.imageOutOfSync = false;
+      });
+    },
     generatePersonaFeedback: async (id) => {
       const persona = get().nodes.find(
         (node) => node.id === id && node.type === NodeType.Persona
@@ -538,129 +452,76 @@ const createStore: StateCreator<
       });
     },
 
-    pinProblemDimension: (id: string, currentValue: string[]) => {
-      const dimension = get().problemDimensions.find((d) => d.id === id);
-      if (!dimension) return;
-
-      get().takeSnapshot();
-      set({
-        problemDimensions: get().problemDimensions.map((d) => {
-          if (d.id === id) {
-            return {
-              ...d,
-              currentValues: currentValue
-            };
-          }
-          return d;
-        })
-      });
-    },
-    generateProblemDimensions: async (context: string) => {
-      const newDimensions = await generateProblemDimensions(
-        get().problemDimensions,
-        context
+    generateProblemNodes: async (
+      context: string,
+      personaIds: string[],
+      numberOfNodes?: number
+    ) => {
+      const personaNodes = get().nodes.filter(
+        (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
       );
+      const personas = personaNodes.map((node) => node.data.content);
 
-      get().takeSnapshot();
-      set({
-        problemDimensions: [...get().problemDimensions, ...newDimensions]
-      });
-    },
-    generateProblemNodes: async (context: string, personaIds: string[]) => {
-      if (personaIds.length === 0) {
-        personaIds = await get().generatePersonaNodes(context);
-      }
-      const dimensionPermutations = generateRandomAssignments(
-        get().problemDimensions,
-        personaIds.length
+      const problems = await generateProblems(
+        {
+          context,
+          personas
+        },
+        numberOfNodes
       );
+      numberOfNodes = problems.length;
 
-      const numNodes = dimensionPermutations.length;
-
-      const [height, width, gap] = [300, 300, 100];
-
-      const parentHeight = height + gap * 2;
-      const parentWidth = width * numNodes + gap * (numNodes + 1);
+      const [width, height, padding, parentPadding, dependencyMargin] = [
+        300, 300, 50, 25, 100
+      ];
+      const parentHeight = height + parentPadding * 2;
+      const center = calculateDependentCenter(personaNodes, {
+        height: parentHeight,
+        margin: dependencyMargin
+      });
+      const { parentPositionAttributes, nodesPositionAttributes } =
+        calculateNodePositionAttributesWithParent(
+          numberOfNodes,
+          {
+            width,
+            height,
+            padding,
+            parentPadding
+          },
+          center
+        );
 
       const parentNode: Node = {
         id: `problem-parent-${nanoid()}`,
         type: 'group',
-        position: get().centerPosition,
-        width: parentWidth,
-        height: parentHeight,
-        style: {
-          width: parentWidth,
-          height: parentHeight
-        },
+        ...parentPositionAttributes,
         data: {}
       };
 
+      const nodes: Node<NodeData>[] = problems.map((problem, idx) => ({
+        id: `problem-${nanoid()}`,
+        type: NodeType.Problem,
+        parentId: parentNode.id,
+        ...nodesPositionAttributes[idx],
+        data: {
+          content: problem
+        }
+      }));
+      const edges = personaIds.flatMap((personaId) =>
+        nodes.map((node) => ({
+          id: `edge-${nanoid()}`,
+          source: personaId,
+          target: node.id
+        }))
+      );
+
+      get().takeSnapshot();
       set({
-        nodes: [...get().nodes, parentNode]
+        nodes: [...get().nodes, parentNode, ...nodes],
+        edges: [...get().edges, ...edges]
       });
 
-      const ids = (
-        await Promise.all(
-          dimensionPermutations.map(async (permutation, idx) => {
-            console.log({ idx });
-            const persona: Node<NodeData> | undefined = get().nodes.find(
-              (node) =>
-                node.id === personaIds[idx] && node.type === NodeType.Persona
-            );
-            if (!persona) return;
-
-            const content = await generateProblem(
-              permutation,
-              context + persona.data.content
-            );
-
-            // const position =
-            //   persona.height !== undefined && persona.height !== null
-            //     ? {
-            //         x: persona.position.x,
-            //         y:
-            //           persona.position.y + persona.height / 2 + height / 2 + gap
-            //       }
-            //     : get().centerPosition;
-            const position = { x: 0, y: 0 };
-
-            const node: Node<NodeData> = {
-              id: `problem-${nanoid()}`,
-              type: NodeType.Problem,
-              parentId: parentNode.id,
-              extent: 'parent',
-              height,
-              width,
-              style: {
-                height,
-                width
-              },
-              position,
-              data: {
-                content,
-                dimensions: permutation
-              }
-            };
-            const edge = {
-              id: `edge-${nanoid()}`,
-              source: persona.id,
-              target: node.id
-            };
-
-            get().takeSnapshot();
-            set({
-              nodes: [...get().nodes, node],
-              edges: [...get().edges, edge]
-            });
-
-            get().generateProblemImage(node.id);
-
-            return node.id;
-          })
-        )
-      ).filter((id) => id !== undefined);
-
-      return ids;
+      return nodes.map((node) => node.id);
     },
     generateProblemImage: async (id: string) => {
       const node: Node<NodeData> | undefined = get().nodes.find(
@@ -678,15 +539,17 @@ const createStore: StateCreator<
         draft.data.imageOutOfSync = false;
       });
     },
-    regenerateProblemNode: async (id: string, instructions: string) => {
-      const problemNode = get().nodes.find(
-        (node) => node.id === id && node.type === NodeType.Problem
+    regenerateProblemNodes: async (problemIds: string[], context: string) => {
+      const problemNodes = get().nodes.filter(
+        (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
       );
-      if (!problemNode) return;
+      const problems = problemNodes.map((node) => node.data.content);
 
       const personaIds = get()
         .edges.filter(
-          (edge) => edge.target === id && edge.source.startsWith('persona')
+          (edge) =>
+            problemIds.includes(edge.target) &&
+            edge.source.startsWith('persona')
         )
         .map((edge) => edge.source);
       const personas: string[] = get()
@@ -696,30 +559,15 @@ const createStore: StateCreator<
         )
         .map((node) => node.data.content);
 
-      const context = `Regenerate the existing persona using the following dependencies, feedback, and instructions.
-    
-Personas (dependencies): """
-${personas.join('\n')}
-"""
-
-Current problem: """
-${problemNode.data.content}
-"""
-
-Instructions/Feedback: """
-${instructions}
-"""`;
-
-      const newProblem = await generateProblem(
-        problemNode.data.dimensions,
-        context
-      );
-      get().updateProblemNode(id, newProblem); // Takes snapshot
-      updateNode(id, (draft) => {
-        draft.data.outOfSync = false;
+      const newProblems = await regenerateProblems(problems, {
+        context,
+        personas
       });
 
-      await get().generateProblemImage(id);
+      get().takeSnapshot();
+      problemIds.forEach((id, idx) => {
+        get().updateProblemNode(id, newProblems[idx]);
+      });
     },
     updateProblemNode: (id: string, problem: string) => {
       const problemNode = get().nodes.find((node) => node.id === id);
@@ -767,130 +615,89 @@ ${instructions}
       });
     },
 
-    pinSolutionDimension: (id: string, currentValue: string[]) => {
-      const dimension = get().solutionDimensions.find((d) => d.id === id);
-      if (!dimension) return;
+    generateSolutionNodes: async (
+      context: string,
+      problemIds: string[],
+      numberOfNodes?: number
+    ) => {
+      const problemNodes = get().nodes.filter(
+        (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
+      );
+      const problems = problemNodes.map((node) => node.data.content);
+
+      const solutions = await generateSolutions(
+        {
+          context,
+          personas: problems
+        },
+        numberOfNodes
+      );
+      numberOfNodes = solutions.length;
+
+      const [width, height, padding, parentPadding, dependencyMargin] = [
+        300, 300, 50, 25, 100
+      ];
+      const parentHeight = height + parentPadding * 2;
+      const center = calculateDependentCenter(problemNodes, {
+        height: parentHeight,
+        margin: dependencyMargin
+      });
+      const { parentPositionAttributes, nodesPositionAttributes } =
+        calculateNodePositionAttributesWithParent(
+          numberOfNodes,
+          {
+            width,
+            height,
+            padding,
+            parentPadding
+          },
+          center
+        );
+
+      const parentNode: Node = {
+        id: `solution-parent-${nanoid()}`,
+        type: 'group',
+        ...parentPositionAttributes,
+        data: {}
+      };
+
+      const nodes: Node<NodeData>[] = solutions.map((solution, idx) => ({
+        id: `solution-${nanoid()}`,
+        type: NodeType.Solution,
+        parentId: parentNode.id,
+        ...nodesPositionAttributes[idx],
+        data: {
+          content: solution
+        }
+      }));
+      const edges = problemIds.flatMap((problemId) =>
+        nodes.map((node) => ({
+          id: `edge-${nanoid()}`,
+          source: problemId,
+          target: node.id
+        }))
+      );
 
       get().takeSnapshot();
       set({
-        solutionDimensions: get().solutionDimensions.map((d) => {
-          if (d.id === id) {
-            return {
-              ...d,
-              currentValues: currentValue
-            };
-          }
-          return d;
-        })
+        nodes: [...get().nodes, parentNode, ...nodes],
+        edges: [...get().edges, ...edges]
       });
+
+      return nodes.map((node) => node.id);
     },
-    generateSolutionDimensions: async (context: string) => {
-      const newDimensions = await generateSolutionDimensions(
-        get().solutionDimensions,
-        context
+    regenerateSolutionNodes: async (solutionIds: string[], context: string) => {
+      const solutionNodes = get().nodes.filter(
+        (node) =>
+          node.type === NodeType.Solution && solutionIds.includes(node.id)
       );
-
-      get().takeSnapshot();
-      set({
-        solutionDimensions: [...get().solutionDimensions, ...newDimensions]
-      });
-    },
-    generateSolutionNodes: async (context, problemIds) => {
-      if (problemIds.length === 0) {
-        problemIds = await get().generateProblemNodes(context, []);
-      }
-      const dimensionPermutations = generateRandomAssignments(
-        get().solutionDimensions,
-        problemIds.length
-      );
-
-      const [height, width, gap] = [300, 300, 100];
-
-      const ids = (
-        await Promise.all(
-          dimensionPermutations.map(async (permutation, idx) => {
-            const problem: Node<NodeData> | undefined = get().nodes.find(
-              (node) =>
-                node.id === problemIds[idx] && node.type === NodeType.Problem
-            );
-            if (!problem) return;
-
-            const content = await generateSolution(
-              permutation,
-              context + problem.data.content
-            );
-
-            const position =
-              problem.height !== undefined && problem.height !== null
-                ? {
-                    x: problem.position.x,
-                    y:
-                      problem.position.y + problem.height / 2 + height / 2 + gap
-                  }
-                : get().centerPosition;
-
-            const node: Node<NodeData> = {
-              id: `solution-${nanoid()}`,
-              type: NodeType.Solution,
-              height,
-              width,
-              style: {
-                height,
-                width
-              },
-              position,
-              data: {
-                content,
-                dimensions: permutation
-              }
-            };
-
-            const edge = {
-              id: `edge-${nanoid()}`,
-              source: problem.id,
-              target: node.id
-            };
-
-            get().takeSnapshot();
-            set({
-              nodes: [...get().nodes, node],
-              edges: [...get().edges, edge]
-            });
-
-            get().generateSolutionImage(node.id);
-
-            return node.id;
-          })
-        )
-      ).filter((id) => id !== undefined);
-
-      return ids;
-    },
-    generateSolutionImage: async (id) => {
-      const node = get().nodes.find(
-        (node) => node.id === id && node.type === NodeType.Solution
-      );
-      if (!node) return;
-
-      const image = await generateIllustrativeImage(
-        `Illustrate solution: ${node.data.content}`
-      );
-
-      get().takeSnapshot();
-      updateNode(node.id, (draft) => {
-        draft.data.image = image;
-        draft.data.imageOutOfSync = false;
-      });
-    },
-    regenerateSolutionNode: async (id, instructions) => {
-      const node = get().nodes.find(
-        (node) => node.id === id && node.type === NodeType.Solution
-      );
-      if (!node) return;
+      const solutions = solutionNodes.map((node) => node.data.content);
 
       const problemIds = get()
         .edges.filter(
-          (edge) => edge.target === node.id && edge.source.startsWith('problem')
+          (edge) =>
+            solutionIds.includes(edge.target) &&
+            edge.source.startsWith('problem')
         )
         .map((edge) => edge.source);
       const problems: string[] = get()
@@ -899,28 +706,16 @@ ${instructions}
             problemIds.includes(node.id) && node.type === NodeType.Problem
         )
         .map((node) => node.data.content);
-      const context = `Regenerate the existing persona using the following dependencies, feedback, and instructions.
 
-Problems (dependencies): """
-${problems.join('\n')}
-"""
-
-Current solution: """
-${node.data.content}
-"""
-
-Instructions/Feedback: """
-${instructions}
-"""`;
-
-      const newSolution = await generateSolution(node.data.dimensions, context);
-
-      get().updateSolutionNode(node.id, newSolution); // Takes snapshot
-      updateNode(node.id, (draft) => {
-        draft.data.outOfSync = false;
+      const newSolutions = await regenerateSolutions(solutions, {
+        context,
+        problems
       });
 
-      await get().generateSolutionImage(node.id);
+      get().takeSnapshot();
+      solutionIds.forEach((id, idx) => {
+        get().updateSolutionNode(id, newSolutions[idx]);
+      });
     },
     updateSolutionNode: (id: string, solution: string) => {
       get().takeSnapshot();
@@ -949,6 +744,22 @@ ${instructions}
         })
       });
     },
+    generateSolutionImage: async (id) => {
+      const node = get().nodes.find(
+        (node) => node.id === id && node.type === NodeType.Solution
+      );
+      if (!node) return;
+
+      const image = await generateIllustrativeImage(
+        `Illustrate solution: ${node.data.content}`
+      );
+
+      get().takeSnapshot();
+      updateNode(node.id, (draft) => {
+        draft.data.image = image;
+        draft.data.imageOutOfSync = false;
+      });
+    },
     generateSolutionFeedback: async (id: string) => {
       const solution = get().nodes.find(
         (node) => node.id === id && node.type === NodeType.Solution
@@ -964,34 +775,6 @@ ${instructions}
       });
     },
 
-    generateStoryboardDimensions: async (context: string) => {
-      const newDimensions = await generateStoryboardDimensions(
-        get().storyboardDimensions,
-        context
-      );
-
-      get().takeSnapshot();
-      set({
-        storyboardDimensions: [...get().storyboardDimensions, ...newDimensions]
-      });
-    },
-    pinStoryboardDimension: (id: string, currentValue: string[]) => {
-      const dimension = get().storyboardDimensions.find((d) => d.id === id);
-      if (!dimension) return;
-
-      get().takeSnapshot();
-      set({
-        storyboardDimensions: get().storyboardDimensions.map((d) => {
-          if (d.id === id) {
-            return {
-              ...d,
-              currentValues: currentValue
-            };
-          }
-          return d;
-        })
-      });
-    },
     generateStoryboardNode: async (
       context: string,
       personaIds: string[],
@@ -1021,6 +804,7 @@ ${instructions}
         ...problemNodes,
         ...solutionNodes
       ];
+
       const dependencyBottomBoundary = Math.max(
         ...dependencyNodes.map((node) => node.position.y + node.height! / 2)
       );
@@ -1037,17 +821,9 @@ ${instructions}
         y: dependencyBottomBoundary + gap + height / 2
       };
 
-      const dimensionPermutation = generateRandomAssignments(
-        get().storyboardDimensions,
-        1
-      )[0];
-
       const fullContext = `${context}\n\nPersonas: ${personas}\n\nProblems: ${problems}\n\nSolutions: ${solutions}`;
 
-      const storyboardData = await generateStoryboardOutline(
-        dimensionPermutation,
-        fullContext
-      );
+      const storyboardData = await generateStoryboardOutline([], fullContext);
 
       const node: Node<StoryboardNodeData> = {
         id: `storyboard-${nanoid()}`,
@@ -1065,8 +841,7 @@ ${instructions}
             ...storyboardData,
             numberOfFrames: storyboardData.outline.length,
             artStyle: 'TODO'
-          },
-          dimensions: dimensionPermutation
+          }
         }
       };
       const edges = [...personaIds, ...problemIds, ...solutionIds].map(
@@ -1159,10 +934,7 @@ ${instructions}
         [];
       if (outline.length === 0) return [];
 
-      const imagePrompts = await generateStoryboardImagePrompts(
-        get().storyboardDimensions,
-        outline
-      );
+      const imagePrompts = await generateStoryboardImagePrompts([], outline);
 
       return imagePrompts.map(async (prompt, idx) => {
         const image = await generateImage(prompt);
@@ -1450,13 +1222,7 @@ export const useStore = create<RFState>()(
     persist(createStore, {
       name: 'story-ensemble',
       storage: createJSONStorage(() => indexDbStorage),
-      partialize: (state) => ({
-        nodes: state.nodes,
-        edges: state.edges,
-        problemDimensions: state.problemDimensions,
-        solutionDimensions: state.solutionDimensions,
-        storyboardDimensions: state.storyboardDimensions
-      })
+      partialize
     })
   )
 );

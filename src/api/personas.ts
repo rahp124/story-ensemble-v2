@@ -28,7 +28,7 @@ ${JSON.stringify(context)}
 
 export async function regeneratePersonas(personas: string[], context: unknown) {
   const prompt = `${USER_PERSONA_PROMPT}
-Update the given personas based on the new context/instructions keep the essence of the persona intact, but make necessary changes to ensure cohesiveness with the new context.
+Update the given personas based on the new context/instructions keep the essence of the persona intact, but make necessary changes to ensure cohesiveness.
 
 Personas: """
 ${JSON.stringify(personas)}

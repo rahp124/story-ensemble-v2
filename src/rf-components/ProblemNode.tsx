@@ -5,11 +5,9 @@ import BaseNode from './BaseNode';
 
 export default function ProblemNode(props: NodeProps<NodeData>) {
   const {
-    problemDimensions,
     updateProblemNode,
-    regenerateProblemNode,
+    regenerateProblemNodes,
     generateProblemImage,
-    updateNodeDimensions,
     generateProblemFeedback
   } = useStore();
 
@@ -26,14 +24,10 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
       content={props.data.content}
       onUpdateContent={(content) => updateProblemNode(props.id, content)}
       onRegenerateContent={(instructions) =>
-        regenerateProblemNode(props.id, instructions)
+        regenerateProblemNodes([props.id], instructions)
       }
       onRegenerateImage={() => generateProblemImage(props.id)}
-      onUpdateDimensions={(newDimensions) => {
-        updateNodeDimensions(props.id, newDimensions);
-      }}
       onGenerateFeedback={() => generateProblemFeedback(props.id)}
-      allDimensions={problemDimensions}
       targetHandle={true}
       sourceHandle={true}
     />

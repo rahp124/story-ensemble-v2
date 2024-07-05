@@ -5,11 +5,10 @@ import BaseNode from './BaseNode';
 
 export default function PersonaNode(props: NodeProps<NodeData>) {
   const {
-    personaDimensions,
     updatePersonaNode,
-    regeneratePersonaNode,
+    regeneratePersonaNodes,
+
     generatePersonaImage,
-    updateNodeDimensions,
     generatePersonaFeedback
   } = useStore();
 
@@ -27,13 +26,9 @@ export default function PersonaNode(props: NodeProps<NodeData>) {
       onUpdateContent={(content) => updatePersonaNode(props.id, content)}
       onRegenerateImage={() => generatePersonaImage(props.id)}
       onRegenerateContent={async (instructions) =>
-        regeneratePersonaNode(props.id, instructions)
+        regeneratePersonaNodes([props.id], instructions)
       }
-      onUpdateDimensions={(newDimensions) => {
-        updateNodeDimensions(props.id, newDimensions);
-      }}
       onGenerateFeedback={() => generatePersonaFeedback(props.id)}
-      allDimensions={personaDimensions}
       targetHandle={false}
       sourceHandle={true}
     />

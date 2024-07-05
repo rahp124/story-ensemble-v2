@@ -1,58 +1,51 @@
-import { nanoid } from 'nanoid';
-import { generateStructured, generateString } from './openai';
-import { Dimension, newDimensionsSchema } from '@/types';
+import { generateStructured } from './openai';
+import { z } from 'zod';
 
-export async function generateProblemDimensions(
-  existingDimensions: Dimension[],
-  context: string
-): Promise<Dimension[]> {
-  const prompt = `You are an AI assistant tasked with enhancing the creative and divergent thinking process for design thinking.
-Your goal is to generate a comprehensive list of dimensions (attributes with a set of allowed values) that can be used to create detailed problem statements.
-These dimensions will help designers understand and frame the problems they are addressing better.
+const PROBLEM_STATEMENT_PROMPT = `A problem statement is a description of an issue designers are trying to solve.
+A good problem statement should be centered on specific people and their needs.
+It should be narrow enough to be manageable but broad enough to explore a variety of solutions.`;
 
-Given a set of existing dimensions and user instructions, generate a set of new dimensions if needed to fully explore the problem space.
-These dimensions should help characterize and define possible problems the root cause, consequences, participants, and other aspects specific to just problem statements.
-DO NOT suggest dimensions that describe the context or solutions!!!
-  
-Existing Dimensions: """
-${JSON.stringify(existingDimensions, null, 2)}
-"""
+export async function generateProblems(
+  context: unknown,
+  numberOfVariations?: number
+) {
+  const prompt = `${PROBLEM_STATEMENT_PROMPT}
+Create ${
+    numberOfVariations ?? 'multiple'
+  } problem statements based on the given context.
 
 Context: """
-${context}
-"""`;
+${JSON.stringify(context)}`;
 
-  const { newDimensions } = await generateStructured(
-    newDimensionsSchema,
-    prompt
-  );
+  const problemsSchema =
+    numberOfVariations !== undefined
+      ? z.string().array().length(numberOfVariations)
+      : z.string().array().min(1);
+  const schema = z.object({
+    problems: problemsSchema
+  });
 
-  return newDimensions.map((dimension) => ({
-    ...dimension,
-    id: `problem-dim-${nanoid()}`,
-    currentValues: []
-  }));
+  const { problems } = await generateStructured(schema, prompt);
+  return problems;
 }
 
-export async function generateProblem(
-  dimensionValues: Dimension[],
-  context: string
-) {
-  const prompt = `Using the assigned values for each dimension, generate a detailed problem statement.
-Structure the problem statement as follows: "As an [occupation or role], they struggle with [problem] because of [cause], which leads to [consequence]."
-Ensure the problem statement is realistic and provides a comprehensive understanding of the issue.
+export async function regenerateProblems(problems: string[], context: unknown) {
+  const prompt = `${PROBLEM_STATEMENT_PROMPT}
+Update the given problem statements based on the new context/instructions.
+Keep the essence of the problem statement intact, but make necessary changes to ensure cohesiveness.
 
-Example: As an entry-level professional, they struggle with making informed investment decisions because of a lack of knowledge, which leads to high levels of stress and missed financial opportunities.
-
-Limit each problem statement to 1-2 sentences. Don't add any Markdown or HTML formatting or line breaks, just plain text.
-
-Dimensions: """
-${JSON.stringify(dimensionValues, null, 2)}
+Problems: """
+${JSON.stringify(problems)}
 """
 
 Context: """
-${context}
+${JSON.stringify(context)}
 """`;
 
-  return await generateString(prompt);
+  const schema = z.object({
+    updatedProblems: z.string().array().length(problems.length)
+  });
+
+  const { updatedProblems } = await generateStructured(schema, prompt);
+  return updatedProblems;
 }
