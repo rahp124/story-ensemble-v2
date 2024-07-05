@@ -6,7 +6,8 @@ import ReactFlow, {
   Panel,
   useReactFlow,
   MiniMap,
-  ControlButton
+  ControlButton,
+  useKeyPress
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -111,6 +112,9 @@ export default function App() {
     updateCenterPosition();
   }, [updateCenterPosition]);
 
+  const panActivationKeyCode = 'Space';
+  const isPanning = useKeyPress(panActivationKeyCode);
+
   return (
     <div className="h-[100vh] w-[100vw]">
       <ReactFlow
@@ -138,7 +142,14 @@ export default function App() {
         }}
         // Viewport
         panOnScroll
-        panOnDrag
+        selectionOnDrag
+        panOnDrag={false}
+        panActivationKeyCode={panActivationKeyCode}
+        nodesDraggable={!isPanning}
+        nodesConnectable={!isPanning}
+        nodesFocusable={!isPanning}
+        edgesFocusable={!isPanning}
+        elementsSelectable={!isPanning}
         nodeOrigin={[0.5, 0.5]}
         selectionMode={SelectionMode.Partial}
         snapToGrid={true}
