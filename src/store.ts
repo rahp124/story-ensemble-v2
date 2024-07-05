@@ -44,7 +44,8 @@ import {
 } from './api/feedback';
 import { WritableDraft } from 'immer';
 import {
-  calculateDependentCenter,
+  calculateNewDependentCenter,
+  calculateNodePositionAttributes,
   calculateNodePositionAttributesWithParent
 } from './lib/positioningUtils';
 
@@ -475,7 +476,7 @@ const createStore: StateCreator<
         300, 300, 50, 25, 100
       ];
       const parentHeight = height + parentPadding * 2;
-      const center = calculateDependentCenter(personaNodes, {
+      const center = calculateNewDependentCenter(personaNodes, get().nodes, {
         height: parentHeight,
         margin: dependencyMargin
       });
@@ -638,7 +639,7 @@ const createStore: StateCreator<
         300, 300, 50, 25, 100
       ];
       const parentHeight = height + parentPadding * 2;
-      const center = calculateDependentCenter(problemNodes, {
+      const center = calculateNewDependentCenter(problemNodes, get().nodes, {
         height: parentHeight,
         margin: dependencyMargin
       });
@@ -805,36 +806,32 @@ const createStore: StateCreator<
         ...solutionNodes
       ];
 
-      const dependencyBottomBoundary = Math.max(
-        ...dependencyNodes.map((node) => node.position.y + node.height! / 2)
-      );
-      const dependencyLeftBoundary = Math.min(
-        ...dependencyNodes.map((node) => node.position.x - node.width! / 2)
-      );
-      const dependencyRightBoundary = Math.max(
-        ...dependencyNodes.map((node) => node.position.x + node.width! / 2)
-      );
-
       const [height, width, gap] = [600, 1200, 100];
-      const position = {
-        x: (dependencyRightBoundary + dependencyLeftBoundary) / 2,
-        y: dependencyBottomBoundary + gap + height / 2
-      };
+      const center = calculateNewDependentCenter(dependencyNodes, get().nodes, {
+        height,
+        margin: gap
+      });
+      const nodesPositionAttributes = calculateNodePositionAttributes(
+        1,
+        {
+          width,
+          height,
+          padding: 0
+        },
+        center
+      )[0];
 
-      const fullContext = `${context}\n\nPersonas: ${personas}\n\nProblems: ${problems}\n\nSolutions: ${solutions}`;
-
-      const storyboardData = await generateStoryboardOutline([], fullContext);
+      const storyboardData = await generateStoryboardOutline({
+        instructions: context,
+        personas,
+        problems,
+        solutions
+      });
 
       const node: Node<StoryboardNodeData> = {
         id: `storyboard-${nanoid()}`,
         type: NodeType.Storyboard,
-        height,
-        width,
-        style: {
-          width: 1200,
-          height: 600
-        },
-        position,
+        ...nodesPositionAttributes,
         data: {
           content: '',
           storyboard: {
@@ -905,19 +902,12 @@ const createStore: StateCreator<
         .map((node) => node.data.content)
         .join('\n');
 
-      const fullContext = {
-        dependencies: {
-          personas,
-          problems,
-          solutions
-        },
+      const storyboardData = await generateStoryboardOutline({
+        personas,
+        problems,
+        solutions,
         instructions
-      };
-
-      const storyboardData = await generateStoryboardOutline(
-        storyboardNode.data.dimensions,
-        JSON.stringify(fullContext, null, 2)
-      );
+      });
 
       get().takeSnapshot();
       updateNode(id, (draft) => {
@@ -934,7 +924,7 @@ const createStore: StateCreator<
         [];
       if (outline.length === 0) return [];
 
-      const imagePrompts = await generateStoryboardImagePrompts([], outline);
+      const imagePrompts = await generateStoryboardImagePrompts(outline);
 
       return imagePrompts.map(async (prompt, idx) => {
         const image = await generateImage(prompt);
