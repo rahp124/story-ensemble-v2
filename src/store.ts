@@ -29,11 +29,7 @@ import { generateImage } from './api/stableDiffusion';
 import { generateSolution, generateSolutionDimensions } from './api/solutions';
 import { Dimension, FrameOutline, NodeData, StoryboardNodeData } from './types';
 import { generateRandomAssignments } from './lib';
-import {
-  generatePersona,
-  generatePersonaDimensions,
-  mergePersonas
-} from './api/personas';
+import { generatePersonas, regeneratePersonas } from './api/personas';
 import { nanoid } from 'nanoid';
 import { NodeType } from './rf-components';
 import { generateProblem, generateProblemDimensions } from './api/problems';
@@ -64,7 +60,11 @@ const indexDbStorage: StateStorage = {
 
 type RFState = {
   nodes: Node[];
+  setNodes: (nodes: Node[]) => void;
+
   edges: Edge[];
+  setEdges: (edges: Edge[]) => void;
+
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -72,7 +72,6 @@ type RFState = {
 
   centerPosition: XYPosition;
 
-  personaDimensions: Dimension[];
   problemDimensions: Dimension[];
   solutionDimensions: Dimension[];
   storyboardDimensions: Dimension[];
@@ -93,19 +92,19 @@ type RFState = {
 
   setNodeOutOfSync: (id: string, outOfSync: boolean) => void;
 
-  // Persona
-  pinPersonaDimension: (id: string, currentValue: string[]) => void;
-  // addPersonaDimension: (dimensionName: string) => void;
-
-  generatePersonaDimensions: (context: string) => Promise<void>;
-  generatePersonaNodes: (context: string) => Promise<string[]>;
-  generatePersonaImage: (id: string) => Promise<void>;
-  regeneratePersonaNode: (id: string, instructions: string) => Promise<void>;
-  updatePersonaNode: (id: string, text: string) => Promise<void>;
-  mergePersonaNodes: (
-    personaNodes: Node<NodeData>[],
-    instructions?: string
+  /* Personas */
+  generatePersonaNodes: (
+    context: string,
+    numberOfNodes?: number
+  ) => Promise<string[]>;
+  regeneratePersonaNodes: (
+    personaIds: string[],
+    context: string
   ) => Promise<void>;
+  updatePersonaNode: (id: string, text: string) => Promise<void>;
+
+  generatePersonaImage: (id: string) => Promise<void>;
+
   generatePersonaFeedback: (id: string) => Promise<void>;
 
   // Problem
@@ -184,7 +183,6 @@ function partialize(state: RFState): Partial<RFState> {
   return {
     nodes: state.nodes,
     edges: state.edges,
-    personaDimensions: state.personaDimensions,
     problemDimensions: state.problemDimensions,
     solutionDimensions: state.solutionDimensions,
     storyboardDimensions: state.storyboardDimensions
@@ -212,7 +210,11 @@ const createStore: StateCreator<
 
   return {
     nodes: [],
+    setNodes: (nodes) => set({ nodes }),
+
     edges: [],
+    setEdges: (edges) => set({ edges }),
+
     onNodesChange: (changes: NodeChange[]) => {
       const isRemoveChange = changes.some(({ type }) => type === 'remove');
       const isDimensionChange =
@@ -326,7 +328,6 @@ const createStore: StateCreator<
 
     centerPosition: { x: 0, y: 0 },
 
-    personaDimensions: [],
     problemDimensions: [],
     solutionDimensions: [],
     storyboardDimensions: [],
@@ -398,78 +399,82 @@ const createStore: StateCreator<
       });
     },
 
-    pinPersonaDimension: (id: string, currentValue: string[]) => {
-      const dimension = get().personaDimensions.find((d) => d.id === id);
-      if (!dimension) return;
+    generatePersonaNodes: async (context: string, numberOfNodes?: number) => {
+      const personas = await generatePersonas(context, numberOfNodes);
+      numberOfNodes = personas.length;
+
+      const [width, height, paddingX, paddingY] = [300, 300, 50, 25];
+      const center = get().centerPosition;
+
+      const parentHeight = height + paddingY * 2;
+      const parentWidth =
+        width * numberOfNodes + paddingX * (numberOfNodes + 1);
+
+      const parentNode: Node = {
+        id: `persona-parent-${nanoid()}`,
+        type: 'group',
+        position: center,
+        width: parentWidth,
+        height: parentHeight,
+        style: {
+          width: parentWidth,
+          height: parentHeight
+        },
+        data: {}
+      };
+
+      const nodes = personas.map((persona, idx) => {
+        const node: Node<NodeData> = {
+          id: `persona-${nanoid()}`,
+          type: NodeType.Persona,
+          parentId: parentNode.id,
+          extent: 'parent',
+          height,
+          width,
+          style: {
+            height,
+            width
+          },
+          position: {
+            x: paddingX + width / 2 + idx * (width + paddingX),
+            y: parentHeight / 2
+          },
+          data: {
+            content: persona,
+            dimensions: []
+          }
+        };
+        return node;
+      });
+
+      get().takeSnapshot();
+      set({ nodes: [...get().nodes, parentNode, ...nodes] });
+
+      return nodes.map((node) => node.id);
+    },
+    regeneratePersonaNodes: async (personaIds: string[], context: string) => {
+      const personaNodes = get().nodes.filter(
+        (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
+      );
+      const personas = personaNodes.map((node) => node.data.content);
+
+      const newPersonas = await regeneratePersonas(personas, context);
 
       get().takeSnapshot();
       set({
-        personaDimensions: get().personaDimensions.map((d) => {
-          if (d.id === id) {
+        nodes: get().nodes.map((node) => {
+          if (personaIds.includes(node.id)) {
             return {
-              ...d,
-              currentValues: currentValue
+              ...node,
+              data: {
+                ...node.data,
+                content: newPersonas[personaIds.indexOf(node.id)]
+              }
             };
           }
-          return d;
+          return node;
         })
       });
-    },
-    generatePersonaDimensions: async (context: string) => {
-      const newDimensions = await generatePersonaDimensions(
-        get().personaDimensions,
-        context
-      );
-
-      get().takeSnapshot();
-      set({
-        personaDimensions: [...get().personaDimensions, ...newDimensions]
-      });
-    },
-    generatePersonaNodes: async (context: string) => {
-      const dimensionPermutations = generateRandomAssignments(
-        get().personaDimensions,
-        5
-      );
-
-      const width = 300;
-      const height = 300;
-      const gap = 50;
-      const numNodes = dimensionPermutations.length;
-
-      const center = get().centerPosition;
-      const startX =
-        center.x - (width * numNodes + (numNodes - 1) * gap) / 2 + width / 2;
-      const startY = center.y;
-
-      const ids = await Promise.all(
-        dimensionPermutations.map(async (permutation, idx) => {
-          const node: Node<NodeData> = {
-            id: `persona-${nanoid()}`,
-            type: NodeType.Persona,
-            height,
-            width,
-            style: {
-              height,
-              width
-            },
-            position: { x: startX + idx * (width + gap), y: startY },
-            data: {
-              content: await generatePersona(permutation, context),
-              dimensions: permutation
-            }
-          };
-
-          get().takeSnapshot();
-          set({ nodes: [...get().nodes, node] });
-
-          get().generatePersonaImage(node.id);
-
-          return node.id;
-        })
-      );
-
-      return ids;
     },
     generatePersonaImage: async (id: string) => {
       const node = get().nodes.find(
@@ -486,33 +491,6 @@ const createStore: StateCreator<
         draft.data.image = image;
         draft.data.imageOutOfSync = false;
       });
-    },
-    regeneratePersonaNode: async (id: string, instructions: string) => {
-      const personaNode = get().nodes.find(
-        (node) => node.id === id && node.type === NodeType.Persona
-      );
-      if (!personaNode) return;
-
-      const context = `Regenerate the existing persona using the following feedback and instructions.
-
-Current persona: """
-${personaNode.data.content}
-"""
-
-Instructions/Feedback: """
-${instructions}
-"""`;
-
-      const newPersona = await generatePersona(
-        personaNode.data.dimensions,
-        context
-      );
-      get().updatePersonaNode(id, newPersona); // Takes snapshot
-      updateNode(id, (draft) => {
-        draft.data.outOfSync = false;
-      });
-
-      await get().generatePersonaImage(id);
     },
     updatePersonaNode: async (id: string, persona: string) => {
       const personaNode = get().nodes.find((node) => node.id === id);
@@ -544,33 +522,6 @@ ${instructions}
           return node;
         })
       });
-    },
-    mergePersonaNodes: async (personaNodes, instructions) => {
-      const personas = personaNodes.map((node) => node.data.content);
-      const personaDimensions = get().personaDimensions;
-
-      const { mergedPersona, mergedDimensions } = await mergePersonas(
-        personas,
-        personaDimensions,
-        instructions || ''
-      );
-
-      const personaNode: Node<NodeData> = {
-        id: `persona-${nanoid()}`,
-        type: NodeType.Persona,
-        position: { x: -200, y: 200 },
-        style: {
-          width: 300,
-          height: 300
-        },
-        data: {
-          content: mergedPersona,
-          dimensions: mergedDimensions
-        }
-      };
-
-      get().takeSnapshot();
-      set({ nodes: [...get().nodes, personaNode] });
     },
     generatePersonaFeedback: async (id) => {
       const persona = get().nodes.find(
@@ -624,7 +575,29 @@ ${instructions}
         personaIds.length
       );
 
+      const numNodes = dimensionPermutations.length;
+
       const [height, width, gap] = [300, 300, 100];
+
+      const parentHeight = height + gap * 2;
+      const parentWidth = width * numNodes + gap * (numNodes + 1);
+
+      const parentNode: Node = {
+        id: `problem-parent-${nanoid()}`,
+        type: 'group',
+        position: get().centerPosition,
+        width: parentWidth,
+        height: parentHeight,
+        style: {
+          width: parentWidth,
+          height: parentHeight
+        },
+        data: {}
+      };
+
+      set({
+        nodes: [...get().nodes, parentNode]
+      });
 
       const ids = (
         await Promise.all(
@@ -641,18 +614,21 @@ ${instructions}
               context + persona.data.content
             );
 
-            const position =
-              persona.height !== undefined && persona.height !== null
-                ? {
-                    x: persona.position.x,
-                    y:
-                      persona.position.y + persona.height / 2 + height / 2 + gap
-                  }
-                : get().centerPosition;
+            // const position =
+            //   persona.height !== undefined && persona.height !== null
+            //     ? {
+            //         x: persona.position.x,
+            //         y:
+            //           persona.position.y + persona.height / 2 + height / 2 + gap
+            //       }
+            //     : get().centerPosition;
+            const position = { x: 0, y: 0 };
 
             const node: Node<NodeData> = {
               id: `problem-${nanoid()}`,
               type: NodeType.Problem,
+              parentId: parentNode.id,
+              extent: 'parent',
               height,
               width,
               style: {
@@ -1477,7 +1453,6 @@ export const useStore = create<RFState>()(
       partialize: (state) => ({
         nodes: state.nodes,
         edges: state.edges,
-        personaDimensions: state.personaDimensions,
         problemDimensions: state.problemDimensions,
         solutionDimensions: state.solutionDimensions,
         storyboardDimensions: state.storyboardDimensions
