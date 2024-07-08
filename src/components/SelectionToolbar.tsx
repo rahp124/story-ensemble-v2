@@ -35,7 +35,9 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
   const showGenerateSolutions =
     nonParentNodes.length > 0 &&
     nonParentNodes.every((node) => node.type === NodeType.Problem);
-  const showGenerateStoryboard = nonParentNodes.length > 0;
+  const showGenerateStoryboard =
+    nonParentNodes.length > 0 &&
+    !nonParentNodes.some((node) => node.type === NodeType.Storyboard);
 
   const showRemoveFromGroup =
     nonParentNodes.length > 0 &&
