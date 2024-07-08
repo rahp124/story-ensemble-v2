@@ -354,7 +354,7 @@ const createStore: StateCreator<
         );
 
       const parentNode: Node = {
-        id: `persona-parent-${nanoid()}`,
+        id: `parent-persona-${nanoid()}`,
         type: 'group',
         ...parentPositionAttributes,
         data: {}
@@ -376,6 +376,8 @@ const createStore: StateCreator<
       get().takeSnapshot();
       set({ nodes: [...get().nodes, parentNode, ...nodes] });
 
+      nodes.forEach((node) => get().generatePersonaImage(node.id));
+
       return nodes.map((node) => node.id);
     },
     regeneratePersonaNodes: async (personaIds: string[], context: string) => {
@@ -389,6 +391,7 @@ const createStore: StateCreator<
       get().takeSnapshot();
       personaIds.forEach((id, idx) => {
         get().updatePersonaNode(id, newPersonas[idx]);
+        get().generatePersonaImage(id);
       });
     },
     updatePersonaNode: async (id: string, persona: string) => {
@@ -493,7 +496,7 @@ const createStore: StateCreator<
         );
 
       const parentNode: Node = {
-        id: `problem-parent-${nanoid()}`,
+        id: `parent-problem-${nanoid()}`,
         type: 'group',
         ...parentPositionAttributes,
         data: {}
@@ -521,6 +524,8 @@ const createStore: StateCreator<
         nodes: [...get().nodes, parentNode, ...nodes],
         edges: [...get().edges, ...edges]
       });
+
+      nodes.forEach((node) => get().generateProblemImage(node.id));
 
       return nodes.map((node) => node.id);
     },
@@ -568,6 +573,7 @@ const createStore: StateCreator<
       get().takeSnapshot();
       problemIds.forEach((id, idx) => {
         get().updateProblemNode(id, newProblems[idx]);
+        get().generateProblemImage(id);
       });
     },
     updateProblemNode: (id: string, problem: string) => {
@@ -656,7 +662,7 @@ const createStore: StateCreator<
         );
 
       const parentNode: Node = {
-        id: `solution-parent-${nanoid()}`,
+        id: `parent-solution-${nanoid()}`,
         type: 'group',
         ...parentPositionAttributes,
         data: {}
@@ -684,6 +690,8 @@ const createStore: StateCreator<
         nodes: [...get().nodes, parentNode, ...nodes],
         edges: [...get().edges, ...edges]
       });
+
+      nodes.forEach((node) => get().generateSolutionImage(node.id));
 
       return nodes.map((node) => node.id);
     },
@@ -716,6 +724,7 @@ const createStore: StateCreator<
       get().takeSnapshot();
       solutionIds.forEach((id, idx) => {
         get().updateSolutionNode(id, newSolutions[idx]);
+        get().generateSolutionImage(id);
       });
     },
     updateSolutionNode: (id: string, solution: string) => {
