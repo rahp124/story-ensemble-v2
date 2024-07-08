@@ -8,13 +8,11 @@ import {
   AspectRatio,
   Button,
   Card,
-  Collapse,
   Input,
   InputLabel,
   Loader,
   LoadingOverlay,
   Modal,
-  MultiSelect,
   Skeleton,
   Switch,
   Table,
@@ -23,7 +21,6 @@ import {
   Tooltip
 } from '@mantine/core';
 import {
-  ChevronDown,
   ImageIcon,
   ImageOff,
   MessageSquareIcon,
@@ -31,14 +28,13 @@ import {
   Pencil,
   X
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 
 export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [showImage, setShowImage] = useState(false);
 
-  const { outOfSync, storyboard, feedback, feedbackOutOfSync, dimensions } =
-    props.data;
+  const { outOfSync, storyboard, feedback, feedbackOutOfSync } = props.data;
 
   const [title, setTitle] = useState(storyboard.title);
   const [descriptions, setDescriptions] = useState<string[]>(
@@ -65,9 +61,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const {
     globalShowImage,
     regenerateStoryboardNode,
-    updateNodeDimensions,
     generateStoryboardImages,
-    storyboardDimensions,
     generateStoryboardFeedback,
     updateStoryboardTitle,
     updateStoryboardDescription,
@@ -75,9 +69,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   } = useStore((state) => ({
     globalShowImage: state.globalShowImage,
     regenerateStoryboardNode: state.regenerateStoryboardNode,
-    updateNodeDimensions: state.updateNodeDimensions,
     generateStoryboardImages: state.generateStoryboardImages,
-    storyboardDimensions: state.storyboardDimensions,
     generateStoryboardFeedback: state.generateStoryboardFeedback,
     updateStoryboardTitle: state.updateStoryboardTitle,
     updateStoryboardDescription: state.updateStoryboardDescription,
@@ -88,44 +80,14 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [activeTab, setActiveTab] = useState<string | null>('feedback');
   const [generatingFeedback, setGeneratingFeedback] = useState(false);
 
-  const initialNodeDimensions = useMemo(
-    () =>
-      storyboardDimensions.map((dimension) => {
-        const pinnedDimension = dimensions.find((d) => d.id === dimension.id);
-        return pinnedDimension ? pinnedDimension : dimension;
-      }),
-    [dimensions, storyboardDimensions]
-  );
-  const [nodeDimensions, setNodeDimensions] = useState(initialNodeDimensions);
   const [editInstructions, setEditInstructions] = useState('');
   const [editFeedback, setEditFeedback] = useState<string | null>(null);
-  const [dimensionsOpen, setDimensionsOpen] = useState(false);
   const [editingNode, setEditingNode] = useState(false);
-
-  useEffect(() => {
-    setNodeDimensions(initialNodeDimensions);
-  }, [initialNodeDimensions]);
-
-  const handleNodeDimensionChange = (dimensionId: string, values: string[]) => {
-    const newDimensions = nodeDimensions.map((dimension) => {
-      if (dimension.id === dimensionId) {
-        return {
-          ...dimension,
-          currentValues: values
-        };
-      }
-      return dimension;
-    });
-
-    setNodeDimensions(newDimensions);
-  };
 
   const handleEditSubmit = async () => {
     if (editingNode) return;
 
     setEditingNode(true);
-
-    updateNodeDimensions(props.id, nodeDimensions);
 
     const instructions = editFeedback
       ? `Feedback: ${editFeedback}\nResponse: ${editInstructions}`
@@ -171,34 +133,6 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
         value={editInstructions}
         onChange={(e) => setEditInstructions(e.target.value)}
       />
-
-      <div className="mb-4">
-        <Button
-          fullWidth
-          variant="subtle"
-          rightSection={<ChevronDown />}
-          onClick={() => {
-            setDimensionsOpen(!dimensionsOpen);
-          }}
-        >
-          Dimensions
-        </Button>
-        <Collapse in={dimensionsOpen}>
-          {nodeDimensions.map((dimension) => (
-            <MultiSelect
-              key={dimension.id}
-              label={dimension.name}
-              data={dimension.values}
-              value={dimension.currentValues}
-              onChange={(value) =>
-                handleNodeDimensionChange(dimension.id, value)
-              }
-              withCheckIcon={true}
-              checkIconPosition="right"
-            />
-          ))}
-        </Collapse>
-      </div>
 
       <Button type="submit">Edit</Button>
     </form>

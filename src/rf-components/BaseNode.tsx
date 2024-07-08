@@ -3,14 +3,13 @@ import { RefreshImageIcon } from '@/components/RefreshImageIcon';
 import SourceHandle from '@/components/SourceHandle';
 import TargetHandle from '@/components/TargetHandle';
 import { useStore } from '@/store';
-import { Dimension, NodeData } from '@/types';
+import { NodeData } from '@/types';
 import {
   ActionIcon,
   Tooltip,
   Image,
   Skeleton,
   Modal,
-  MultiSelect,
   Button,
   Switch,
   Loader,
@@ -18,7 +17,6 @@ import {
   Table,
   Tabs,
   InputLabel,
-  Collapse,
   LoadingOverlay
 } from '@mantine/core';
 import {
@@ -28,10 +26,9 @@ import {
   Pencil,
   MessageSquareShare,
   X,
-  ChevronDown,
   MessageSquareIcon
 } from 'lucide-react';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 
 export interface BaseNodeProps {
@@ -46,24 +43,15 @@ export interface BaseNodeProps {
   onRegenerateContent: (instructions: string) => Promise<void>;
 
   onRegenerateImage: () => Promise<void>;
-  onUpdateDimensions: (dimensions: Dimension[]) => void;
   onGenerateFeedback: () => Promise<void>;
-
-  allDimensions: Dimension[];
 
   targetHandle: boolean;
   sourceHandle: boolean;
 }
 export default function BaseNode(props: BaseNodeProps) {
   const { nodeProps } = props;
-  const {
-    dimensions,
-    image,
-    imageOutOfSync,
-    outOfSync,
-    feedback,
-    feedbackOutOfSync
-  } = nodeProps.data;
+  const { image, imageOutOfSync, outOfSync, feedback, feedbackOutOfSync } =
+    nodeProps.data;
 
   const [regenerating, setRegenerating] = useState(false);
   const [generatingFeedback, setGeneratingFeedback] = useState(false);
@@ -78,39 +66,11 @@ export default function BaseNode(props: BaseNodeProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>('feedback');
 
-  const initialNodeDimensions = useMemo(
-    () =>
-      props.allDimensions.map((dimension) => {
-        const pinnedDimension = dimensions.find((d) => d.id === dimension.id);
-        return pinnedDimension ? pinnedDimension : dimension;
-      }),
-    [dimensions, props.allDimensions]
-  );
-  const [nodeDimensions, setNodeDimensions] = useState(initialNodeDimensions);
   const [editInstructions, setEditInstructions] = useState('');
   const [editFeedback, setEditFeedback] = useState<string | null>(null);
-  const [dimensionsOpen, setDimensionsOpen] = useState(false);
   const [editingNode, setEditingNode] = useState(false);
 
-  const { globalShowImage } = useStore();
-
-  useEffect(() => {
-    setNodeDimensions(initialNodeDimensions);
-  }, [initialNodeDimensions]);
-
-  const handleNodeDimensionChange = (dimensionId: string, values: string[]) => {
-    const newDimensions = nodeDimensions.map((dimension) => {
-      if (dimension.id === dimensionId) {
-        return {
-          ...dimension,
-          currentValues: values
-        };
-      }
-      return dimension;
-    });
-
-    setNodeDimensions(newDimensions);
-  };
+  const { globalShowImage, nodes, setNodes } = useStore();
 
   function cardContent() {
     if (globalShowImage || showImage) {
@@ -193,8 +153,6 @@ export default function BaseNode(props: BaseNodeProps) {
 
     setEditingNode(true);
 
-    props.onUpdateDimensions(nodeDimensions);
-
     const instructions = editFeedback
       ? `Feedback: ${editFeedback}\nResponse: ${editInstructions}`
       : editInstructions;
@@ -238,34 +196,6 @@ export default function BaseNode(props: BaseNodeProps) {
         value={editInstructions}
         onChange={(e) => setEditInstructions(e.target.value)}
       />
-
-      <div className="mb-4">
-        <Button
-          fullWidth
-          variant="subtle"
-          rightSection={<ChevronDown />}
-          onClick={() => {
-            setDimensionsOpen(!dimensionsOpen);
-          }}
-        >
-          Dimensions
-        </Button>
-        <Collapse in={dimensionsOpen}>
-          {nodeDimensions.map((dimension) => (
-            <MultiSelect
-              key={dimension.id}
-              label={dimension.name}
-              data={dimension.values}
-              value={dimension.currentValues}
-              onChange={(value) =>
-                handleNodeDimensionChange(dimension.id, value)
-              }
-              withCheckIcon={true}
-              checkIconPosition="right"
-            />
-          ))}
-        </Collapse>
-      </div>
 
       <Button type="submit">Edit</Button>
     </form>
@@ -364,7 +294,42 @@ export default function BaseNode(props: BaseNodeProps) {
         } ${props.nodeBackgroundClass}`}
       >
         <div className="flex justify-between items-center mb-2">
-          <h3 className="font-bold text-sm">{props.nodeName}</h3>
+          <h3
+            className="font-bold text-sm"
+            onClick={() => {
+              console.log('removing');
+              setNodes(
+                nodes.map((node) => {
+                  if (node.id === nodeProps.id) {
+                    const parentNode = nodes.find(
+                      ({ id }) => id === node.parentId
+                    );
+                    const parentCenter = parentNode!.position;
+                    const parentPosition = {
+                      x: parentCenter.x - parentNode!.width! / 2,
+                      y: parentCenter.y - parentNode!.height! / 2
+                    };
+                    const newPosition = {
+                      x: parentPosition.x + node.position.x,
+                      y: parentPosition.y + node.position.y
+                    };
+                    const nodePosition = node.position;
+                    console.log({ nodePosition, parentPosition });
+
+                    return {
+                      ...node,
+                      parentId: undefined,
+                      extent: undefined,
+                      position: newPosition
+                    };
+                  }
+                  return node;
+                })
+              );
+            }}
+          >
+            {props.nodeName}
+          </h3>
           <div className="flex gap-2 items-center nodrag">
             <Switch
               size="sm"

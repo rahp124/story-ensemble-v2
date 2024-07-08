@@ -1,50 +1,12 @@
 import { generateStructured } from './openai';
-import { nanoid } from 'nanoid';
 import {
-  Dimension,
   frameImagePromptSchema,
   FrameOutline,
-  newDimensionsSchema,
   storyboardOutlineSchema
 } from '@/types';
 import { z } from 'zod';
 
-export async function generateStoryboardDimensions(
-  existingDimensions: Dimension[],
-  context: string
-): Promise<Dimension[]> {
-  const prompt = `You are an AI assistant tasked with enhancing the creative and divergent thinking process for design thinking.
-Your goal is to generate a comprehensive list of dimensions (attributes with a set of allowed values) that can be used to create detailed storyboard ideas.
-These dimensions will help designers explore various different storyboards to communicate and explore a solution to a problem within a specific context.
-
-Given a set of existing dimensions and user instructions, generate a set of new dimensions if needed to fully explore the storyboard space.
-These dimensions should help characterize and define possible storyboards, including their themes, characters, settings, tone, as well as aesthetics such as the style of the storyboard.
-DO NOT suggest dimensions that describe the context or problems!!!
-
-Existing Dimensions: """
-${JSON.stringify(existingDimensions, null, 2)}
-"""
-
-Context: """
-${context}
-"""`;
-
-  const { newDimensions } = await generateStructured(
-    newDimensionsSchema,
-    prompt
-  );
-
-  return newDimensions.map((dimension) => ({
-    ...dimension,
-    id: `storyboard-dim-${nanoid()}`,
-    currentValues: []
-  }));
-}
-
-export async function generateStoryboardOutline(
-  dimensionValues: Dimension[],
-  context: string
-) {
+export async function generateStoryboardOutline(context: unknown) {
   const prompt = `
 You are an AI assistant tasked with creating a detailed storyboard outline for design thinking based on specific dimensions and their assigned values.
 Use the given dimensions to generate a coherent storyboard outline to visualize a problem, solution, and the surrounding context.
@@ -57,8 +19,6 @@ Generate an outline with at least 4 frames.
 The frame outline contains a brief description for each frame in the storyboard.
 The description should tell a cohesive story about the user situation, problem, solution, and resolution.
 Each frame description should describe the key story elements and actions in the frame.
-
-
 
 Each frame outline also contains a caption that will be displayed directly below the visuals as part of the storyboard.
 The caption should aim to clarify or add context to the visual image.
@@ -93,12 +53,8 @@ Output: [
   }
 ]
   
-Dimensions: """
-${JSON.stringify(dimensionValues, null, 2)}
-"""
-
 Context: """
-${context}
+${JSON.stringify(context)}
 """`;
   const storyboardOutline = await generateStructured(
     storyboardOutlineSchema,
@@ -107,10 +63,7 @@ ${context}
   return storyboardOutline;
 }
 
-export async function generateStoryboardImagePrompts(
-  dimensionValues: Dimension[],
-  frames: FrameOutline[]
-) {
+export async function generateStoryboardImagePrompts(frames: FrameOutline[]) {
   // Strip out any additional properties
   frames = frames.map((frame) => ({
     frameType: frame.frameType,
@@ -135,10 +88,6 @@ The imagePrompt shouldn't use ambiguous nouns such as names, but should instead 
 The negative prompt should omit things that are difficult for AI to generate or are not relevant to the frame
 such as text or specific details that are not essential to the visual representation. This can be left blank if not applicable.
 Disfigured, deformed hands, blurry, grainy, bad eyes, and similar negative prompts can be used to avoid unwanted results.
-
-Dimensions: """
-${JSON.stringify(dimensionValues, null, 2)}
-"""
 
 Frames: """
 ${JSON.stringify(frames, null, 2)}

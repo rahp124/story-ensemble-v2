@@ -1,54 +1,51 @@
-import { Dimension, newDimensionsSchema } from '@/types';
-import { generateString, generateStructured } from './openai';
-import { nanoid } from 'nanoid';
+import { generateStructured } from './openai';
+import { z } from 'zod';
 
-export async function generateSolutionDimensions(
-  existingDimensions: Dimension[],
-  context: string
-): Promise<Dimension[]> {
-  const prompt = `You are an AI assistant tasked with enhancing the creative and divergent thinking process for design thinking.
-Your goal is to generate a comprehensive list of dimensions (attributes with a set of allowed values) that can be used to create detailed solution ideas.
-These dimensions will help designers explore various aspects of potential solutions to address a given problem effectively.
+const SOLUTION_PROMPT = `A design solution is a proposal for addressing specific problems or user needs.
+Solutions don't have to be perfect, but instead should be a starting point for further refinement and iteration.`;
 
-Given a set of existing dimensions and user instructions, generate a set of new dimensions if needed to fully explore the solution space.
-These dimensions should help characterize and define possible solutions, their features, benefits, and other aspects specific to just solution ideas.
-DO NOT suggest dimensions that describe the context or problems!!!
-
-Existing Dimensions: """
-${JSON.stringify(existingDimensions, null, 2)}
-"""
+export async function generateSolutions(
+  context: unknown,
+  numberOfVariations?: number
+) {
+  const prompt = `${SOLUTION_PROMPT}
+Create ${numberOfVariations ?? 'multiple'} solutions based on the given context.
 
 Context: """
-${context}
-"""`;
+${JSON.stringify(context)}`;
 
-  const { newDimensions } = await generateStructured(
-    newDimensionsSchema,
-    prompt
-  );
+  const solutionsSchema =
+    numberOfVariations !== undefined
+      ? z.string().array().length(numberOfVariations)
+      : z.string().array().min(1);
+  const schema = z.object({
+    solutions: solutionsSchema
+  });
 
-  return newDimensions.map((dimension) => ({
-    ...dimension,
-    id: `solution-dim-${nanoid()}`,
-    currentValues: []
-  }));
+  const { solutions } = await generateStructured(schema, prompt);
+  return solutions;
 }
 
-export async function generateSolution(
-  dimensionValues: Dimension[],
-  instructions: string
+export async function regenerateSolutions(
+  solutions: string[],
+  context: unknown
 ) {
-  const prompt = `You are an AI assistant tasked with creating a detailed solution idea for design thinking based on specific dimensions and their assigned values.
-Use the given dimensions to generate a coherent and realistic solution idea that can help designers address the identified problem effectively.
-Limit each solution idea to 1-2 sentences. Don't add any Markdown or HTML formatting or line breaks, just plain text.
+  const prompt = `${SOLUTION_PROMPT}
+Update the given solutions based on the new context/instructions.
+Keep the essence of the problem statement intact, but make necessary changes to ensure cohesiveness.
 
-Dimensions: """
-${JSON.stringify(dimensionValues, null, 2)}
+Problems: """
+${JSON.stringify(solutions)}
 """
 
 Context: """
-${instructions}
+${JSON.stringify(context)}
 """`;
 
-  return await generateString(prompt);
+  const schema = z.object({
+    updateSolutions: z.string().array().length(solutions.length)
+  });
+
+  const { updateSolutions } = await generateStructured(schema, prompt);
+  return updateSolutions;
 }

@@ -5,11 +5,9 @@ import BaseNode from './BaseNode';
 
 export default function SolutionNode(props: NodeProps<NodeData>) {
   const {
-    solutionDimensions,
     updateSolutionNode,
-    regenerateSolutionNode,
+    regenerateSolutionNodes,
     generateSolutionImage,
-    updateNodeDimensions,
     generateSolutionFeedback
   } = useStore();
 
@@ -26,14 +24,10 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
       content={props.data.content}
       onUpdateContent={(content) => updateSolutionNode(props.id, content)}
       onRegenerateContent={(instructions) =>
-        regenerateSolutionNode(props.id, instructions)
+        regenerateSolutionNodes([props.id], instructions)
       }
       onRegenerateImage={() => generateSolutionImage(props.id)}
-      onUpdateDimensions={(newDimensions) => {
-        updateNodeDimensions(props.id, newDimensions);
-      }}
       onGenerateFeedback={() => generateSolutionFeedback(props.id)}
-      allDimensions={solutionDimensions}
       targetHandle={true}
       sourceHandle={true}
     />
