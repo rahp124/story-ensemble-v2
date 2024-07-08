@@ -244,9 +244,28 @@ const createStore: StateCreator<
         }, 500);
       }
 
-      set({
-        nodes: applyNodeChanges(changes, get().nodes)
-      });
+      const removeParentChanges = changes
+        .filter((change) => change.type === 'remove')
+        .filter((change) => change.id.startsWith('parent-'));
+      if (removeParentChanges.length) {
+        const parentIdsToRemove = removeParentChanges.map(({ id }) => id);
+        const nodesToRemoveFromParent = get().nodes.filter(
+          (node) =>
+            node.parentId !== undefined &&
+            parentIdsToRemove.includes(node.parentId)
+        );
+        get().removeNodesFromGroup(
+          nodesToRemoveFromParent.map((node) => node.id)
+        );
+
+        set({
+          nodes: applyNodeChanges(removeParentChanges, get().nodes)
+        });
+      } else {
+        set({
+          nodes: applyNodeChanges(changes, get().nodes)
+        });
+      }
     },
     onEdgesChange: (changes: EdgeChange[]) => {
       const removeChanges = changes.filter(
@@ -358,6 +377,7 @@ const createStore: StateCreator<
           return {
             ...node,
             parentId: undefined,
+            expandParent: undefined,
             extend: undefined,
             position: idToPositionMap[node.id]
           };
@@ -409,6 +429,7 @@ const createStore: StateCreator<
           id: `persona-${nanoid()}`,
           type: NodeType.Persona,
           parentId: parentNode.id,
+          expandParent: true,
           ...nodesPositionAttributes[idx],
           data: {
             content: persona
@@ -550,6 +571,7 @@ const createStore: StateCreator<
         id: `problem-${nanoid()}`,
         type: NodeType.Problem,
         parentId: parentNode.id,
+        expandParent: true,
         ...nodesPositionAttributes[idx],
         data: {
           content: problem
@@ -716,6 +738,7 @@ const createStore: StateCreator<
         id: `solution-${nanoid()}`,
         type: NodeType.Solution,
         parentId: parentNode.id,
+        expandParent: true,
         ...nodesPositionAttributes[idx],
         data: {
           content: solution
