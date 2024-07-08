@@ -1,7 +1,7 @@
 import { NodeType } from '@/rf-components';
 import { Node, NodeToolbar, Position } from 'reactflow';
-import { Button } from '@mantine/core';
-import { CopyIcon } from 'lucide-react';
+import { Button, Tooltip } from '@mantine/core';
+import { BlocksIcon, CopyIcon, PlusIcon } from 'lucide-react';
 
 export interface SelectionToolbarProps {
   selectedNodes: Node[];
@@ -10,6 +10,7 @@ export interface SelectionToolbarProps {
   onGenerateSolutions: () => void;
   onGenerateStoryboard: () => void;
   onDuplicate: () => void;
+  onRemoveFromGroup: () => void;
 }
 export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
   // const showMergePersonas =
@@ -21,23 +22,41 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
   const showGenerateSolutions = props.selectedNodes.some(
     (node) => node.type === NodeType.Problem
   );
+  const showRemoveFromGroup = props.selectedNodes.every(
+    (node) => !!node.parentId
+  );
+
   const buttons = [
     {
       show: showGenerateProblems,
-      label: 'Generate problems 🚨',
+      leftSection: <PlusIcon className="size-4" />,
+      label: 'Problems 🚨',
       onClick: props.onGenerateProblems
     },
     {
       show: showGenerateSolutions,
-      label: 'Generate solutions 💡',
+      leftSection: <PlusIcon className="size-4" />,
+      label: 'Solutions 💡',
       onClick: props.onGenerateSolutions
     },
     {
       show: true,
-      label: 'Generate storyboard 🎞',
+      leftSection: <PlusIcon className="size-4" />,
+      label: 'Storyboard 🎞',
       onClick: props.onGenerateStoryboard
     },
-    { show: true, label: <CopyIcon />, onClick: props.onDuplicate }
+    {
+      show: true,
+      tooltip: 'Duplicate',
+      label: <CopyIcon className="size-4" />,
+      onClick: props.onDuplicate
+    },
+    {
+      show: showRemoveFromGroup,
+      tooltip: 'Remove from group',
+      label: <BlocksIcon className="size-4" />,
+      onClick: props.onRemoveFromGroup
+    }
   ];
 
   return (
@@ -49,16 +68,30 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
       <Button.Group>
         {buttons
           .filter(({ show }) => show)
-          .map(({ label, onClick }, idx) => (
-            <Button
-              key={idx}
-              variant="outline"
-              size="compact-sm"
-              onClick={onClick}
-            >
-              {label}
-            </Button>
-          ))}
+          .map(({ tooltip, leftSection, label, onClick }, idx) => {
+            const buttonElement = (
+              <Button
+                key={idx}
+                variant="filled"
+                color="dark"
+                size="xs"
+                onClick={onClick}
+                leftSection={leftSection}
+              >
+                {label}
+              </Button>
+            );
+
+            if (tooltip) {
+              return (
+                <Tooltip key={idx} label={tooltip} position="top">
+                  {buttonElement}
+                </Tooltip>
+              );
+            }
+
+            return buttonElement;
+          })}
       </Button.Group>
     </NodeToolbar>
   );

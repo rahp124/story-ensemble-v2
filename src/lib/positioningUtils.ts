@@ -1,6 +1,6 @@
 import { Node } from 'reactflow';
 
-function getAbsolutePosition(nodes: Node[], allNodes: Node[]) {
+export function getAbsolutePosition(nodes: Node[], allNodes: Node[]) {
   const idToNode = Object.fromEntries(allNodes.map((node) => [node.id, node]));
 
   return nodes.map((node) => {

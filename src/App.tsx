@@ -42,6 +42,8 @@ export default function App() {
     onConnectStart,
     onConnectEnd,
 
+    removeNodesFromGroup,
+
     globalShowImage,
     setGlobalShowImage,
 
@@ -62,6 +64,8 @@ export default function App() {
       onConnect: state.onConnect,
       onConnectStart: state.onConnectStart,
       onConnectEnd: state.onConnectEnd,
+
+      removeNodesFromGroup: state.removeNodesFromGroup,
 
       globalShowImage: state.globalShowImage,
       setGlobalShowImage: state.setGlobalShowImage,
@@ -253,6 +257,9 @@ export default function App() {
             onDuplicate={() => {
               copy();
               paste();
+            }}
+            onRemoveFromGroup={() => {
+              removeNodesFromGroup(selectedNodes.map(({ id }) => id));
             }}
           />
         )}

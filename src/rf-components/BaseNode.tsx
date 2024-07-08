@@ -70,7 +70,7 @@ export default function BaseNode(props: BaseNodeProps) {
   const [editFeedback, setEditFeedback] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState(false);
 
-  const { globalShowImage, nodes, setNodes } = useStore();
+  const { globalShowImage } = useStore();
 
   function cardContent() {
     if (globalShowImage || showImage) {
@@ -289,47 +289,12 @@ export default function BaseNode(props: BaseNodeProps) {
         }}
       />
       <div
-        className={`h-full flex flex-col min-w-[300px] min-h-[300px] p-3 ${
-          nodeProps.selected ? 'nowheel' : ''
+        className={`h-full flex flex-col min-w-[300px] min-h-[300px] p-3 border-2 ${
+          nodeProps.selected ? 'nowheel border-blue-600' : 'border-transparent'
         } ${props.nodeBackgroundClass}`}
       >
         <div className="flex justify-between items-center mb-2">
-          <h3
-            className="font-bold text-sm"
-            onClick={() => {
-              console.log('removing');
-              setNodes(
-                nodes.map((node) => {
-                  if (node.id === nodeProps.id) {
-                    const parentNode = nodes.find(
-                      ({ id }) => id === node.parentId
-                    );
-                    const parentCenter = parentNode!.position;
-                    const parentPosition = {
-                      x: parentCenter.x - parentNode!.width! / 2,
-                      y: parentCenter.y - parentNode!.height! / 2
-                    };
-                    const newPosition = {
-                      x: parentPosition.x + node.position.x,
-                      y: parentPosition.y + node.position.y
-                    };
-                    const nodePosition = node.position;
-                    console.log({ nodePosition, parentPosition });
-
-                    return {
-                      ...node,
-                      parentId: undefined,
-                      extent: undefined,
-                      position: newPosition
-                    };
-                  }
-                  return node;
-                })
-              );
-            }}
-          >
-            {props.nodeName}
-          </h3>
+          <h3 className="font-bold text-sm">{props.nodeName}</h3>
           <div className="flex gap-2 items-center nodrag">
             <Switch
               size="sm"

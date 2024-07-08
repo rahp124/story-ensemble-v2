@@ -46,7 +46,8 @@ import { WritableDraft } from 'immer';
 import {
   calculateNewDependentCenter,
   calculateNodePositionAttributes,
-  calculateNodePositionAttributesWithParent
+  calculateNodePositionAttributesWithParent,
+  getAbsolutePosition
 } from './lib/positioningUtils';
 
 const indexDbStorage: StateStorage = {
@@ -83,6 +84,8 @@ type RFState = {
   setGlobalShowImage: (show: boolean) => void;
 
   setNodeOutOfSync: (id: string, outOfSync: boolean) => void;
+
+  removeNodesFromGroup: (ids: string[]) => void;
 
   /* Personas */
   generatePersonaNodes: (
@@ -333,6 +336,47 @@ const createStore: StateCreator<
     setNodeOutOfSync: (id: string, outOfSync: boolean) => {
       updateNode(id, (draft) => {
         draft.data.outOfSync = outOfSync;
+      });
+    },
+
+    removeNodesFromGroup: (ids: string[]) => {
+      const nodesToRemove = get().nodes.filter((node) => ids.includes(node.id));
+      const absoluteNodePositions = getAbsolutePosition(
+        nodesToRemove,
+        get().nodes
+      );
+      const idToPositionMap = Object.fromEntries(
+        nodesToRemove.map((node, idx) => [node.id, absoluteNodePositions[idx]])
+      );
+
+      get().takeSnapshot();
+
+      set(({ nodes }) => ({
+        nodes: nodes.map((node) => {
+          if (!ids.includes(node.id)) return node;
+
+          return {
+            ...node,
+            parentId: undefined,
+            extend: undefined,
+            position: idToPositionMap[node.id]
+          };
+        })
+      }));
+
+      // Remove groups without children
+      const { nodes } = get();
+      const parentIdsWithChildren = new Set(
+        nodes.map((node) => node.parentId).filter((id) => id !== undefined)
+      );
+      const allParentIds = nodes
+        .map((node) => node.id)
+        .filter((id) => id.startsWith('parent-'));
+      const parentIdsToRemove = allParentIds.filter(
+        (id) => !parentIdsWithChildren.has(id)
+      );
+      set({
+        nodes: nodes.filter((node) => !parentIdsToRemove.includes(node.id))
       });
     },
 
