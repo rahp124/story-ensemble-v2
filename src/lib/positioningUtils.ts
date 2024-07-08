@@ -28,19 +28,31 @@ export function calculateNewDependentCenter(
   dependencies: Node[],
   allNodes: Node[],
   dependentDimensions: {
+    width: number;
     height: number;
     margin: number;
-  }
+  },
+  position: 'bottom' | 'right' = 'bottom'
 ) {
   const dependencyBoundaries = calculateNodeBoundaries(dependencies, allNodes);
 
-  return {
-    x: dependencyBoundaries.centerX,
-    y:
-      dependencyBoundaries.maxY +
-      dependentDimensions.margin +
-      dependentDimensions.height / 2
-  };
+  if (position === 'bottom') {
+    return {
+      x: dependencyBoundaries.centerX,
+      y:
+        dependencyBoundaries.maxY +
+        dependentDimensions.margin +
+        dependentDimensions.height / 2
+    };
+  } else {
+    return {
+      x:
+        dependencyBoundaries.maxX +
+        dependentDimensions.margin +
+        dependentDimensions.width / 2,
+      y: dependencyBoundaries.centerY
+    };
+  }
 }
 
 export function calculateNodeBoundaries(nodes: Node[], allNodes: Node[]) {

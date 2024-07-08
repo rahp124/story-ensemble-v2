@@ -1,49 +1,107 @@
 import { NodeType } from '@/rf-components';
 import { Node, NodeToolbar, Position } from 'reactflow';
 import { Button, Tooltip } from '@mantine/core';
-import { BlocksIcon, CopyIcon, PlusIcon } from 'lucide-react';
+import {
+  BlocksIcon,
+  CopyIcon,
+  NetworkIcon,
+  SquareStackIcon
+} from 'lucide-react';
 
 export interface SelectionToolbarProps {
   selectedNodes: Node[];
-  onMergePersonas: () => void;
+
   onGenerateProblems: () => void;
   onGenerateSolutions: () => void;
   onGenerateStoryboard: () => void;
+
+  onGenerateSimilarPersonas: () => void;
+  onGenerateSimilarProblems: () => void;
+  onGenerateSimilarSolutions: () => void;
+  onGenerateSimilarStoryboard: () => void;
+
   onDuplicate: () => void;
+
   onRemoveFromGroup: () => void;
 }
 export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
-  // const showMergePersonas =
-  //   props.selectedNodes.filter((node) => node.type === NodeType.Persona)
-  //     .length > 1;
-  const showGenerateProblems = props.selectedNodes.some(
-    (node) => node.type === NodeType.Persona
+  const nonParentNodes = props.selectedNodes.filter(
+    (node) => !node.id.startsWith('parent-')
   );
-  const showGenerateSolutions = props.selectedNodes.some(
-    (node) => node.type === NodeType.Problem
-  );
-  const showRemoveFromGroup = props.selectedNodes.every(
-    (node) => !!node.parentId
-  );
+
+  const showGenerateProblems =
+    nonParentNodes.length > 0 &&
+    nonParentNodes.every((node) => node.type === NodeType.Persona);
+  const showGenerateSolutions =
+    nonParentNodes.length > 0 &&
+    nonParentNodes.every((node) => node.type === NodeType.Problem);
+
+  const showRemoveFromGroup =
+    nonParentNodes.length > 0 &&
+    nonParentNodes.every((node) => !!node.parentId);
+
+  const showGenerateSimilarPersonas =
+    nonParentNodes.length > 0 &&
+    nonParentNodes.every((node) => node.type === NodeType.Persona);
+  const showGenerateSimilarProblems =
+    nonParentNodes.length > 0 &&
+    nonParentNodes.every((node) => node.type === NodeType.Problem);
+  const showGenerateSimilarSolutions =
+    nonParentNodes.length > 0 &&
+    nonParentNodes.every((node) => node.type === NodeType.Solution);
+  const showGenerateSimilarStoryboard =
+    nonParentNodes.length > 0 &&
+    nonParentNodes.every((node) => node.type === NodeType.Storyboard);
 
   const buttons = [
     {
       show: showGenerateProblems,
-      leftSection: <PlusIcon className="size-4" />,
+      tooltip: 'Generate problems from the selected personas',
+      leftSection: <NetworkIcon className="size-4" />,
       label: 'Problems 🚨',
       onClick: props.onGenerateProblems
     },
     {
       show: showGenerateSolutions,
-      leftSection: <PlusIcon className="size-4" />,
+      tooltip: 'Generate solutions from the selected problems',
+      leftSection: <NetworkIcon className="size-4" />,
       label: 'Solutions 💡',
       onClick: props.onGenerateSolutions
     },
     {
       show: true,
-      leftSection: <PlusIcon className="size-4" />,
+      tooltip: 'Generate a storyboard from the selected nodes',
+      leftSection: <NetworkIcon className="size-4" />,
       label: 'Storyboard 🎞',
       onClick: props.onGenerateStoryboard
+    },
+    {
+      show: showGenerateSimilarPersonas,
+      tooltip: 'Generate personas similar to the selected personas',
+      leftSection: <SquareStackIcon className="size-4" />,
+      label: 'Personas 👤',
+      onClick: props.onGenerateSimilarPersonas
+    },
+    {
+      show: showGenerateSimilarProblems,
+      tooltip: 'Generate problems similar to the selected problems',
+      leftSection: <SquareStackIcon className="size-4" />,
+      label: 'Problems 🚨',
+      onClick: props.onGenerateSimilarProblems
+    },
+    {
+      show: showGenerateSimilarSolutions,
+      tooltip: 'Generate solutions similar to the selected solutions',
+      leftSection: <SquareStackIcon className="size-4" />,
+      label: 'Solutions 💡',
+      onClick: props.onGenerateSimilarSolutions
+    },
+    {
+      show: showGenerateSimilarStoryboard,
+      tooltip: 'Generate a storyboard similar to the selected storyboards',
+      leftSection: <SquareStackIcon className="size-4" />,
+      label: 'Storyboard 🎞',
+      onClick: props.onGenerateSimilarStoryboard
     },
     {
       show: true,

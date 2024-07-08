@@ -28,7 +28,10 @@ import {
 import { useShallow } from 'zustand/react/shallow';
 import { useNodeGroups } from './lib/useNodeGroups';
 import { useGroupFeedback } from './lib/useGroupFeedback';
-import { GenerationModal } from './components/GenerationModal';
+import {
+  GenerationModal,
+  GenerationModalProps
+} from './components/GenerationModal';
 import { NodeCountDisplayer } from './components/NodeCountDisplayer';
 import { ApiKeyModal } from './components/ApiKeyModal';
 
@@ -101,9 +104,11 @@ export default function App() {
 
   const [feedbackDrawerOpened, setFeedbackDrawerOpened] = useState(false);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
-  const [dependentNodeToGenerate, setDependentNodeToGenerate] = useState<
-    'problem' | 'solution' | 'storyboard' | null
-  >(null);
+  const [generationType, setGenerationType] = useState<
+    GenerationModalProps['generationType']
+  >({
+    type: 'ideas'
+  });
 
   const updateCenterPosition = useCallback(() => {
     const centerPosition = screenToFlowPosition({
@@ -178,7 +183,7 @@ export default function App() {
           <div className="flex gap-4 items-center">
             <Button
               onClick={() => {
-                setDependentNodeToGenerate(null);
+                setGenerationType({ type: 'ideas' });
                 setShowGenerationModal(true);
               }}
             >
@@ -241,17 +246,53 @@ export default function App() {
         {showSelectionTooltip && (
           <SelectionToolbar
             selectedNodes={selectedNodes}
-            onMergePersonas={() => {}}
             onGenerateProblems={() => {
-              setDependentNodeToGenerate('problem');
+              setGenerationType({
+                type: 'dependent',
+                dependentNodeToGenerate: 'problem'
+              });
               setShowGenerationModal(true);
             }}
             onGenerateSolutions={() => {
-              setDependentNodeToGenerate('solution');
+              setGenerationType({
+                type: 'dependent',
+                dependentNodeToGenerate: 'solution'
+              });
               setShowGenerationModal(true);
             }}
             onGenerateStoryboard={() => {
-              setDependentNodeToGenerate('storyboard');
+              setGenerationType({
+                type: 'dependent',
+                dependentNodeToGenerate: 'storyboard'
+              });
+              setShowGenerationModal(true);
+            }}
+            onGenerateSimilarPersonas={() => {
+              setGenerationType({
+                type: 'similar',
+                similarNodeToGenerate: 'persona'
+              });
+              setShowGenerationModal(true);
+            }}
+            onGenerateSimilarProblems={() => {
+              setGenerationType({
+                type: 'similar',
+                similarNodeToGenerate: 'problem'
+              });
+              setShowGenerationModal(true);
+            }}
+            onGenerateSimilarSolutions={() => {
+              setGenerationType({
+                type: 'similar',
+                similarNodeToGenerate: 'solution'
+              });
+              setShowGenerationModal(true);
+            }}
+            onGenerateSimilarStoryboard={() => {
+              setGenerationType({
+                type: 'similar',
+                similarNodeToGenerate: 'storyboard'
+              });
               setShowGenerationModal(true);
             }}
             onDuplicate={() => {
@@ -267,7 +308,7 @@ export default function App() {
       <GenerationModal
         opened={showGenerationModal}
         onClose={() => setShowGenerationModal(false)}
-        dependentNodeToGenerate={dependentNodeToGenerate}
+        generationType={generationType}
       />
       <Drawer
         opened={feedbackDrawerOpened}

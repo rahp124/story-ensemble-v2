@@ -9,16 +9,36 @@ import { NodeCountDisplayer } from './NodeCountDisplayer';
 export interface GenerationModalProps {
   opened: boolean;
   onClose: () => void;
-  dependentNodeToGenerate: 'problem' | 'solution' | 'storyboard' | null;
+  generationType:
+    | {
+        type: 'dependent';
+        dependentNodeToGenerate: 'problem' | 'solution' | 'storyboard';
+      }
+    | {
+        type: 'similar';
+        similarNodeToGenerate:
+          | 'persona'
+          | 'problem'
+          | 'solution'
+          | 'storyboard';
+      }
+    | {
+        type: 'ideas';
+      };
 }
 export function GenerationModal(props: GenerationModalProps) {
-  const { opened, onClose, dependentNodeToGenerate } = props;
+  const { opened, onClose, generationType } = props;
 
   const {
     generatePersonaNodes,
     generateProblemNodes,
     generateSolutionNodes,
     generateStoryboardNode,
+
+    generateSimilarPersonaNodes,
+    generateSimilarProblemNodes,
+    generateSimilarSolutionNodes,
+    generateSimilarStoryboardNode,
 
     selectNodes,
     selectedNodes
@@ -28,6 +48,11 @@ export function GenerationModal(props: GenerationModalProps) {
       generateProblemNodes: state.generateProblemNodes,
       generateSolutionNodes: state.generateSolutionNodes,
       generateStoryboardNode: state.generateStoryboardNode,
+
+      generateSimilarPersonaNodes: state.generateSimilarPersonaNodes,
+      generateSimilarProblemNodes: state.generateSimilarProblemNodes,
+      generateSimilarSolutionNodes: state.generateSimilarSolutionNodes,
+      generateSimilarStoryboardNode: state.generateSimilarStoryboardNode,
 
       selectNodes: state.selectNodes,
       selectedNodes: state.nodes.filter((node) => node.selected)
@@ -51,75 +76,173 @@ export function GenerationModal(props: GenerationModalProps) {
   const selectedSolutionNodes = selectedNodes.filter(
     ({ type }) => type === NodeType.Solution
   );
-  const dependentNodes =
-    dependentNodeToGenerate === 'problem'
-      ? selectedPersonaNodes
-      : dependentNodeToGenerate === 'solution'
-      ? selectedSolutionNodes
-      : dependentNodeToGenerate === 'storyboard'
-      ? [
-          ...selectedPersonaNodes,
-          ...selectedProblemNodes,
-          ...selectedSolutionNodes
-        ]
-      : [];
+  const selectedStoryboardNodes = selectedNodes.filter(
+    ({ type }) => type === NodeType.Storyboard
+  );
+
+  const getDependentNodes = () => {
+    if (generationType.type === 'dependent') {
+      switch (generationType.dependentNodeToGenerate) {
+        case 'problem':
+          return selectedPersonaNodes;
+        case 'solution':
+          return selectedProblemNodes;
+        case 'storyboard':
+          return [
+            ...selectedPersonaNodes,
+            ...selectedProblemNodes,
+            ...selectedSolutionNodes
+          ];
+      }
+    } else if (generationType.type === 'similar') {
+      switch (generationType.similarNodeToGenerate) {
+        case 'persona':
+          return selectedPersonaNodes;
+        case 'problem':
+          return selectedProblemNodes;
+        case 'solution':
+          return selectedSolutionNodes;
+        case 'storyboard':
+          return selectedStoryboardNodes;
+      }
+    } else {
+      return [];
+    }
+  };
+  const dependentNodes = getDependentNodes();
+
+  const getModalTitle = () => {
+    if (generationType.type === 'dependent') {
+      switch (generationType.dependentNodeToGenerate) {
+        case 'problem':
+          return 'Generate dependent problems';
+        case 'solution':
+          return 'Generate dependent solutions';
+        case 'storyboard':
+          return 'Generate dependent storyboard';
+      }
+    } else if (generationType.type === 'similar') {
+      switch (generationType.similarNodeToGenerate) {
+        case 'persona':
+          return 'Generate similar personas';
+        case 'problem':
+          return 'Generate similar problems';
+        case 'solution':
+          return 'Generate similar solutions';
+        case 'storyboard':
+          return 'Generate similar storyboard';
+      }
+    } else {
+      return 'Generate ideas';
+    }
+  };
+  const modalTitle = getModalTitle();
+
+  const showSelectedNodeCounter = generationType.type !== 'ideas';
+
+  const handleGenerateIdeas = async () => {
+    const nodesToFocus: string[] = [];
+
+    const personaIds = await generatePersonaNodes(designPrompt);
+    nodesToFocus.push(...personaIds);
+
+    if (finalStep !== 'Persona') {
+      const problemIds = await generateProblemNodes(designPrompt, personaIds);
+      nodesToFocus.push(...problemIds);
+
+      if (finalStep !== 'Problem') {
+        const solutionIds = await generateSolutionNodes(
+          designPrompt,
+          problemIds
+        );
+        nodesToFocus.push(...solutionIds);
+
+        if (finalStep !== 'Solution') {
+          const storyboardIds = await generateStoryboardNode(
+            designPrompt,
+            personaIds,
+            problemIds,
+            solutionIds
+          );
+          nodesToFocus.push(...storyboardIds);
+        }
+      }
+    }
+
+    return nodesToFocus;
+  };
+
+  const handleGenerateDependent = async () => {
+    if (generationType.type !== 'dependent') return [];
+
+    const { dependentNodeToGenerate } = generationType;
+
+    const generatedNodeIds =
+      dependentNodeToGenerate === 'problem'
+        ? await generateProblemNodes(
+            designPrompt,
+            selectedPersonaNodes.map(({ id }) => id)
+          )
+        : dependentNodeToGenerate === 'solution'
+        ? await generateSolutionNodes(
+            designPrompt,
+            selectedProblemNodes.map(({ id }) => id)
+          )
+        : dependentNodeToGenerate === 'storyboard'
+        ? await generateStoryboardNode(
+            designPrompt,
+            selectedPersonaNodes.map(({ id }) => id),
+            selectedProblemNodes.map(({ id }) => id),
+            selectedSolutionNodes.map(({ id }) => id)
+          )
+        : [];
+
+    return generatedNodeIds;
+  };
+
+  const handleGenerateSimilar = async () => {
+    if (generationType.type !== 'similar') return [];
+
+    const { similarNodeToGenerate } = generationType;
+
+    const generatedNodeIds =
+      similarNodeToGenerate === 'persona'
+        ? await generateSimilarPersonaNodes(
+            designPrompt,
+            selectedPersonaNodes.map(({ id }) => id)
+          )
+        : similarNodeToGenerate === 'problem'
+        ? await generateSimilarProblemNodes(
+            designPrompt,
+            selectedProblemNodes.map(({ id }) => id)
+          )
+        : similarNodeToGenerate === 'solution'
+        ? await generateSimilarSolutionNodes(
+            designPrompt,
+            selectedSolutionNodes.map(({ id }) => id)
+          )
+        : similarNodeToGenerate === 'storyboard'
+        ? await generateSimilarStoryboardNode(
+            designPrompt,
+            selectedStoryboardNodes.map(({ id }) => id)
+          )
+        : [];
+
+    return generatedNodeIds;
+  };
 
   const handleGenerate = async () => {
     if (generating) return;
     setGenerating(true);
 
-    const nodesToFocus: string[] = [];
-
-    if (!dependentNodeToGenerate) {
-      const personaIds = await generatePersonaNodes(designPrompt);
-      nodesToFocus.push(...personaIds);
-
-      if (finalStep !== 'Persona') {
-        const problemIds = await generateProblemNodes(designPrompt, personaIds);
-        nodesToFocus.push(...problemIds);
-
-        if (finalStep !== 'Problem') {
-          const solutionIds = await generateSolutionNodes(
-            designPrompt,
-            problemIds
-          );
-          nodesToFocus.push(...solutionIds);
-
-          if (finalStep !== 'Solution') {
-            const storyboardIds = await generateStoryboardNode(
-              designPrompt,
-              personaIds,
-              problemIds,
-              solutionIds
-            );
-            nodesToFocus.push(...storyboardIds);
-          }
-        }
-      }
-    } else {
-      const generatedNodeIds =
-        dependentNodeToGenerate === 'problem'
-          ? await generateProblemNodes(
-              designPrompt,
-              selectedPersonaNodes.map(({ id }) => id)
-            )
-          : dependentNodeToGenerate === 'solution'
-          ? await generateSolutionNodes(
-              designPrompt,
-              selectedProblemNodes.map(({ id }) => id)
-            )
-          : dependentNodeToGenerate === 'storyboard'
-          ? await generateStoryboardNode(
-              designPrompt,
-              selectedPersonaNodes.map(({ id }) => id),
-              selectedProblemNodes.map(({ id }) => id),
-              selectedSolutionNodes.map(({ id }) => id)
-            )
-          : [];
-
-      nodesToFocus.push(...generatedNodeIds);
-      nodesToFocus.push(...dependentNodes.map(({ id }) => id));
-    }
+    const nodesToFocus: string[] =
+      generationType.type === 'ideas'
+        ? await handleGenerateIdeas()
+        : generationType.type === 'dependent'
+        ? await handleGenerateDependent()
+        : generationType.type === 'similar'
+        ? await handleGenerateSimilar()
+        : [];
 
     setGenerating(false);
 
@@ -127,6 +250,7 @@ export function GenerationModal(props: GenerationModalProps) {
       nodes: nodesToFocus.map((id) => ({ id }))
     });
     selectNodes(nodesToFocus);
+
     onClose();
   };
 
@@ -135,27 +259,17 @@ export function GenerationModal(props: GenerationModalProps) {
       opened={opened}
       onClose={onClose}
       size="xl"
-      title={
-        <span className="text-xl font-bold">
-          {dependentNodeToGenerate
-            ? `Generate dependent ${dependentNodeToGenerate}`
-            : 'Generate ideas'}
-        </span>
-      }
+      title={<span className="text-xl font-bold">{modalTitle}</span>}
     >
       <div className="relative">
         <LoadingOverlay visible={generating} />
-        {dependentNodeToGenerate && (
+        {showSelectedNodeCounter && (
           <div className="mb-8">
             <h2 className="text-md font-bold mb-2">Selected input nodes:</h2>
             <NodeCountDisplayer nodeIds={dependentNodes.map(({ id }) => id)} />
           </div>
         )}
         <div className="mb-8">
-          <p className="text-sm mb-6">
-            Enter a design prompt to start generating ideas and select which
-            type of ideas you want to generate up to.
-          </p>
           <Textarea
             label="Design prompt"
             className="mb-4"
@@ -166,7 +280,7 @@ export function GenerationModal(props: GenerationModalProps) {
             value={designPrompt}
             onChange={(event) => setDesignPrompt(event.target.value)}
           />
-          {!dependentNodeToGenerate && (
+          {generationType.type === 'ideas' && (
             <Select
               label="Final step"
               description="Select the step of the design process to generate up to"

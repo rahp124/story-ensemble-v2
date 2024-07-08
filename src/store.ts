@@ -92,6 +92,10 @@ type RFState = {
     context: string,
     numberOfNodes?: number
   ) => Promise<string[]>;
+  generateSimilarPersonaNodes: (
+    instructions: string,
+    personaIds: string[]
+  ) => Promise<string[]>;
   regeneratePersonaNodes: (
     personaIds: string[],
     context: string
@@ -107,6 +111,10 @@ type RFState = {
     context: string,
     personaIds: string[],
     numberOfNodes?: number
+  ) => Promise<string[]>;
+  generateSimilarProblemNodes: (
+    instructions: string,
+    problemIds: string[]
   ) => Promise<string[]>;
   regenerateProblemNodes: (
     problemIds: string[],
@@ -124,6 +132,10 @@ type RFState = {
     problemIds: string[],
     numberOfNodes?: number
   ) => Promise<string[]>;
+  generateSimilarSolutionNodes: (
+    instructions: string,
+    solutionIds: string[]
+  ) => Promise<string[]>;
   regenerateSolutionNodes: (
     solutionIds: string[],
     context: string
@@ -140,6 +152,10 @@ type RFState = {
     personaIds: string[],
     problemIds: string[],
     solutionIds: string[]
+  ) => Promise<string[]>;
+  generateSimilarStoryboardNode: (
+    instructions: string,
+    storyboardIds: string[]
   ) => Promise<string[]>;
   regenerateStoryboardNode: (id: string, instructions: string) => Promise<void>;
   updateStoryboardTitle: (id: string, title: string) => void;
@@ -377,7 +393,7 @@ const createStore: StateCreator<
           return {
             ...node,
             parentId: undefined,
-            expandParent: undefined,
+            // expandParent: undefined,
             extend: undefined,
             position: idToPositionMap[node.id]
           };
@@ -429,7 +445,7 @@ const createStore: StateCreator<
           id: `persona-${nanoid()}`,
           type: NodeType.Persona,
           parentId: parentNode.id,
-          expandParent: true,
+          // expandParent: true,
           ...nodesPositionAttributes[idx],
           data: {
             content: persona
@@ -440,6 +456,81 @@ const createStore: StateCreator<
 
       get().takeSnapshot();
       set({ nodes: [...get().nodes, parentNode, ...nodes] });
+
+      nodes.forEach((node) => get().generatePersonaImage(node.id));
+
+      return nodes.map((node) => node.id);
+    },
+    generateSimilarPersonaNodes: async (
+      instructions: string,
+      personaIds: string[]
+    ) => {
+      const personaNodes = get().nodes.filter(
+        (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
+      );
+      const personas = personaNodes.map((node) => node.data.content);
+
+      const context = {
+        systemInstructions:
+          'Given a list of selected personas and user instructions. Generate more similar, but distinct personas.',
+        userInstructions: instructions,
+        personas
+      };
+
+      const newPersonas = await generatePersonas(context);
+      const numberOfNodes = newPersonas.length;
+      const [width, height, padding, parentPadding, dependencyMargin] = [
+        300, 300, 50, 25, 100
+      ];
+      const parentHeight = height + parentPadding * 2;
+      const parentWidth =
+        width * numberOfNodes +
+        padding * (numberOfNodes - 1) +
+        parentPadding * 2;
+      const center = calculateNewDependentCenter(
+        personaNodes,
+        get().nodes,
+        {
+          width: parentWidth,
+          height: parentHeight,
+          margin: dependencyMargin
+        },
+        'right'
+      );
+      const { parentPositionAttributes, nodesPositionAttributes } =
+        calculateNodePositionAttributesWithParent(
+          numberOfNodes,
+          {
+            width,
+            height,
+            padding,
+            parentPadding
+          },
+          center
+        );
+
+      const parentNode: Node = {
+        id: `parent-persona-${nanoid()}`,
+        type: 'group',
+        ...parentPositionAttributes,
+        data: {}
+      };
+
+      const nodes: Node<NodeData>[] = newPersonas.map((persona, idx) => ({
+        id: `persona-${nanoid()}`,
+        type: NodeType.Persona,
+        parentId: parentNode.id,
+        // expandParent: true,
+        ...nodesPositionAttributes[idx],
+        data: {
+          content: persona
+        }
+      }));
+
+      get().takeSnapshot();
+      set({
+        nodes: [...get().nodes, parentNode, ...nodes]
+      });
 
       nodes.forEach((node) => get().generatePersonaImage(node.id));
 
@@ -544,7 +635,12 @@ const createStore: StateCreator<
         300, 300, 50, 25, 100
       ];
       const parentHeight = height + parentPadding * 2;
+      const parentWidth =
+        width * numberOfNodes +
+        padding * (numberOfNodes - 1) +
+        parentPadding * 2;
       const center = calculateNewDependentCenter(personaNodes, get().nodes, {
+        width: parentWidth,
         height: parentHeight,
         margin: dependencyMargin
       });
@@ -571,7 +667,7 @@ const createStore: StateCreator<
         id: `problem-${nanoid()}`,
         type: NodeType.Problem,
         parentId: parentNode.id,
-        expandParent: true,
+        // expandParent: true,
         ...nodesPositionAttributes[idx],
         data: {
           content: problem
@@ -589,6 +685,78 @@ const createStore: StateCreator<
       set({
         nodes: [...get().nodes, parentNode, ...nodes],
         edges: [...get().edges, ...edges]
+      });
+
+      nodes.forEach((node) => get().generateProblemImage(node.id));
+
+      return nodes.map((node) => node.id);
+    },
+    generateSimilarProblemNodes: async (instructions, problemIds) => {
+      const problemNodes = get().nodes.filter(
+        (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
+      );
+      const problems = problemNodes.map((node) => node.data.content);
+
+      const context = {
+        systemInstructions:
+          'Given a list of selected problems and user instructions, generate more similar, but distinct problems.',
+        userInstructions: instructions,
+        problems
+      };
+
+      const newProblems = await generateProblems(context);
+      const numberOfNodes = newProblems.length;
+      const [width, height, padding, parentPadding, dependencyMargin] = [
+        300, 300, 50, 25, 100
+      ];
+      const parentHeight = height + parentPadding * 2;
+      const parentWidth =
+        width * numberOfNodes +
+        padding * (numberOfNodes - 1) +
+        parentPadding * 2;
+      const center = calculateNewDependentCenter(
+        problemNodes,
+        get().nodes,
+        {
+          width: parentWidth,
+          height: parentHeight,
+          margin: dependencyMargin
+        },
+        'right'
+      );
+      const { parentPositionAttributes, nodesPositionAttributes } =
+        calculateNodePositionAttributesWithParent(
+          numberOfNodes,
+          {
+            width,
+            height,
+            padding,
+            parentPadding
+          },
+          center
+        );
+
+      const parentNode: Node = {
+        id: `parent-problem-${nanoid()}`,
+        type: 'group',
+        ...parentPositionAttributes,
+        data: {}
+      };
+
+      const nodes: Node<NodeData>[] = newProblems.map((problem, idx) => ({
+        id: `problem-${nanoid()}`,
+        type: NodeType.Problem,
+        parentId: parentNode.id,
+        // expandParent: true,
+        ...nodesPositionAttributes[idx],
+        data: {
+          content: problem
+        }
+      }));
+
+      get().takeSnapshot();
+      set({
+        nodes: [...get().nodes, parentNode, ...nodes]
       });
 
       nodes.forEach((node) => get().generateProblemImage(node.id));
@@ -711,7 +879,12 @@ const createStore: StateCreator<
         300, 300, 50, 25, 100
       ];
       const parentHeight = height + parentPadding * 2;
+      const parentWidth =
+        width * numberOfNodes +
+        padding * (numberOfNodes - 1) +
+        parentPadding * 2;
       const center = calculateNewDependentCenter(problemNodes, get().nodes, {
+        width: parentWidth,
         height: parentHeight,
         margin: dependencyMargin
       });
@@ -738,7 +911,7 @@ const createStore: StateCreator<
         id: `solution-${nanoid()}`,
         type: NodeType.Solution,
         parentId: parentNode.id,
-        expandParent: true,
+        // expandParent: true,
         ...nodesPositionAttributes[idx],
         data: {
           content: solution
@@ -756,6 +929,79 @@ const createStore: StateCreator<
       set({
         nodes: [...get().nodes, parentNode, ...nodes],
         edges: [...get().edges, ...edges]
+      });
+
+      nodes.forEach((node) => get().generateSolutionImage(node.id));
+
+      return nodes.map((node) => node.id);
+    },
+    generateSimilarSolutionNodes: async (instructions, solutionIds) => {
+      const solutionNodes = get().nodes.filter(
+        (node) =>
+          node.type === NodeType.Solution && solutionIds.includes(node.id)
+      );
+      const solutions = solutionNodes.map((node) => node.data.content);
+
+      const context = {
+        systemInstructions:
+          'Given a list of selected solutions and user instructions, generate more similar, but distinct solutions.',
+        userInstructions: instructions,
+        solutions
+      };
+
+      const newSolutions = await generateSolutions(context);
+      const numberOfNodes = newSolutions.length;
+      const [width, height, padding, parentPadding, dependencyMargin] = [
+        300, 300, 50, 25, 100
+      ];
+      const parentHeight = height + parentPadding * 2;
+      const parentWidth =
+        width * numberOfNodes +
+        padding * (numberOfNodes - 1) +
+        parentPadding * 2;
+      const center = calculateNewDependentCenter(
+        solutionNodes,
+        get().nodes,
+        {
+          width: parentWidth,
+          height: parentHeight,
+          margin: dependencyMargin
+        },
+        'right'
+      );
+      const { parentPositionAttributes, nodesPositionAttributes } =
+        calculateNodePositionAttributesWithParent(
+          numberOfNodes,
+          {
+            width,
+            height,
+            padding,
+            parentPadding
+          },
+          center
+        );
+
+      const parentNode: Node = {
+        id: `parent-solution-${nanoid()}`,
+        type: 'group',
+        ...parentPositionAttributes,
+        data: {}
+      };
+
+      const nodes: Node<NodeData>[] = newSolutions.map((solution, idx) => ({
+        id: `solution-${nanoid()}`,
+        type: NodeType.Solution,
+        parentId: parentNode.id,
+        // expandParent: true,
+        ...nodesPositionAttributes[idx],
+        data: {
+          content: solution
+        }
+      }));
+
+      get().takeSnapshot();
+      set({
+        nodes: [...get().nodes, parentNode, ...nodes]
       });
 
       nodes.forEach((node) => get().generateSolutionImage(node.id));
@@ -884,6 +1130,7 @@ const createStore: StateCreator<
 
       const [height, width, gap] = [600, 1200, 100];
       const center = calculateNewDependentCenter(dependencyNodes, get().nodes, {
+        width,
         height,
         margin: gap
       });
@@ -929,6 +1176,72 @@ const createStore: StateCreator<
       set({
         nodes: [...get().nodes, node],
         edges: [...get().edges, ...edges]
+      });
+
+      get().generateStoryboardImages(node.id);
+
+      return [node.id];
+    },
+    generateSimilarStoryboardNode: async (instructions, storyboardIds) => {
+      const storyboardNodes: Node<StoryboardNodeData>[] = get().nodes.filter(
+        (node) =>
+          node.type === NodeType.Storyboard && storyboardIds.includes(node.id)
+      );
+      const storyboards = storyboardNodes.map((node) => ({
+        title: node.data.storyboard.title,
+        outline: node.data.storyboard.outline.map((frame) => ({
+          frameType: frame.frameType,
+          description: frame.description,
+          caption: frame.caption
+        }))
+      }));
+
+      const context = {
+        systemInstructions:
+          'Given a list of selected storyboards and user instructions, generate more similar, but distinct storyboards.',
+        userInstructions: instructions,
+        storyboards
+      };
+
+      const storyboardData = await generateStoryboardOutline(context);
+      const [height, width, gap] = [600, 1200, 100];
+      const center = calculateNewDependentCenter(
+        storyboardNodes,
+        get().nodes,
+        {
+          width,
+          height,
+          margin: gap
+        },
+        'right'
+      );
+      const nodesPositionAttributes = calculateNodePositionAttributes(
+        1,
+        {
+          width,
+          height,
+          padding: 0
+        },
+        center
+      )[0];
+
+      const node: Node<StoryboardNodeData> = {
+        id: `storyboard-${nanoid()}`,
+        type: NodeType.Storyboard,
+        ...nodesPositionAttributes,
+        data: {
+          content: '',
+          storyboard: {
+            ...storyboardData,
+            numberOfFrames: storyboardData.outline.length,
+            artStyle: 'TODO'
+          }
+        }
+      };
+
+      get().takeSnapshot();
+      set({
+        nodes: [...get().nodes, node]
       });
 
       get().generateStoryboardImages(node.id);
