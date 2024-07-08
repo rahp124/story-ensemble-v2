@@ -1462,15 +1462,25 @@ const createStore: StateCreator<
       const newNodes = cloneDeep(
         get()
           .nodes.filter(({ id }) => copiedNodeIds.includes(id))
-          .map((node) => ({
-            ...node,
-            id: newIdByOldId.get(node.id)!,
-            position: {
-              ...node.position,
-              x: node.position.x + 50,
-              y: node.position.y + 50
+          .map((node) => {
+            if (node.parentId && newIdByOldId.has(node.parentId)) {
+              return {
+                ...node,
+                id: newIdByOldId.get(node.id)!,
+                parentId: newIdByOldId.get(node.parentId)!
+              };
             }
-          }))
+
+            return {
+              ...node,
+              id: newIdByOldId.get(node.id)!,
+              position: {
+                ...node.position,
+                x: node.position.x + 50,
+                y: node.position.y + 50
+              }
+            };
+          })
       );
       const newEdges = cloneDeep(
         get()
