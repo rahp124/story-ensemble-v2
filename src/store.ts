@@ -18,7 +18,8 @@ import {
   XYPosition,
   OnConnectStart,
   OnConnectEnd,
-  EdgeRemoveChange
+  EdgeRemoveChange,
+  OnSelectionChangeFunc
 } from 'reactflow';
 import {
   generateStoryboardImagePrompts,
@@ -72,6 +73,8 @@ type RFState = {
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
+  onSelectionChange: OnSelectionChangeFunc;
+
   selectNodes: (ids: string[]) => void;
 
   centerPosition: XYPosition;
@@ -347,6 +350,30 @@ const createStore: StateCreator<
           return node;
         })
       });
+    },
+    onSelectionChange: (params) => {
+      const { nodes } = params;
+
+      const selectedNodeIds = new Set(nodes.map((node) => node.id));
+      const selectedParentIds = new Set(
+        nodes
+          .filter((node) => node.id.startsWith('parent-'))
+          .map((node) => node.id)
+      );
+
+      if (selectedParentIds.size === 0) return;
+
+      const unselectedChildrenIds = get()
+        .nodes.filter((node) => {
+          return (
+            !selectedNodeIds.has(node.id) &&
+            node.parentId !== undefined &&
+            selectedParentIds.has(node.parentId)
+          );
+        })
+        .map((node) => node.id);
+
+      get().selectNodes([...selectedNodeIds, ...unselectedChildrenIds]);
     },
     selectNodes: (ids: string[]) => {
       set({

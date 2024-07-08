@@ -35,6 +35,7 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
   const showGenerateSolutions =
     nonParentNodes.length > 0 &&
     nonParentNodes.every((node) => node.type === NodeType.Problem);
+  const showGenerateStoryboard = nonParentNodes.length > 0;
 
   const showRemoveFromGroup =
     nonParentNodes.length > 0 &&
@@ -69,7 +70,7 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
       onClick: props.onGenerateSolutions
     },
     {
-      show: true,
+      show: showGenerateStoryboard,
       tooltip: 'Generate a storyboard from the selected nodes',
       leftSection: <NetworkIcon className="size-4" />,
       label: 'Storyboard 🎞',

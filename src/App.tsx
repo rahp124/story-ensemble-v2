@@ -44,6 +44,7 @@ export default function App() {
     onConnect,
     onConnectStart,
     onConnectEnd,
+    onSelectionChange,
 
     removeNodesFromGroup,
 
@@ -67,6 +68,7 @@ export default function App() {
       onConnect: state.onConnect,
       onConnectStart: state.onConnectStart,
       onConnectEnd: state.onConnectEnd,
+      onSelectionChange: state.onSelectionChange,
 
       removeNodesFromGroup: state.removeNodesFromGroup,
 
@@ -136,6 +138,7 @@ export default function App() {
         onConnect={onConnect}
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
+        onSelectionChange={onSelectionChange}
         isValidConnection={({ source, target }) => {
           if (!source || !target) return false;
 
