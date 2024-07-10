@@ -9,11 +9,11 @@ export const imagePromptSchema = z.object({
   negativePrompt: z.string()
 });
 
-export async function generateIllustrativeImage(idea: string) {
+export async function generateIllustrativeImage(idea: unknown) {
   const prompt = `${imagePromptPrompt}
 
 Idea: """
-${idea}
+${JSON.stringify(idea)}
 """`;
 
   const imagePrompt = await generateStructured(imagePromptSchema, prompt);

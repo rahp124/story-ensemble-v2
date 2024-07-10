@@ -19,6 +19,7 @@ import {
   InputLabel,
   LoadingOverlay
 } from '@mantine/core';
+import { useForm } from '@mantine/form';
 import {
   ImageIcon,
   ImageOff,
@@ -28,7 +29,7 @@ import {
   X,
   MessageSquareIcon
 } from 'lucide-react';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import {
   NodeProps,
   NodeResizer,
@@ -38,15 +39,15 @@ import {
 
 const zoomSelector = (s: ReactFlowState) => s.transform[2];
 
-export interface BaseNodeProps {
+export interface BaseNodeProps<T extends Record<string, string>> {
   nodeProps: NodeProps<NodeData>;
 
   nodeName: ReactNode;
   nodeBackgroundClass: string;
   textAreaBackgroundClass: string;
 
-  content: string;
-  onUpdateContent: (content: string) => void;
+  content: T;
+  onUpdateContent: (content: Partial<T>) => void;
   onRegenerateContent: (instructions: string) => Promise<void>;
 
   onRegenerateImage: () => Promise<void>;
@@ -55,24 +56,15 @@ export interface BaseNodeProps {
   targetHandle: boolean;
   sourceHandle: boolean;
 }
-export default function BaseNode(props: BaseNodeProps) {
+export default function BaseNode<T extends Record<string, string>>(
+  props: BaseNodeProps<T>
+) {
   const { nodeProps } = props;
-  const {
-    image,
-    imageOutOfSync,
-    outOfSync,
-    feedback,
-    feedbackOutOfSync,
-    tags
-  } = nodeProps.data;
+  const { image, imageOutOfSync, outOfSync, feedback, feedbackOutOfSync } =
+    nodeProps.data;
 
   const [regenerating, setRegenerating] = useState(false);
   const [generatingFeedback, setGeneratingFeedback] = useState(false);
-
-  const [content, setContent] = useState(props.content);
-  useEffect(() => {
-    setContent(props.content);
-  }, [props.content]);
 
   const [showImage, setShowImage] = useState(false);
 
@@ -84,7 +76,6 @@ export default function BaseNode(props: BaseNodeProps) {
   const [editingNode, setEditingNode] = useState(false);
 
   const zoom = useRfStore(zoomSelector);
-  const showLabels = zoom < 1.2;
   const zoomShowImage = zoom < 0.7;
 
   const { globalShowImage } = useStore();
@@ -114,26 +105,14 @@ export default function BaseNode(props: BaseNodeProps) {
         );
       }
     } else {
-      return tags && showLabels ? (
-        <div className="flex flex-wrap gap-1">
-          {tags.map((tag) => (
-            <div key={tag} className="bg-gray-100">
-              {tag}
+      return (
+        <div>
+          {Object.entries(props.content).map(([key, value]) => (
+            <div key={key}>
+              <b>{key}</b>: {value}
             </div>
           ))}
         </div>
-      ) : (
-        <textarea
-          className={`block w-full resize-none p-2 text-md flex-grow ${props.textAreaBackgroundClass} nodrag`}
-          disabled={regenerating}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onBlur={() => {
-            if (content !== props.content) {
-              props.onUpdateContent(content);
-            }
-          }}
-        />
       );
     }
   }
@@ -297,6 +276,25 @@ export default function BaseNode(props: BaseNodeProps) {
     );
   });
 
+  const nodeForm = useForm({
+    mode: 'uncontrolled',
+    initialValues: props.content
+  });
+
+  const nodeFormElement = (
+    <form
+      onSubmit={nodeForm.onSubmit((values) => {
+        props.onUpdateContent(values);
+      })}
+    >
+      {Object.keys(props.content).map((key) => (
+        <Textarea key={key} label={key} {...nodeForm.getInputProps(key)} />
+      ))}
+
+      <Button type="submit">Submit</Button>
+    </form>
+  );
+
   return (
     <>
       <NodeResizer
@@ -345,9 +343,7 @@ export default function BaseNode(props: BaseNodeProps) {
       >
         <div className={`p-2 ${props.nodeBackgroundClass} mb-4`}>
           <h3 className="font-bold text-sm mb-2">{props.nodeName}</h3>
-          <p className={`p-2 ${props.textAreaBackgroundClass}`}>
-            {props.content}
-          </p>
+          {nodeFormElement}
         </div>
 
         <Tabs

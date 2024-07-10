@@ -27,14 +27,21 @@ import {
 } from './api/storyboards';
 import { generateImage } from './api/stableDiffusion';
 import { generateSolutions, regenerateSolutions } from './api/solutions';
-import { FrameOutline, NodeData, StoryboardNodeData } from './types';
+import {
+  FrameOutline,
+  NodeData,
+  Persona,
+  Problem,
+  Solution,
+  StoryboardNodeData
+} from './types';
 import { generatePersonas, regeneratePersonas } from './api/personas';
 import { nanoid } from 'nanoid';
 import { NodeType } from './rf-components';
 import { generateProblems, regenerateProblems } from './api/problems';
 import { generateIllustrativeImage } from './api/images';
 import debounce from 'lodash/debounce';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, merge } from 'lodash';
 import {
   ConnectedFeedback,
   generateConnectedFeedback,
@@ -50,7 +57,6 @@ import {
   calculateNodePositionAttributesWithParent,
   getAbsolutePosition
 } from './lib/positioningUtils';
-import { generatePersonaTags } from './api/tags';
 
 const indexDbStorage: StateStorage = {
   getItem: async (name) => {
@@ -104,7 +110,7 @@ type RFState = {
     personaIds: string[],
     context: string
   ) => Promise<void>;
-  updatePersonaNode: (id: string, text: string) => Promise<void>;
+  updatePersonaNode: (id: string, persona: Partial<Persona>) => Promise<void>;
 
   generatePersonaImage: (id: string) => Promise<void>;
 
@@ -124,7 +130,7 @@ type RFState = {
     problemIds: string[],
     context: string
   ) => Promise<void>;
-  updateProblemNode: (id: string, text: string) => void;
+  updateProblemNode: (id: string, problem: Partial<Problem>) => void;
 
   generateProblemImage: (id: string) => Promise<void>;
 
@@ -144,7 +150,7 @@ type RFState = {
     solutionIds: string[],
     context: string
   ) => Promise<void>;
-  updateSolutionNode: (id: string, text: string) => void;
+  updateSolutionNode: (id: string, solution: Partial<Solution>) => void;
 
   generateSolutionImage: (id: string) => Promise<void>;
 
@@ -578,13 +584,10 @@ const createStore: StateCreator<
         get().generatePersonaImage(id);
       });
     },
-    updatePersonaNode: async (id: string, persona: string) => {
-      const personaNode = get().nodes.find((node) => node.id === id);
-      if (!personaNode || personaNode.type !== NodeType.Persona) return;
-
+    updatePersonaNode: async (id: string, persona: Partial<Persona>) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
-        draft.data.content = persona;
+        merge(draft.data.content, persona);
         draft.data.imageOutOfSync = true;
         draft.data.feedbackOutOfSync = true;
       });
@@ -615,16 +618,14 @@ const createStore: StateCreator<
       );
       if (!node) return;
 
-      const [image, tags] = await Promise.all([
-        generateIllustrativeImage(`Illustrate persona: ${node.data.content}`),
-        generatePersonaTags(node.data.content)
-      ]);
+      const image = await generateIllustrativeImage(
+        `Illustrate persona: ${JSON.stringify(node.data.content)}`
+      );
 
       get().takeSnapshot();
       updateNode(node.id, (draft) => {
         draft.data.image = image;
         draft.data.imageOutOfSync = false;
-        draft.data.tags = tags;
       });
     },
     generatePersonaFeedback: async (id) => {
@@ -799,16 +800,14 @@ const createStore: StateCreator<
       );
       if (!node) return;
 
-      const [image, tags] = await Promise.all([
-        generateIllustrativeImage(`Illustrate problem: ${node.data.content}`),
-        generatePersonaTags(node.data.content)
-      ]);
+      const image = await generateIllustrativeImage(
+        `Illustrate problem: ${JSON.stringify(node.data.content)}`
+      );
 
       get().takeSnapshot();
       updateNode(id, (draft) => {
         draft.data.image = image;
         draft.data.imageOutOfSync = false;
-        draft.data.tags = tags;
       });
     },
     regenerateProblemNodes: async (problemIds: string[], context: string) => {
@@ -842,13 +841,10 @@ const createStore: StateCreator<
         get().generateProblemImage(id);
       });
     },
-    updateProblemNode: (id: string, problem: string) => {
-      const problemNode = get().nodes.find((node) => node.id === id);
-      if (!problemNode) return;
-
+    updateProblemNode: (id, problem) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
-        draft.data.content = problem;
+        merge(draft.data.content, problem);
         draft.data.imageOutOfSync = true;
         draft.data.feedbackOutOfSync = true;
       });
@@ -1072,10 +1068,10 @@ const createStore: StateCreator<
         get().generateSolutionImage(id);
       });
     },
-    updateSolutionNode: (id: string, solution: string) => {
+    updateSolutionNode: (id, solution) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
-        draft.data.content = solution;
+        merge(draft.data.content, solution);
         draft.data.imageOutOfSync = true;
         draft.data.feedbackOutOfSync = true;
       });
@@ -1105,16 +1101,14 @@ const createStore: StateCreator<
       );
       if (!node) return;
 
-      const [image, tags] = await Promise.all([
-        generateIllustrativeImage(`Illustrate solution: ${node.data.content}`),
-        generatePersonaTags(node.data.content)
-      ]);
+      const image = await generateIllustrativeImage(
+        `Illustrate solution: ${JSON.stringify(node.data.content)}`
+      );
 
       get().takeSnapshot();
       updateNode(node.id, (draft) => {
         draft.data.image = image;
         draft.data.imageOutOfSync = false;
-        draft.data.tags = tags;
       });
     },
     generateSolutionFeedback: async (id: string) => {
@@ -1190,7 +1184,7 @@ const createStore: StateCreator<
         type: NodeType.Storyboard,
         ...nodesPositionAttributes,
         data: {
-          content: '',
+          content: {},
           storyboard: {
             ...storyboardData,
             numberOfFrames: storyboardData.outline.length,
@@ -1264,7 +1258,7 @@ const createStore: StateCreator<
         type: NodeType.Storyboard,
         ...nodesPositionAttributes,
         data: {
-          content: '',
+          content: {},
           storyboard: {
             ...storyboardData,
             numberOfFrames: storyboardData.outline.length,

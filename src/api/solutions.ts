@@ -1,3 +1,4 @@
+import { solutionSchema } from '@/types';
 import { generateStructured } from './openai';
 import { z } from 'zod';
 
@@ -16,8 +17,8 @@ ${JSON.stringify(context)}`;
 
   const solutionsSchema =
     numberOfVariations !== undefined
-      ? z.string().array().length(numberOfVariations)
-      : z.string().array().min(1);
+      ? solutionSchema.array().length(numberOfVariations)
+      : solutionSchema.array().min(1);
   const schema = z.object({
     solutions: solutionsSchema
   });
@@ -43,7 +44,7 @@ ${JSON.stringify(context)}
 """`;
 
   const schema = z.object({
-    updateSolutions: z.string().array().length(solutions.length)
+    updateSolutions: solutionSchema.array().length(solutions.length)
   });
 
   const { updateSolutions } = await generateStructured(schema, prompt);

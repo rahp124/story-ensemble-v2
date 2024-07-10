@@ -5,7 +5,7 @@ const feedbackSchema = z.object({
   feedback: z.string().array()
 });
 
-export async function generatePersonaFeedback(node: string) {
+export async function generatePersonaFeedback(node: unknown) {
   const prompt = `You are an UX designer given a persona.
 Brainstorm questions to evaluate this persona being used for design thinking.
 
@@ -17,14 +17,14 @@ Brainstorm questions to evaluate this persona being used for design thinking.
   - Example: If a persona is a salesperson, could a sales manager be another useful persona to consider.
 
 Persona: """
-${node}
+${JSON.stringify(node)}
 """`;
 
   const { feedback } = await generateStructured(feedbackSchema, prompt);
   return feedback;
 }
 
-export async function generateProblemFeedback(node: string) {
+export async function generateProblemFeedback(node: unknown) {
   const prompt = `You are an UX designer given a problem statement.
 Brainstorm questions to evaluate this problem statement being used for design thinking.
 Focus on the quality of the problem statement rather than solutions.
@@ -37,14 +37,14 @@ Focus on the quality of the problem statement rather than solutions.
   - Example: If a salesperson struggles to find qualified leads, they may also struggle with finding leads in general.
 
 Problem: """
-${node}
+${JSON.stringify(node)}
 """`;
 
   const { feedback } = await generateStructured(feedbackSchema, prompt);
   return feedback;
 }
 
-export async function generateSolutionFeedback(node: string) {
+export async function generateSolutionFeedback(node: unknown) {
   const prompt = `You are an UX designer given a solution.
 Brainstorm questions to evaluate this solution being used for design thinking.
 
@@ -56,7 +56,7 @@ Brainstorm questions to evaluate this solution being used for design thinking.
   - Example: If our solutions helps a salesperson find leads, it may be useful to also have a solution for qualifying those leads.
 
 Solution: """
-${node}
+${JSON.stringify(node)}
 """`;
 
   const { feedback } = await generateStructured(feedbackSchema, prompt);
