@@ -17,7 +17,8 @@ import {
   Table,
   Tabs,
   InputLabel,
-  LoadingOverlay
+  LoadingOverlay,
+  ScrollArea
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import {
@@ -29,7 +30,7 @@ import {
   X,
   MessageSquareIcon
 } from 'lucide-react';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useRef, useState } from 'react';
 import {
   NodeProps,
   NodeResizer,
@@ -77,6 +78,7 @@ export default function BaseNode<T extends Record<string, string>>(
 
   const zoom = useRfStore(zoomSelector);
   const zoomShowImage = zoom < 0.7;
+  const scrollViewport = useRef<HTMLDivElement>(null);
 
   const { globalShowImage } = useStore();
 
@@ -105,14 +107,27 @@ export default function BaseNode<T extends Record<string, string>>(
         );
       }
     } else {
-      return (
-        <div>
+      const content = (
+        <ScrollArea type="scroll" viewportRef={scrollViewport}>
           {Object.entries(props.content).map(([key, value]) => (
             <div key={key}>
               <b>{key}</b>: {value}
             </div>
           ))}
-        </div>
+        </ScrollArea>
+      );
+
+      const hasOverflowY =
+        scrollViewport.current &&
+        scrollViewport.current.scrollHeight >
+          scrollViewport.current.clientHeight;
+
+      return nodeProps.selected || !hasOverflowY ? (
+        content
+      ) : (
+        <Tooltip.Floating label="Select node to scroll">
+          <div className="cursor-pointer">{content}</div>
+        </Tooltip.Floating>
       );
     }
   }
