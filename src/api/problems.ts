@@ -3,7 +3,9 @@ import { z } from 'zod';
 
 const PROBLEM_STATEMENT_PROMPT = `A problem statement is a description of an issue designers are trying to solve.
 A good problem statement should be centered on specific people and their needs.
-It should be narrow enough to be manageable but broad enough to explore a variety of solutions.`;
+It should be narrow enough to be manageable but broad enough to explore a variety of solutions.
+A problem statement should be a statement and not a question.
+A problem statement should not suggest solutions.`;
 
 export async function generateProblems(
   context: unknown,

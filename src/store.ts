@@ -50,6 +50,7 @@ import {
   calculateNodePositionAttributesWithParent,
   getAbsolutePosition
 } from './lib/positioningUtils';
+import { generatePersonaTags } from './api/tags';
 
 const indexDbStorage: StateStorage = {
   getItem: async (name) => {
@@ -614,14 +615,16 @@ const createStore: StateCreator<
       );
       if (!node) return;
 
-      const image = await generateIllustrativeImage(
-        `Illustrate persona: ${node.data.content}`
-      );
+      const [image, tags] = await Promise.all([
+        generateIllustrativeImage(`Illustrate persona: ${node.data.content}`),
+        generatePersonaTags(node.data.content)
+      ]);
 
       get().takeSnapshot();
       updateNode(node.id, (draft) => {
         draft.data.image = image;
         draft.data.imageOutOfSync = false;
+        draft.data.tags = tags;
       });
     },
     generatePersonaFeedback: async (id) => {
@@ -796,14 +799,16 @@ const createStore: StateCreator<
       );
       if (!node) return;
 
-      const image = await generateIllustrativeImage(
-        `Illustrate problem: ${node.data.content}`
-      );
+      const [image, tags] = await Promise.all([
+        generateIllustrativeImage(`Illustrate problem: ${node.data.content}`),
+        generatePersonaTags(node.data.content)
+      ]);
 
       get().takeSnapshot();
       updateNode(id, (draft) => {
         draft.data.image = image;
         draft.data.imageOutOfSync = false;
+        draft.data.tags = tags;
       });
     },
     regenerateProblemNodes: async (problemIds: string[], context: string) => {
@@ -1100,14 +1105,16 @@ const createStore: StateCreator<
       );
       if (!node) return;
 
-      const image = await generateIllustrativeImage(
-        `Illustrate solution: ${node.data.content}`
-      );
+      const [image, tags] = await Promise.all([
+        generateIllustrativeImage(`Illustrate solution: ${node.data.content}`),
+        generatePersonaTags(node.data.content)
+      ]);
 
       get().takeSnapshot();
       updateNode(node.id, (draft) => {
         draft.data.image = image;
         draft.data.imageOutOfSync = false;
+        draft.data.tags = tags;
       });
     },
     generateSolutionFeedback: async (id: string) => {

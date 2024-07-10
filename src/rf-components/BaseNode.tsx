@@ -29,7 +29,14 @@ import {
   MessageSquareIcon
 } from 'lucide-react';
 import { ReactNode, useEffect, useState } from 'react';
-import { NodeProps, NodeResizer } from 'reactflow';
+import {
+  NodeProps,
+  NodeResizer,
+  ReactFlowState,
+  useStore as useRfStore
+} from 'reactflow';
+
+const zoomSelector = (s: ReactFlowState) => s.transform[2];
 
 export interface BaseNodeProps {
   nodeProps: NodeProps<NodeData>;
@@ -50,8 +57,14 @@ export interface BaseNodeProps {
 }
 export default function BaseNode(props: BaseNodeProps) {
   const { nodeProps } = props;
-  const { image, imageOutOfSync, outOfSync, feedback, feedbackOutOfSync } =
-    nodeProps.data;
+  const {
+    image,
+    imageOutOfSync,
+    outOfSync,
+    feedback,
+    feedbackOutOfSync,
+    tags
+  } = nodeProps.data;
 
   const [regenerating, setRegenerating] = useState(false);
   const [generatingFeedback, setGeneratingFeedback] = useState(false);
@@ -70,10 +83,14 @@ export default function BaseNode(props: BaseNodeProps) {
   const [editFeedback, setEditFeedback] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState(false);
 
+  const zoom = useRfStore(zoomSelector);
+  const showLabels = zoom < 1.2;
+  const zoomShowImage = zoom < 0.7;
+
   const { globalShowImage } = useStore();
 
   function cardContent() {
-    if (globalShowImage || showImage) {
+    if (globalShowImage || showImage || zoomShowImage) {
       if (regenerating || !image) {
         return <Skeleton className="h-full w-full" />;
       } else {
@@ -97,20 +114,26 @@ export default function BaseNode(props: BaseNodeProps) {
         );
       }
     } else {
-      return (
-        <>
-          <textarea
-            className={`block w-full resize-none p-2 text-md flex-grow ${props.textAreaBackgroundClass} nodrag`}
-            disabled={regenerating}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onBlur={() => {
-              if (content !== props.content) {
-                props.onUpdateContent(content);
-              }
-            }}
-          />
-        </>
+      return tags && showLabels ? (
+        <div className="flex flex-wrap gap-1">
+          {tags.map((tag) => (
+            <div key={tag} className="bg-gray-100">
+              {tag}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <textarea
+          className={`block w-full resize-none p-2 text-md flex-grow ${props.textAreaBackgroundClass} nodrag`}
+          disabled={regenerating}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          onBlur={() => {
+            if (content !== props.content) {
+              props.onUpdateContent(content);
+            }
+          }}
+        />
       );
     }
   }

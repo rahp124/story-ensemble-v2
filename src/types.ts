@@ -5,6 +5,7 @@ export type NodeData = {
 
   content: string;
 
+  tags?: string[];
   image?: string;
   imageOutOfSync?: boolean;
 
