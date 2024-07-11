@@ -30,7 +30,7 @@ import {
   X,
   MessageSquareIcon
 } from 'lucide-react';
-import { ReactNode, useCallback, useRef, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
   NodeProps,
   NodeResizer,
@@ -116,9 +116,11 @@ export default function BaseNode<T extends Record<string, string>>(
       return (
         <Tooltip.Floating
           label="Select node to scroll"
-          disabled={nodeProps.selected || !hasOverflowY}
+          disabled={nodeProps.selected || !hasOverflowY()}
         >
           <ScrollArea
+            type={hasOverflowY() ? 'always' : 'hover'}
+            scrollbars="y"
             viewportRef={scrollViewport}
             styles={{
               root: {
@@ -298,8 +300,14 @@ export default function BaseNode<T extends Record<string, string>>(
 
   const nodeForm = useForm({
     mode: 'uncontrolled',
-    initialValues: props.content
+    // Spread initial values to avoid assignment error
+    // https://github.com/mantinedev/mantine/issues/4542
+    initialValues: { ...props.content }
   });
+  const setFormValues = nodeForm.setValues;
+  useEffect(() => {
+    setFormValues({ ...props.content });
+  }, [setFormValues, props.content]);
 
   const nodeFormElement = (
     <form

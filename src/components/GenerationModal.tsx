@@ -285,6 +285,7 @@ export function GenerationModal(props: GenerationModalProps) {
               label="Final step"
               description="Select the step of the design process to generate up to"
               data={['Persona', 'Problem', 'Solution', 'Storyboard']}
+              allowDeselect={false}
               disabled={generating}
               value={finalStep}
               onChange={(value) =>
