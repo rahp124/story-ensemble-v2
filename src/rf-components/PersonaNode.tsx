@@ -2,6 +2,9 @@ import { NodeProps } from 'reactflow';
 import { NodeData } from '@/types';
 import { useStore } from '@/store';
 import BaseNode from './BaseNode';
+import { NodeType, nodeTypeDisplayAttributes } from '.';
+
+const displayAttributes = nodeTypeDisplayAttributes(NodeType.Persona);
 
 export default function PersonaNode(props: NodeProps<NodeData>) {
   const {
@@ -16,12 +19,11 @@ export default function PersonaNode(props: NodeProps<NodeData>) {
     <BaseNode
       nodeName={
         <span>
-          <span className="mr-1">👤</span> Persona
+          <span className="mr-1">{displayAttributes.emoji}</span> Persona
         </span>
       }
       nodeProps={props}
-      nodeBackgroundClass="bg-yellow-100"
-      textAreaBackgroundClass="bg-yellow-50"
+      nodeBackgroundClass={displayAttributes.backgroundClass}
       content={props.data.content}
       onUpdateContent={(content) => updatePersonaNode(props.id, content)}
       onRegenerateImage={() => generatePersonaImage(props.id)}

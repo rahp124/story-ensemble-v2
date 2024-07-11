@@ -1,3 +1,4 @@
+import { NodeContent } from '@/components/NodeContent';
 import NotificationDot from '@/components/NotificationDot';
 import { RefreshImageIcon } from '@/components/RefreshImageIcon';
 import SourceHandle from '@/components/SourceHandle';
@@ -45,7 +46,6 @@ export interface BaseNodeProps<T extends Record<string, string>> {
 
   nodeName: ReactNode;
   nodeBackgroundClass: string;
-  textAreaBackgroundClass: string;
 
   content: T;
   onUpdateContent: (content: Partial<T>) => void;
@@ -128,11 +128,7 @@ export default function BaseNode<T extends Record<string, string>>(
               }
             }}
           >
-            {Object.entries(props.content).map(([key, value]) => (
-              <div key={key}>
-                <b>{key}</b>: {value}
-              </div>
-            ))}
+            <NodeContent content={props.content} />
           </ScrollArea>
         </Tooltip.Floating>
       );

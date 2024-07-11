@@ -30,6 +30,9 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
+import { NodeType, nodeTypeDisplayAttributes } from '.';
+
+const displayAttributes = nodeTypeDisplayAttributes(NodeType.Storyboard);
 
 export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [showImage, setShowImage] = useState(false);
@@ -269,7 +272,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
       <Card className="h-full" withBorder>
         <div className="flex justify-between mb-2">
           <p className="font-bold text-sm">
-            <span className="mr-1">🎞</span> Storyboard
+            <span className="mr-1">{displayAttributes.emoji}</span> Storyboard
           </p>
           <div className="flex gap-2 items-center nodrag">
             <Switch

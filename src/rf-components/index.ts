@@ -1,28 +1,34 @@
-import ContextEdge from './ContextEdge';
-import ImageNode from './ImageNode';
-import PersonaNode from './PersonaNode';
-import ProblemNode from './ProblemNode';
-import SolutionNode from './SolutionNode';
-import StoryboardNode from './StoryboardNode';
-
 export const NodeType = {
   Persona: 'Persona',
   Problem: 'Problem',
   Solution: 'Solution',
-  Image: 'Image',
   Storyboard: 'Storyboard'
 } as const;
-export const nodeTypes = {
-  [NodeType.Persona]: PersonaNode,
-  [NodeType.Problem]: ProblemNode,
-  [NodeType.Solution]: SolutionNode,
-  [NodeType.Image]: ImageNode,
-  [NodeType.Storyboard]: StoryboardNode
+export type NodeType = (typeof NodeType)[keyof typeof NodeType];
+
+const nodeTypeToDisplay = {
+  [NodeType.Persona]: {
+    emoji: '👤',
+    backgroundClass: 'bg-yellow-100'
+  },
+  [NodeType.Problem]: {
+    emoji: '🚨',
+    backgroundClass: 'bg-red-100'
+  },
+  [NodeType.Solution]: {
+    emoji: '💡',
+    backgroundClass: 'bg-blue-100'
+  },
+  [NodeType.Storyboard]: {
+    emoji: '🎞',
+    backgroundClass: 'bg-white'
+  }
 };
+
+export function nodeTypeDisplayAttributes(type: NodeType) {
+  return nodeTypeToDisplay[type] || { emoji: '', backgroundClass: 'bg-white' };
+}
 
 export const EdgeType = {
   Context: 'Context'
 } as const;
-export const edgeTypes = {
-  [EdgeType.Context]: ContextEdge
-};

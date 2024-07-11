@@ -11,7 +11,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { NodeType, edgeTypes, nodeTypes } from './rf-components';
+import { EdgeType, NodeType } from './rf-components';
 import { useCallback, useEffect, useState } from 'react';
 import SelectionToolbar from './components/SelectionToolbar';
 
@@ -34,6 +34,22 @@ import {
 } from './components/GenerationModal';
 import { NodeCountDisplayer } from './components/NodeCountDisplayer';
 import { ApiKeyModal } from './components/ApiKeyModal';
+import PersonaNode from './rf-components/PersonaNode';
+import ProblemNode from './rf-components/ProblemNode';
+import SolutionNode from './rf-components/SolutionNode';
+import StoryboardNode from './rf-components/StoryboardNode';
+import ContextEdge from './rf-components/ContextEdge';
+
+export const nodeTypes = {
+  [NodeType.Persona]: PersonaNode,
+  [NodeType.Problem]: ProblemNode,
+  [NodeType.Solution]: SolutionNode,
+  [NodeType.Storyboard]: StoryboardNode
+};
+
+export const edgeTypes = {
+  [EdgeType.Context]: ContextEdge
+};
 
 export default function App() {
   const {

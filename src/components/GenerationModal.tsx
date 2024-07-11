@@ -4,7 +4,7 @@ import { Modal, Textarea, Select, Button, LoadingOverlay } from '@mantine/core';
 import { useState } from 'react';
 import { useReactFlow } from 'reactflow';
 import { useShallow } from 'zustand/react/shallow';
-import { NodeCountDisplayer } from './NodeCountDisplayer';
+import { SelectedNodePreview } from './SelectedNodePreview';
 
 export interface GenerationModalProps {
   opened: boolean;
@@ -266,7 +266,7 @@ export function GenerationModal(props: GenerationModalProps) {
         {showSelectedNodeCounter && (
           <div className="mb-8">
             <h2 className="text-md font-bold mb-2">Selected input nodes:</h2>
-            <NodeCountDisplayer nodeIds={dependentNodes.map(({ id }) => id)} />
+            <SelectedNodePreview selectedNodes={dependentNodes} />
           </div>
         )}
         <div className="mb-8">
