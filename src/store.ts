@@ -635,6 +635,9 @@ const createStore: StateCreator<
       get().takeSnapshot();
       problemIds.forEach((id, idx) => {
         get().updateProblemNode(id, newProblems[idx]);
+        updateNode(id, (draft) => {
+          draft.data.outOfSync = false;
+        });
         get().generateProblemImage(id);
       });
     },
@@ -786,6 +789,9 @@ const createStore: StateCreator<
       get().takeSnapshot();
       solutionIds.forEach((id, idx) => {
         get().updateSolutionNode(id, newSolutions[idx]);
+        updateNode(id, (draft) => {
+          draft.data.outOfSync = false;
+        });
         get().generateSolutionImage(id);
       });
     },
