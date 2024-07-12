@@ -27,34 +27,44 @@ export interface SelectionToolbarProps {
   onDuplicate: () => void;
 }
 export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
-  const nonParentNodes = props.selectedNodes.filter(
-    (node) => !node.id.startsWith('parent-')
+  const { selectedNodes } = props;
+
+  const showGenerateProblems = selectedNodes.every(
+    (node) => node.type === NodeType.Persona
+  );
+  const showGenerateSolutions = selectedNodes.every(
+    (node) => node.type === NodeType.Problem
+  );
+  const showGenerateStoryboard =
+    selectedNodes.every((node) => node.type !== NodeType.Storyboard) &&
+    selectedNodes.some((node) => node.type === NodeType.Solution);
+
+  const showGenerateSimilarPersonas = selectedNodes.every(
+    (node) => node.type === NodeType.Persona
+  );
+  const showGenerateSimilarProblems = selectedNodes.every(
+    (node) => node.type === NodeType.Problem
+  );
+  const showGenerateSimilarSolutions = selectedNodes.every(
+    (node) => node.type === NodeType.Solution
+  );
+  const showGenerateSimilarStoryboard = selectedNodes.every(
+    (node) => node.type === NodeType.Storyboard
   );
 
-  const showGenerateProblems =
-    nonParentNodes.length > 0 &&
-    nonParentNodes.every((node) => node.type === NodeType.Persona);
-  const showGenerateSolutions =
-    nonParentNodes.length > 0 &&
-    nonParentNodes.every((node) => node.type === NodeType.Problem);
-  const showGenerateStoryboard =
-    nonParentNodes.length > 0 &&
-    !nonParentNodes.some((node) => node.type === NodeType.Storyboard);
-
-  const showGenerateSimilarPersonas =
-    nonParentNodes.length > 0 &&
-    nonParentNodes.every((node) => node.type === NodeType.Persona);
-  const showGenerateSimilarProblems =
-    nonParentNodes.length > 0 &&
-    nonParentNodes.every((node) => node.type === NodeType.Problem);
-  const showGenerateSimilarSolutions =
-    nonParentNodes.length > 0 &&
-    nonParentNodes.every((node) => node.type === NodeType.Solution);
-  const showGenerateSimilarStoryboard =
-    nonParentNodes.length > 0 &&
-    nonParentNodes.every((node) => node.type === NodeType.Storyboard);
-
   const buttons = [
+    {
+      show: selectedNodes.length > 0,
+      tooltip: 'Regenerate',
+      label: <PencilIcon className="size-4" />,
+      onClick: props.onRegenerate
+    },
+    {
+      show: selectedNodes.length > 0,
+      tooltip: 'View feedback',
+      label: <MessageSquareIcon className="size-4" />,
+      onClick: props.onFeedback
+    },
     {
       show: showGenerateProblems,
       tooltip: 'Generate problems from the selected personas',
@@ -103,18 +113,6 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
       leftSection: <SquareStackIcon className="size-4" />,
       label: 'Storyboard 🎞',
       onClick: props.onGenerateMoreStoryboard
-    },
-    {
-      show: nonParentNodes.length > 0,
-      tooltip: 'View feedback',
-      label: <MessageSquareIcon className="size-4" />,
-      onClick: props.onFeedback
-    },
-    {
-      show: nonParentNodes.length > 0,
-      tooltip: 'Regenerate',
-      label: <PencilIcon className="size-4" />,
-      onClick: props.onRegenerate
     },
     {
       show: true,

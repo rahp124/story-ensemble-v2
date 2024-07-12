@@ -13,17 +13,19 @@ import {
   Textarea,
   Tooltip
 } from '@mantine/core';
-import { ImageIcon, ImageOff, MessageSquareIcon, Pencil } from 'lucide-react';
+import { ImageIcon, ImageOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
+import { useZoom } from '@/lib/useZoom';
 
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Storyboard);
 
 export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [showImage, setShowImage] = useState(false);
+  const { zoomShowImage } = useZoom();
 
-  const { outOfSync, storyboard } = props.data;
+  const { storyboard } = props.data;
 
   const [title, setTitle] = useState(storyboard.title);
   const [descriptions, setDescriptions] = useState<string[]>(
@@ -54,12 +56,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
 
     updateStoryboardTitle,
     updateStoryboardDescription,
-    updateStoryboardCaption,
-
-    selectNodes,
-
-    setIterateModalOpen,
-    setIterateModalTab
+    updateStoryboardCaption
   } = useStore((state) => ({
     globalShowImage: state.globalShowImage,
 
@@ -96,33 +93,6 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
             });
           });
         });
-      }
-    },
-    {
-      key: 'feedback',
-      tooltip: 'Feedback',
-      icon: <MessageSquareIcon />,
-      onClick: () => {
-        selectNodes([props.id]);
-        setIterateModalTab('feedback');
-        setIterateModalOpen(true);
-      }
-    },
-    {
-      key: 'edit',
-      tooltip: outOfSync ? 'Dependencies updated. Update node' : 'Edit',
-      icon: <Pencil />,
-      notification: outOfSync,
-      onClick: () => {
-        // if (outOfSync) {
-        //   setEditInstructions(
-        //     'Update the node taking into account the updated dependencies.'
-        //   );
-        // }
-
-        selectNodes([props.id]);
-        setIterateModalTab('edit');
-        setIterateModalOpen(true);
       }
     }
   ].map(({ key, tooltip, icon, notification, loading, onClick }) => {
@@ -215,7 +185,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 )}`}
               >
                 <AspectRatio ratio={1}>
-                  {showImage || globalShowImage ? (
+                  {showImage || globalShowImage || zoomShowImage ? (
                     <>
                       {loadingMap[frameIdx] ? (
                         <Skeleton />

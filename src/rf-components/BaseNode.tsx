@@ -3,6 +3,7 @@ import NotificationDot from '@/components/NotificationDot';
 import { RefreshImageIcon } from '@/components/RefreshImageIcon';
 import SourceHandle from '@/components/SourceHandle';
 import TargetHandle from '@/components/TargetHandle';
+import { useZoom } from '@/lib/useZoom';
 import { useStore } from '@/store';
 import { NodeData } from '@/types';
 import {
@@ -13,22 +14,9 @@ import {
   Switch,
   ScrollArea
 } from '@mantine/core';
-import {
-  ImageIcon,
-  ImageOff,
-  Info,
-  Pencil,
-  MessageSquareIcon
-} from 'lucide-react';
+import { ImageIcon, ImageOff, Info } from 'lucide-react';
 import { ReactNode, useCallback, useRef, useState } from 'react';
-import {
-  NodeProps,
-  NodeResizer,
-  ReactFlowState,
-  useStore as useRfStore
-} from 'reactflow';
-
-const zoomSelector = (s: ReactFlowState) => s.transform[2];
+import { NodeProps, NodeResizer } from 'reactflow';
 
 export interface BaseNodeProps<T extends Record<string, string>> {
   nodeProps: NodeProps<NodeData>;
@@ -47,14 +35,13 @@ export default function BaseNode<T extends Record<string, string>>(
   props: BaseNodeProps<T>
 ) {
   const { nodeProps } = props;
-  const { image, imageOutOfSync, outOfSync } = nodeProps.data;
+  const { image, imageOutOfSync } = nodeProps.data;
 
   const [regenerating, setRegenerating] = useState(false);
 
   const [showImage, setShowImage] = useState(false);
 
-  const zoom = useRfStore(zoomSelector);
-  const zoomShowImage = zoom < 0.7;
+  const { zoomShowImage } = useZoom();
   const scrollViewport = useRef<HTMLDivElement>(null);
   const hasOverflowY = useCallback(() => {
     return (
@@ -63,12 +50,7 @@ export default function BaseNode<T extends Record<string, string>>(
     );
   }, [scrollViewport]);
 
-  const {
-    globalShowImage,
-    selectNodes,
-    setIterateModalOpen,
-    setIterateModalTab
-  } = useStore();
+  const globalShowImage = useStore((state) => state.globalShowImage);
 
   function cardContent() {
     if (globalShowImage || showImage || zoomShowImage) {
@@ -117,59 +99,6 @@ export default function BaseNode<T extends Record<string, string>>(
     }
   }
 
-  // const handleEditSubmit = async () => {
-  //   if (editingNode) return;
-
-  //   setEditingNode(true);
-
-  //   const instructions = editFeedback
-  //     ? `Feedback: ${editFeedback}\nResponse: ${editInstructions}`
-  //     : editInstructions;
-  //   await props.onRegenerateContent(instructions);
-
-  //   setEditInstructions('');
-  //   setEditFeedback(null);
-
-  //   setModalOpen(false);
-  //   setEditingNode(false);
-  // };
-
-  // const editForm = (
-  //   <form
-  //     className="pt-4"
-  //     onSubmit={(e) => {
-  //       e.preventDefault();
-  //       handleEditSubmit();
-  //     }}
-  //   >
-  //     {editFeedback && (
-  //       <div className="mb-4 flex justify-between items-center gap-4">
-  //         <div>
-  //           <InputLabel>Feedback to incorporate</InputLabel>
-  //           <p className="italic text-md">{editFeedback}</p>
-  //         </div>
-  //         <ActionIcon
-  //           variant="subtle"
-  //           color="red"
-  //           onClick={() => setEditFeedback(null)}
-  //         >
-  //           <X />
-  //         </ActionIcon>
-  //       </div>
-  //     )}
-  //     <Textarea
-  //       label="Edit instructions"
-  //       description="Provide instructions for how to update this node, provide feedback, or respond to feedback."
-  //       className="mb-4"
-  //       required={true}
-  //       value={editInstructions}
-  //       onChange={(e) => setEditInstructions(e.target.value)}
-  //     />
-
-  //     <Button type="submit">Edit</Button>
-  //   </form>
-  // );
-
   const icons = [
     {
       key: 'regenerate',
@@ -183,27 +112,6 @@ export default function BaseNode<T extends Record<string, string>>(
         setRegenerating(true);
         await props.onRegenerateImage();
         setRegenerating(false);
-      }
-    },
-    {
-      key: 'feedback',
-      tooltip: 'Feedback',
-      icon: <MessageSquareIcon />,
-      onClick: () => {
-        selectNodes([nodeProps.id]);
-        setIterateModalTab('feedback');
-        setIterateModalOpen(true);
-      }
-    },
-    {
-      key: 'edit',
-      tooltip: outOfSync ? 'Dependencies updated. Update node' : 'Edit',
-      icon: <Pencil />,
-      notification: outOfSync,
-      onClick: () => {
-        selectNodes([nodeProps.id]);
-        setIterateModalTab('edit');
-        setIterateModalOpen(true);
       }
     }
   ].map(({ key, tooltip, icon, notification, loading, onClick }) => {
@@ -228,31 +136,6 @@ export default function BaseNode<T extends Record<string, string>>(
       iconElement
     );
   });
-
-  // const nodeForm = useForm({
-  //   mode: 'uncontrolled',
-  //   // Spread initial values to avoid assignment error
-  //   // https://github.com/mantinedev/mantine/issues/4542
-  //   initialValues: { ...props.content }
-  // });
-  // const setFormValues = nodeForm.setValues;
-  // useEffect(() => {
-  //   setFormValues({ ...props.content });
-  // }, [setFormValues, props.content]);
-
-  // const nodeFormElement = (
-  //   <form
-  //     onSubmit={nodeForm.onSubmit((values) => {
-  //       props.onUpdateContent(values);
-  //     })}
-  //   >
-  //     {Object.keys(props.content).map((key) => (
-  //       <Textarea key={key} label={key} {...nodeForm.getInputProps(key)} />
-  //     ))}
-
-  //     <Button type="submit">Submit</Button>
-  //   </form>
-  // );
 
   return (
     <>
