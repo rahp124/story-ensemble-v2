@@ -41,7 +41,7 @@ import { NodeType } from './rf-components';
 import { generateProblems, regenerateProblems } from './api/problems';
 import { generateIllustrativeImage } from './api/images';
 import debounce from 'lodash/debounce';
-import { cloneDeep, merge } from 'lodash';
+import { cloneDeep, merge, pick } from 'lodash';
 import { WritableDraft } from 'immer';
 import {
   calculateDependentNodePositionAttributes,
@@ -461,7 +461,10 @@ const createStore: StateCreator<
     updatePersonaNode: async (id: string, persona: Partial<Persona>) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
-        merge(draft.data.content, persona);
+        merge(
+          draft.data.content,
+          pick(persona, Object.keys(draft.data.content))
+        );
         draft.data.imageOutOfSync = true;
       });
 
@@ -651,7 +654,10 @@ const createStore: StateCreator<
     updateProblemNode: (id, problem) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
-        merge(draft.data.content, problem);
+        merge(
+          draft.data.content,
+          pick(problem, Object.keys(draft.data.content))
+        );
         draft.data.imageOutOfSync = true;
       });
 
@@ -812,7 +818,10 @@ const createStore: StateCreator<
     updateSolutionNode: (id, solution) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
-        merge(draft.data.content, solution);
+        merge(
+          draft.data.content,
+          pick(solution, Object.keys(draft.data.content))
+        );
         draft.data.imageOutOfSync = true;
       });
 
