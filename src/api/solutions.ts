@@ -31,14 +31,14 @@ ${JSON.stringify(context)}`;
 }
 
 export async function regenerateSolutions(
-  solutions: string[],
+  solutions: unknown[],
   context: unknown
 ) {
   const prompt = `${SOLUTION_PROMPT}
 Update the given solutions based on the new context/instructions.
 Keep the essence of the problem statement intact, but make necessary changes to ensure cohesiveness.
 
-Problems: """
+Solutions: """
 ${JSON.stringify(solutions)}
 """
 

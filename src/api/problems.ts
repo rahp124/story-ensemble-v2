@@ -35,7 +35,10 @@ ${JSON.stringify(context)}`;
   return problems;
 }
 
-export async function regenerateProblems(problems: string[], context: unknown) {
+export async function regenerateProblems(
+  problems: unknown[],
+  context: unknown
+) {
   const prompt = `${PROBLEM_STATEMENT_PROMPT}
 Update the given problem statements based on the new context/instructions.
 Keep the essence of the problem statement intact, but make necessary changes to ensure cohesiveness.

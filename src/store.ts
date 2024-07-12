@@ -611,26 +611,27 @@ const createStore: StateCreator<
       const problemNodes = get().nodes.filter(
         (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
       );
-      const problems = problemNodes.map((node) => node.data.content);
+      const problems = problemNodes.map((node) => {
+        const personaIds = get()
+          .edges.filter(
+            (edge) =>
+              edge.target === node.id && edge.source.startsWith('persona')
+          )
+          .map((edge) => edge.source);
+        const personas = get()
+          .nodes.filter(
+            (node) =>
+              personaIds.includes(node.id) && node.type === NodeType.Persona
+          )
+          .map((node) => node.data.content);
 
-      const personaIds = get()
-        .edges.filter(
-          (edge) =>
-            problemIds.includes(edge.target) &&
-            edge.source.startsWith('persona')
-        )
-        .map((edge) => edge.source);
-      const personas: string[] = get()
-        .nodes.filter(
-          (node) =>
-            personaIds.includes(node.id) && node.type === NodeType.Persona
-        )
-        .map((node) => node.data.content);
-
-      const newProblems = await regenerateProblems(problems, {
-        context,
-        personas
+        return {
+          personaDependencies: personas,
+          problem: node.data.content
+        };
       });
+
+      const newProblems = await regenerateProblems(problems, context);
 
       get().takeSnapshot();
       problemIds.forEach((id, idx) => {
@@ -765,26 +766,27 @@ const createStore: StateCreator<
         (node) =>
           node.type === NodeType.Solution && solutionIds.includes(node.id)
       );
-      const solutions = solutionNodes.map((node) => node.data.content);
+      const solutions = solutionNodes.map((node) => {
+        const problemIds = get()
+          .edges.filter(
+            (edge) =>
+              edge.target === node.id && edge.source.startsWith('problem')
+          )
+          .map((edge) => edge.source);
+        const problems = get()
+          .nodes.filter(
+            (node) =>
+              problemIds.includes(node.id) && node.type === NodeType.Problem
+          )
+          .map((node) => node.data.content);
 
-      const problemIds = get()
-        .edges.filter(
-          (edge) =>
-            solutionIds.includes(edge.target) &&
-            edge.source.startsWith('problem')
-        )
-        .map((edge) => edge.source);
-      const problems: string[] = get()
-        .nodes.filter(
-          (node) =>
-            problemIds.includes(node.id) && node.type === NodeType.Problem
-        )
-        .map((node) => node.data.content);
-
-      const newSolutions = await regenerateSolutions(solutions, {
-        context,
-        problems
+        return {
+          problemDependencies: problems,
+          solution: node.data.content
+        };
       });
+
+      const newSolutions = await regenerateSolutions(solutions, context);
 
       get().takeSnapshot();
       solutionIds.forEach((id, idx) => {

@@ -320,7 +320,7 @@ export function IterateModal() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   regenerateNodes(
-                    `Q: ${feedbackToIncorporate}\nA: ${feedbackResponse}`
+                    `Incorporate the following feedback:\nQ: ${feedbackToIncorporate}\nA: ${feedbackResponse}`
                   );
                 }}
               >
