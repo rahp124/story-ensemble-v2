@@ -11,6 +11,8 @@ import {
   Textarea,
   Tooltip
 } from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { notifications } from '@mantine/notifications';
 import { SelectedNodePreview } from './SelectedNodePreview';
 import { useStore } from '@/store';
 import { useCallback, useEffect, useState } from 'react';
@@ -22,7 +24,7 @@ import {
   generateProblemFeedback,
   generateStoryboardFeedback
 } from '@/api/feedback';
-import { StoryboardNodeData } from '@/types';
+import { NodeData, StoryboardNodeData } from '@/types';
 
 export interface IterateModalProps {}
 export function IterateModal() {
@@ -38,7 +40,11 @@ export function IterateModal() {
     regeneratePersonaNodes,
     regenerateProblemNodes,
     regenerateSolutionNodes,
-    regenerateStoryboardNode
+    regenerateStoryboardNode,
+
+    updatePersonaNode,
+    updateProblemNode,
+    updateSolutionNode
   } = useStore((state) => ({
     selectedNodes: state.nodes.filter((node) => node.selected),
 
@@ -51,7 +57,11 @@ export function IterateModal() {
     regeneratePersonaNodes: state.regeneratePersonaNodes,
     regenerateProblemNodes: state.regenerateProblemNodes,
     regenerateSolutionNodes: state.regenerateSolutionNodes,
-    regenerateStoryboardNode: state.regenerateStoryboardNode
+    regenerateStoryboardNode: state.regenerateStoryboardNode,
+
+    updatePersonaNode: state.updatePersonaNode,
+    updateProblemNode: state.updateProblemNode,
+    updateSolutionNode: state.updateSolutionNode
   }));
 
   const [generatingFeedback, setGeneratingFeedback] = useState(false);
@@ -139,6 +149,13 @@ export function IterateModal() {
 
   const [editInstructions, setEditInstructions] = useState('');
 
+  const resetInputs = () => {
+    setFeedback(null);
+    setFeedbackToIncorporate(null);
+    setFeedbackResponse('');
+    setEditInstructions('');
+  };
+
   const [regenerating, setRegenerating] = useState(false);
   const regenerateNodes = async (context: string) => {
     if (regenerating) return;
@@ -174,28 +191,69 @@ export function IterateModal() {
     }
 
     setRegenerating(false);
-    setFeedbackToIncorporate(null);
-    setFeedbackResponse('');
-    setEditInstructions('');
+    resetInputs();
   };
 
-  // const showEditForm =
-  //   selectedNodes.length === 1 &&
-  //   (
-  //     [NodeType.Persona, NodeType.Problem, NodeType.Solution] as string[]
-  //   ).includes(selectedNodes[0].type ?? '');
-  // const nodeToEdit = selectedNodes[0];
-  // const editForm = useForm({
-  //   mode: 'uncontrolled',
-  //   initialValues
-  // });
+  const showEditForm =
+    selectedNodes.length === 1 &&
+    (
+      [NodeType.Persona, NodeType.Problem, NodeType.Solution] as string[]
+    ).includes(selectedNodes[0].type ?? '');
+  const nodeToEdit: Node<NodeData> = selectedNodes[0];
+  const editForm = useForm({
+    mode: 'controlled'
+  });
+  const setEditFormValues = editForm.setValues;
+  useEffect(() => {
+    if (showEditForm) {
+      setEditFormValues({ ...nodeToEdit.data.content });
+    }
+  }, [showEditForm, setEditFormValues, nodeToEdit]);
+
+  function editFormTab() {
+    if (!showEditForm || !nodeToEdit) return null;
+
+    return (
+      <Tabs.Panel value="edit">
+        <form
+          className="pt-4"
+          onSubmit={editForm.onSubmit((values) => {
+            if (!nodeToEdit) return;
+
+            if (nodeToEdit.type === NodeType.Persona) {
+              updatePersonaNode(nodeToEdit.id, values);
+            } else if (nodeToEdit.type === NodeType.Problem) {
+              updateProblemNode(nodeToEdit.id, values);
+            } else if (nodeToEdit.type === NodeType.Solution) {
+              updateSolutionNode(nodeToEdit.id, values);
+            }
+
+            resetInputs();
+            notifications.show({
+              message: `${nodeToEdit.type} edited`,
+              autoClose: 5000
+            });
+          })}
+        >
+          <h2 className="text-md font-bold mb-2">
+            Manually edit selected node
+          </h2>
+
+          {Object.keys(nodeToEdit.data.content).map((key) => (
+            <Textarea key={key} label={key} {...editForm.getInputProps(key)} />
+          ))}
+
+          <Button type="submit" className="mt-4">
+            Edit
+          </Button>
+        </form>
+      </Tabs.Panel>
+    );
+  }
 
   useEffect(() => {
     if (!iterateModalOpen) {
-      setFeedback(null);
-      setFeedbackToIncorporate(null);
-      setFeedbackResponse('');
-      setEditInstructions('');
+      resetInputs();
     }
   }, [iterateModalOpen]);
 
@@ -324,31 +382,4 @@ export function IterateModal() {
       </div>
     </Modal>
   );
-
-  function editFormTab() {
-    if (selectedNodes.length !== 1) return null;
-
-    return (
-      <Tabs.Panel value="edit">
-        <form
-          className="pt-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            // TODO manual editing button
-            // regenerateNodes(editInstructions);
-          }}
-        >
-          <h2 className="text-md font-bold mb-2">
-            Manually edit selected node
-          </h2>
-
-          {/* {Object.keys(props.content).map((key) => (
-            <Textarea key={key} label={key} {...nodeForm.getInputProps(key)} />
-          ))} */}
-
-          <Button type="submit">Edit</Button>
-        </form>
-      </Tabs.Panel>
-    );
-  }
 }
