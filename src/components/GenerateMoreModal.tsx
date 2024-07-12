@@ -4,47 +4,58 @@ import { Button, LoadingOverlay, Modal, Textarea } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { useReactFlow } from 'reactflow';
 import { SelectedNodePreview } from './SelectedNodePreview';
-import { generateDependentNodeDescriptionRecommendations } from '@/api/recommendations';
+import { generateMoreNodeDescriptionRecommendations } from '@/api/recommendations';
 import { getSanitizedNodeContents } from '@/lib/getSanitizedNodeContent';
 
 const TEXT_CONTENT = {
+  Persona: {
+    title: 'Generate more personas',
+    inputLabel: 'Persona description',
+    inputDescription:
+      'Roughly describe the personas to generate and how they differ from the existing personas'
+  },
   Problem: {
-    title: 'Generate problems from personas',
+    title: 'Generate more problems',
     inputLabel: 'Problem description',
-    inputDescription: 'Roughly describe the problems to generate'
+    inputDescription:
+      'Roughly describe the problems to generate and how they differ from the existing problems'
   },
   Solution: {
-    title: 'Generate solutions from problems',
+    title: 'Generate more solutions',
     inputLabel: 'Solution description',
-    inputDescription: 'Roughly describe the solutions to generate'
+    inputDescription:
+      'Roughly describe the solutions to generate and how they differ from the existing solutions'
   },
   Storyboard: {
-    title: 'Generate storyboards from personas, problems, and solutions',
+    title: 'Generate another storyboard',
     inputLabel: 'Storyboard description',
-    inputDescription: 'Roughly describe the storyboard to generate'
+    inputDescription:
+      'Roughly describe the storyboard to generate and how it differs from the existing storyboards'
   }
 };
 
-export interface DependentGenerationModalProps {
+export interface GenerateMoreModalProps {
   opened: boolean;
   onClose: () => void;
 
-  nodeToGenerate: 'Problem' | 'Solution' | 'Storyboard';
+  nodeToGenerate: 'Persona' | 'Problem' | 'Solution' | 'Storyboard';
 }
-export function DependentGenerationModal(props: DependentGenerationModalProps) {
+export function GenerateMoreModal(props: GenerateMoreModalProps) {
   const { opened, onClose, nodeToGenerate } = props;
 
   const {
-    generateProblemNodes,
-    generateSolutionNodes,
-    generateStoryboardNode,
+    generateMorePersonaNodes,
+    generateMoreProblemNodes,
+    generateMoreSolutionNodes,
+    generateMoreStoryboardNode,
 
     selectedNodes,
     selectNodes
   } = useStore((state) => ({
-    generateProblemNodes: state.generateProblemNodes,
-    generateSolutionNodes: state.generateSolutionNodes,
-    generateStoryboardNode: state.generateStoryboardNode,
+    generateMorePersonaNodes: state.generateMorePersonaNodes,
+    generateMoreProblemNodes: state.generateMoreProblemNodes,
+    generateMoreSolutionNodes: state.generateMoreSolutionNodes,
+    generateMoreStoryboardNode: state.generateMoreStoryboardNode,
 
     selectedNodes: state.nodes.filter((node) => node.selected),
     selectNodes: state.selectNodes
@@ -58,6 +69,9 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
   );
   const selectedSolutionNodes = selectedNodes.filter(
     ({ type }) => type === NodeType.Solution
+  );
+  const selectedStoryboardNodes = selectedNodes.filter(
+    ({ type }) => type === NodeType.Storyboard
   );
 
   const { fitView } = useReactFlow();
@@ -73,7 +87,7 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
     if (generatingRecommendations) return;
     setGeneratingRecommendations(true);
 
-    generateDependentNodeDescriptionRecommendations(
+    generateMoreNodeDescriptionRecommendations(
       getSanitizedNodeContents(selectedNodes),
       nodeToGenerate
     ).then((recommendations) => {
@@ -102,21 +116,24 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
     setGenerating(true);
 
     const nodesToFocus =
-      nodeToGenerate === 'Problem'
-        ? await generateProblemNodes(
+      nodeToGenerate === 'Persona'
+        ? await generateMorePersonaNodes(
             instructions,
             selectedPersonaNodes.map(({ id }) => id)
           )
-        : nodeToGenerate === 'Solution'
-        ? await generateSolutionNodes(
+        : nodeToGenerate === 'Problem'
+        ? await generateMoreProblemNodes(
             instructions,
             selectedProblemNodes.map(({ id }) => id)
           )
-        : await generateStoryboardNode(
+        : nodeToGenerate === 'Solution'
+        ? await generateMoreSolutionNodes(
             instructions,
-            selectedPersonaNodes.map(({ id }) => id),
-            selectedProblemNodes.map(({ id }) => id),
             selectedSolutionNodes.map(({ id }) => id)
+          )
+        : await generateMoreStoryboardNode(
+            instructions,
+            selectedStoryboardNodes.map(({ id }) => id)
           );
 
     fitView({

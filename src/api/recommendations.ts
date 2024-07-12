@@ -44,3 +44,45 @@ ${JSON.stringify(dependencyNodes)}
   );
   return recommendations;
 }
+
+const MORE_PERSONA_PROMPT = `Generate autocomplete suggestions for descriptions of a general group of personas which differ from the provided personas.
+Suggestions should be a couple of words.`;
+const MORE_PROBLEM_PROMPT = `Generate autocomplete suggestions for descriptions of a general group of problems which differ from the provided problems.
+Suggestions should be a couple of words.`;
+const MORE_SOLUTION_PROMPT = `Generate autocomplete suggestions for descriptions of a general group of solutions which differ from the provided solutions.
+Suggestions should be a couple of words.`;
+const MORE_STORYBOARD_PROMPT = `Generate autocomplete suggestions for the title of a general group of storyboards which differ from the provided storyboards.
+The title should generally describe the plot of the storyboard.`;
+
+function moreNodePrompt(
+  nodeToGenerate: 'Persona' | 'Problem' | 'Solution' | 'Storyboard' | string
+) {
+  if (nodeToGenerate === 'Persona') {
+    return MORE_PERSONA_PROMPT;
+  } else if (nodeToGenerate === 'Problem') {
+    return MORE_PROBLEM_PROMPT;
+  } else if (nodeToGenerate === 'Solution') {
+    return MORE_SOLUTION_PROMPT;
+  } else if (nodeToGenerate === 'Storyboard') {
+    return MORE_STORYBOARD_PROMPT;
+  } else {
+    return '';
+  }
+}
+
+export async function generateMoreNodeDescriptionRecommendations(
+  dependencyNodes: unknown[],
+  nodeToGenerate: 'Persona' | 'Problem' | 'Solution' | 'Storyboard' | string
+) {
+  const prompt = `${moreNodePrompt(nodeToGenerate)}
+
+Nodes: """
+${JSON.stringify(dependencyNodes)}
+"""`;
+
+  const { recommendations } = await generateStructured(
+    recommendationsSchema,
+    prompt
+  );
+  return recommendations;
+}

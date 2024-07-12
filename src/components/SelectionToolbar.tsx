@@ -16,10 +16,10 @@ export interface SelectionToolbarProps {
   onGenerateSolutions: () => void;
   onGenerateStoryboard: () => void;
 
-  onGenerateSimilarPersonas: () => void;
-  onGenerateSimilarProblems: () => void;
-  onGenerateSimilarSolutions: () => void;
-  onGenerateSimilarStoryboard: () => void;
+  onGenerateMorePersonas: () => void;
+  onGenerateMoreProblems: () => void;
+  onGenerateMoreSolutions: () => void;
+  onGenerateMoreStoryboard: () => void;
 
   onFeedback: () => void;
   onRegenerate: () => void;
@@ -78,31 +78,31 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
     },
     {
       show: showGenerateSimilarPersonas,
-      tooltip: 'Generate personas similar to the selected personas',
+      tooltip: 'Generate more personas based on the selected personas',
       leftSection: <SquareStackIcon className="size-4" />,
       label: 'Personas 👤',
-      onClick: props.onGenerateSimilarPersonas
+      onClick: props.onGenerateMorePersonas
     },
     {
       show: showGenerateSimilarProblems,
-      tooltip: 'Generate problems similar to the selected problems',
+      tooltip: 'Generate more problems based on the selected problems',
       leftSection: <SquareStackIcon className="size-4" />,
       label: 'Problems 🚨',
-      onClick: props.onGenerateSimilarProblems
+      onClick: props.onGenerateMoreProblems
     },
     {
       show: showGenerateSimilarSolutions,
-      tooltip: 'Generate solutions similar to the selected solutions',
+      tooltip: 'Generate more solutions based on the selected solutions',
       leftSection: <SquareStackIcon className="size-4" />,
       label: 'Solutions 💡',
-      onClick: props.onGenerateSimilarSolutions
+      onClick: props.onGenerateMoreSolutions
     },
     {
       show: showGenerateSimilarStoryboard,
-      tooltip: 'Generate a storyboard similar to the selected storyboards',
+      tooltip: 'Generate another storyboard based on the selected storyboards',
       leftSection: <SquareStackIcon className="size-4" />,
       label: 'Storyboard 🎞',
-      onClick: props.onGenerateSimilarStoryboard
+      onClick: props.onGenerateMoreStoryboard
     },
     {
       show: nonParentNodes.length > 0,

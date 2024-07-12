@@ -95,7 +95,7 @@ type RFState = {
     context: string,
     numberOfNodes?: number
   ) => Promise<string[]>;
-  generateSimilarPersonaNodes: (
+  generateMorePersonaNodes: (
     instructions: string,
     personaIds: string[]
   ) => Promise<string[]>;
@@ -113,7 +113,7 @@ type RFState = {
     personaIds: string[],
     oneNodeForEachPersona?: boolean
   ) => Promise<string[]>;
-  generateSimilarProblemNodes: (
+  generateMoreProblemNodes: (
     instructions: string,
     problemIds: string[]
   ) => Promise<string[]>;
@@ -131,7 +131,7 @@ type RFState = {
     problemIds: string[],
     oneNodeForEachProblem?: boolean
   ) => Promise<string[]>;
-  generateSimilarSolutionNodes: (
+  generateMoreSolutionNodes: (
     instructions: string,
     solutionIds: string[]
   ) => Promise<string[]>;
@@ -150,7 +150,7 @@ type RFState = {
     problemIds: string[],
     solutionIds: string[]
   ) => Promise<string[]>;
-  generateSimilarStoryboardNode: (
+  generateMoreStoryboardNode: (
     instructions: string,
     storyboardIds: string[]
   ) => Promise<string[]>;
@@ -400,7 +400,7 @@ const createStore: StateCreator<
 
       return nodes.map((node) => node.id);
     },
-    generateSimilarPersonaNodes: async (
+    generateMorePersonaNodes: async (
       instructions: string,
       personaIds: string[]
     ) => {
@@ -559,7 +559,7 @@ const createStore: StateCreator<
 
       return nodes.map((node) => node.id);
     },
-    generateSimilarProblemNodes: async (instructions, problemIds) => {
+    generateMoreProblemNodes: async (instructions, problemIds) => {
       const problemNodes = get().nodes.filter(
         (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
       );
@@ -733,7 +733,7 @@ const createStore: StateCreator<
 
       return nodes.map((node) => node.id);
     },
-    generateSimilarSolutionNodes: async (instructions, solutionIds) => {
+    generateMoreSolutionNodes: async (instructions, solutionIds) => {
       const solutionNodes = get().nodes.filter(
         (node) =>
           node.type === NodeType.Solution && solutionIds.includes(node.id)
@@ -930,7 +930,7 @@ const createStore: StateCreator<
 
       return [node.id];
     },
-    generateSimilarStoryboardNode: async (instructions, storyboardIds) => {
+    generateMoreStoryboardNode: async (instructions, storyboardIds) => {
       const storyboardNodes: Node<StoryboardNodeData>[] = get().nodes.filter(
         (node) =>
           node.type === NodeType.Storyboard && storyboardIds.includes(node.id)

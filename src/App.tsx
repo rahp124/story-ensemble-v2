@@ -19,10 +19,6 @@ import { useStore } from './store';
 import { ImageIcon, ImageOff, Redo, Trash, Undo } from 'lucide-react';
 import { Button, Switch } from '@mantine/core';
 import { useShallow } from 'zustand/react/shallow';
-import {
-  GenerationModal,
-  GenerationModalProps
-} from './components/GenerationModal';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import PersonaNode from './rf-components/PersonaNode';
 import ProblemNode from './rf-components/ProblemNode';
@@ -32,6 +28,7 @@ import ContextEdge from './rf-components/ContextEdge';
 import { IterateModal } from './components/IterateModal';
 import { FirstGenerationModal } from './components/FirstGenerationModal';
 import { DependentGenerationModal } from './components/DependentGenerationModal';
+import { GenerateMoreModal } from './components/GenerateMoreModal';
 
 const nodeTypes = {
   [NodeType.Persona]: PersonaNode,
@@ -118,12 +115,10 @@ export default function App() {
     'Problem' | 'Solution' | 'Storyboard'
   >('Problem');
 
-  const [showGenerationModal, setShowGenerationModal] = useState(false);
-  const [generationType, setGenerationType] = useState<
-    GenerationModalProps['generationType']
-  >({
-    type: 'ideas'
-  });
+  const [generateMoreModalOpened, setGenerateMoreModalOpened] = useState(false);
+  const [generateMoreNodeToGenerate, setGenerateMoreNodeToGenerate] = useState<
+    'Persona' | 'Problem' | 'Solution' | 'Storyboard'
+  >('Persona');
 
   const updateCenterPosition = useCallback(() => {
     const centerPosition = screenToFlowPosition({
@@ -268,33 +263,21 @@ export default function App() {
               setDependentNodeToGenerate('Storyboard');
               setDependentGenerationModalOpened(true);
             }}
-            onGenerateSimilarPersonas={() => {
-              setGenerationType({
-                type: 'similar',
-                similarNodeToGenerate: 'persona'
-              });
-              setShowGenerationModal(true);
+            onGenerateMorePersonas={() => {
+              setGenerateMoreNodeToGenerate('Persona');
+              setGenerateMoreModalOpened(true);
             }}
-            onGenerateSimilarProblems={() => {
-              setGenerationType({
-                type: 'similar',
-                similarNodeToGenerate: 'problem'
-              });
-              setShowGenerationModal(true);
+            onGenerateMoreProblems={() => {
+              setGenerateMoreNodeToGenerate('Problem');
+              setGenerateMoreModalOpened(true);
             }}
-            onGenerateSimilarSolutions={() => {
-              setGenerationType({
-                type: 'similar',
-                similarNodeToGenerate: 'solution'
-              });
-              setShowGenerationModal(true);
+            onGenerateMoreSolutions={() => {
+              setGenerateMoreNodeToGenerate('Solution');
+              setGenerateMoreModalOpened(true);
             }}
-            onGenerateSimilarStoryboard={() => {
-              setGenerationType({
-                type: 'similar',
-                similarNodeToGenerate: 'storyboard'
-              });
-              setShowGenerationModal(true);
+            onGenerateMoreStoryboard={() => {
+              setGenerateMoreNodeToGenerate('Storyboard');
+              setGenerateMoreModalOpened(true);
             }}
             onFeedback={() => {
               setIterateModalTab('feedback');
@@ -320,10 +303,10 @@ export default function App() {
         onClose={() => setDependentGenerationModalOpened(false)}
         nodeToGenerate={dependentNodeToGenerate}
       />
-      <GenerationModal
-        opened={showGenerationModal}
-        onClose={() => setShowGenerationModal(false)}
-        generationType={generationType}
+      <GenerateMoreModal
+        opened={generateMoreModalOpened}
+        onClose={() => setGenerateMoreModalOpened(false)}
+        nodeToGenerate={generateMoreNodeToGenerate}
       />
       <IterateModal />
       <ApiKeyModal />
