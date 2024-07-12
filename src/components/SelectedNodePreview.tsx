@@ -1,7 +1,7 @@
 import { Node } from 'reactflow';
 import { Accordion } from '@mantine/core';
 import { NodeType, nodeTypeDisplayAttributes } from '@/rf-components';
-import { NodeData } from '@/types';
+import { NodeData, StoryboardNodeData } from '@/types';
 import { NodeContent } from './NodeContent';
 
 interface SelectedNodePreviewProps {
@@ -21,7 +21,15 @@ export function SelectedNodePreview(props: SelectedNodePreviewProps) {
   const solutionNodes = selectedNodes.filter(
     (node) => node.type === NodeType.Solution
   );
-  const nodesToPreview = [...personaNodes, ...problemNodes, ...solutionNodes];
+  const storyboardNodes = selectedNodes.filter(
+    (node) => node.type === NodeType.Storyboard
+  ) as Node<StoryboardNodeData>[];
+  const nodesToPreview = [
+    ...personaNodes,
+    ...problemNodes,
+    ...solutionNodes,
+    ...storyboardNodes
+  ];
 
   return (
     <Accordion defaultValue={selectedNodes[0].id}>
@@ -30,6 +38,10 @@ export function SelectedNodePreview(props: SelectedNodePreviewProps) {
           node.type as NodeType
         );
         const content = node.data.content;
+        const storyboardTitle =
+          node.type === NodeType.Storyboard
+            ? (node as Node<StoryboardNodeData>).data?.storyboard?.title
+            : '';
 
         return (
           <Accordion.Item
@@ -37,10 +49,22 @@ export function SelectedNodePreview(props: SelectedNodePreviewProps) {
             value={node.id}
             className={backgroundClass}
           >
-            <Accordion.Control icon={emoji}>{content.Name}</Accordion.Control>
-            <Accordion.Panel>
-              <NodeContent content={content} />
-            </Accordion.Panel>
+            {node.type === NodeType.Storyboard ? (
+              <>
+                <Accordion.Control icon={emoji} disabled>
+                  {storyboardTitle}
+                </Accordion.Control>
+              </>
+            ) : (
+              <>
+                <Accordion.Control icon={emoji}>
+                  {content.Name}
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <NodeContent content={content} />
+                </Accordion.Panel>
+              </>
+            )}
           </Accordion.Item>
         );
       })}
