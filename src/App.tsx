@@ -31,6 +31,7 @@ import StoryboardNode from './rf-components/StoryboardNode';
 import ContextEdge from './rf-components/ContextEdge';
 import { IterateModal } from './components/IterateModal';
 import { FirstGenerationModal } from './components/FirstGenerationModal';
+import { DependentGenerationModal } from './components/DependentGenerationModal';
 
 const nodeTypes = {
   [NodeType.Persona]: PersonaNode,
@@ -110,6 +111,12 @@ export default function App() {
 
   const [firstGenerationModalOpened, setFirstGenerationModalOpened] =
     useState(false);
+
+  const [dependentGenerationModalOpened, setDependentGenerationModalOpened] =
+    useState(false);
+  const [dependentNodeToGenerate, setDependentNodeToGenerate] = useState<
+    'Problem' | 'Solution' | 'Storyboard'
+  >('Problem');
 
   const [showGenerationModal, setShowGenerationModal] = useState(false);
   const [generationType, setGenerationType] = useState<
@@ -250,25 +257,16 @@ export default function App() {
           <SelectionToolbar
             selectedNodes={selectedNodes}
             onGenerateProblems={() => {
-              setGenerationType({
-                type: 'dependent',
-                dependentNodeToGenerate: 'problem'
-              });
-              setShowGenerationModal(true);
+              setDependentNodeToGenerate('Problem');
+              setDependentGenerationModalOpened(true);
             }}
             onGenerateSolutions={() => {
-              setGenerationType({
-                type: 'dependent',
-                dependentNodeToGenerate: 'solution'
-              });
-              setShowGenerationModal(true);
+              setDependentNodeToGenerate('Solution');
+              setDependentGenerationModalOpened(true);
             }}
             onGenerateStoryboard={() => {
-              setGenerationType({
-                type: 'dependent',
-                dependentNodeToGenerate: 'storyboard'
-              });
-              setShowGenerationModal(true);
+              setDependentNodeToGenerate('Storyboard');
+              setDependentGenerationModalOpened(true);
             }}
             onGenerateSimilarPersonas={() => {
               setGenerationType({
@@ -316,6 +314,11 @@ export default function App() {
       <FirstGenerationModal
         opened={firstGenerationModalOpened}
         onClose={() => setFirstGenerationModalOpened(false)}
+      />
+      <DependentGenerationModal
+        opened={dependentGenerationModalOpened}
+        onClose={() => setDependentGenerationModalOpened(false)}
+        nodeToGenerate={dependentNodeToGenerate}
       />
       <GenerationModal
         opened={showGenerationModal}

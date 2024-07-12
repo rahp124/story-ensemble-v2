@@ -104,7 +104,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
       opened={opened}
       onClose={onClose}
       size="xl"
-      title="Start brainstorming"
+      title={<span className="text-lg font-bold">Start brainstorming</span>}
     >
       <div className="relative">
         <LoadingOverlay visible={generating} />
@@ -116,7 +116,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
         >
           <Select
             label="Design thinking step"
-            description="Select the design thinking step you want to generate up to. Starting from personas, ideas will be generated for each step including the selected step."
+            description="Select the design thinking step you want to generate up to. Starting from personas, ideas will be generated for each step up to and including the selected step."
             className="mb-4"
             data={['Persona', 'Problem', 'Solution', 'Storyboard']}
             value={finalStep}
