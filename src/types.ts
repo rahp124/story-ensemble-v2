@@ -7,9 +7,6 @@ export type NodeData = {
 
   image?: string;
   imageOutOfSync?: boolean;
-
-  feedbackOutOfSync?: boolean;
-  feedback?: string[];
 };
 
 export const personaSchema = z.object({

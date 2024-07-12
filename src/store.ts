@@ -42,14 +42,7 @@ import { generateProblems, regenerateProblems } from './api/problems';
 import { generateIllustrativeImage } from './api/images';
 import debounce from 'lodash/debounce';
 import { cloneDeep, merge } from 'lodash';
-import {
-  ConnectedFeedback,
-  generateConnectedFeedback,
-  generatePersonaFeedback,
-  generateProblemFeedback,
-  generateSolutionFeedback,
-  generateStoryboardFeedback
-} from './api/feedback';
+import { ConnectedFeedback, generateConnectedFeedback } from './api/feedback';
 import { WritableDraft } from 'immer';
 import {
   calculateDependentNodePositionAttributes,
@@ -115,8 +108,6 @@ type RFState = {
 
   generatePersonaImage: (id: string) => Promise<void>;
 
-  generatePersonaFeedback: (id: string) => Promise<void>;
-
   /* Problems */
   generateProblemNodes: (
     context: string,
@@ -135,8 +126,6 @@ type RFState = {
 
   generateProblemImage: (id: string) => Promise<void>;
 
-  generateProblemFeedback: (id: string) => Promise<void>;
-
   /* Solutions */
   generateSolutionNodes: (
     context: string,
@@ -154,8 +143,6 @@ type RFState = {
   updateSolutionNode: (id: string, solution: Partial<Solution>) => void;
 
   generateSolutionImage: (id: string) => Promise<void>;
-
-  generateSolutionFeedback: (id: string) => Promise<void>;
 
   /* Storyboards */
   generateStoryboardNode: (
@@ -182,7 +169,6 @@ type RFState = {
   ) => void;
 
   generateStoryboardImages: (id: string) => Promise<Promise<number>[]>;
-  generateStoryboardFeedback: (id: string) => Promise<void>;
 
   pastStates: Partial<RFState>[];
   futureStates: Partial<RFState>[];
@@ -219,9 +205,9 @@ const createStore: StateCreator<
   RFState,
   [['zustand/immer', never], ['zustand/persist', unknown]]
 > = (set, get) => {
-  const updateNode = (
+  const updateNode = <T = NodeData>(
     id: string,
-    setter: (nodeDraft: WritableDraft<Node>) => void
+    setter: (nodeDraft: WritableDraft<Node<T>>) => void
   ) => {
     set((state) => {
       const index = state.nodes.findIndex((node) => node.id === id);
@@ -476,6 +462,9 @@ const createStore: StateCreator<
       get().takeSnapshot();
       personaIds.forEach((id, idx) => {
         get().updatePersonaNode(id, newPersonas[idx]);
+        updateNode(id, (draft) => {
+          draft.data.outOfSync = false;
+        });
         get().generatePersonaImage(id);
       });
     },
@@ -484,7 +473,6 @@ const createStore: StateCreator<
       updateNode(id, (draft) => {
         merge(draft.data.content, persona);
         draft.data.imageOutOfSync = true;
-        draft.data.feedbackOutOfSync = true;
       });
 
       // Update dependencies
@@ -521,20 +509,6 @@ const createStore: StateCreator<
       updateNode(node.id, (draft) => {
         draft.data.image = image;
         draft.data.imageOutOfSync = false;
-      });
-    },
-    generatePersonaFeedback: async (id) => {
-      const persona = get().nodes.find(
-        (node) => node.id === id && node.type === NodeType.Persona
-      )?.data.content;
-      if (!persona) return;
-
-      const feedback = await generatePersonaFeedback(persona);
-
-      get().takeSnapshot();
-      updateNode(id, (draft) => {
-        draft.data.feedback = feedback;
-        draft.data.feedbackOutOfSync = false;
       });
     },
 
@@ -679,7 +653,6 @@ const createStore: StateCreator<
       updateNode(id, (draft) => {
         merge(draft.data.content, problem);
         draft.data.imageOutOfSync = true;
-        draft.data.feedbackOutOfSync = true;
       });
 
       // Update dependencies
@@ -700,20 +673,6 @@ const createStore: StateCreator<
           }
           return node;
         })
-      });
-    },
-    generateProblemFeedback: async (id: string) => {
-      const problem: string | undefined = get().nodes.find(
-        (node) => node.id === id && node.type === NodeType.Problem
-      )?.data.content;
-      if (!problem) return;
-
-      const feedback = await generateProblemFeedback(problem);
-
-      get().takeSnapshot();
-      updateNode(id, (draft) => {
-        draft.data.feedback = feedback;
-        draft.data.feedbackOutOfSync = false;
       });
     },
 
@@ -845,7 +804,6 @@ const createStore: StateCreator<
       updateNode(id, (draft) => {
         merge(draft.data.content, solution);
         draft.data.imageOutOfSync = true;
-        draft.data.feedbackOutOfSync = true;
       });
 
       const dependencyIds = get()
@@ -881,20 +839,6 @@ const createStore: StateCreator<
       updateNode(node.id, (draft) => {
         draft.data.image = image;
         draft.data.imageOutOfSync = false;
-      });
-    },
-    generateSolutionFeedback: async (id: string) => {
-      const solution = get().nodes.find(
-        (node) => node.id === id && node.type === NodeType.Solution
-      )?.data.content;
-      if (!solution) return;
-
-      const feedback = await generateSolutionFeedback(solution);
-
-      get().takeSnapshot();
-      updateNode(id, (draft) => {
-        draft.data.feedback = feedback;
-        draft.data.feedbackOutOfSync = false;
       });
     },
 
@@ -1087,8 +1031,8 @@ const createStore: StateCreator<
       });
 
       get().takeSnapshot();
-      updateNode(id, (draft) => {
-        draft.data.storyboard = storyboardData;
+      updateNode<StoryboardNodeData>(id, (draft) => {
+        merge(draft.data.storyboard, storyboardData);
         draft.data.outOfSync = false;
       });
 
@@ -1107,7 +1051,7 @@ const createStore: StateCreator<
         const image = await generateImage(prompt);
 
         get().takeSnapshot();
-        updateNode(id, (draft) => {
+        updateNode<StoryboardNodeData>(id, (draft) => {
           draft.data.storyboard.outline[idx].image = image;
           draft.data.storyboard.outline[idx].imageOutOfSync = false;
         });
@@ -1115,32 +1059,8 @@ const createStore: StateCreator<
         return idx;
       });
     },
-    generateStoryboardFeedback: async (id) => {
-      const storyboardNode: Node<StoryboardNodeData> | undefined =
-        get().nodes.find(
-          (node) => node.id === id && node.type === NodeType.Storyboard
-        );
-      if (!storyboardNode) return;
-
-      const { storyboard } = storyboardNode.data;
-      const sanitizedStoryboard = {
-        title: storyboard.title,
-        outline: storyboard.outline.map((frame) => ({
-          frameType: frame.frameType,
-          description: frame.description,
-          caption: frame.caption
-        }))
-      };
-
-      const feedback = await generateStoryboardFeedback(sanitizedStoryboard);
-      get().takeSnapshot();
-      updateNode(id, (draft) => {
-        draft.data.feedback = feedback;
-        draft.data.feedbackOutOfSync = false;
-      });
-    },
     updateStoryboardTitle: (id, title) => {
-      updateNode(id, (draft: WritableDraft<Node<StoryboardNodeData>>) => {
+      updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.title = title;
         draft.data.storyboard.outline.forEach((frame) => {
           frame.imageOutOfSync = true;
@@ -1148,13 +1068,13 @@ const createStore: StateCreator<
       });
     },
     updateStoryboardDescription: (id, frameIndex, description) => {
-      updateNode(id, (draft: WritableDraft<Node<StoryboardNodeData>>) => {
+      updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline[frameIndex].description = description;
         draft.data.storyboard.outline[frameIndex].imageOutOfSync = true;
       });
     },
     updateStoryboardCaption: (id, frameIndex, caption) => {
-      updateNode(id, (draft: WritableDraft<Node<StoryboardNodeData>>) => {
+      updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline[frameIndex].caption = caption;
         draft.data.storyboard.outline[frameIndex].imageOutOfSync = true;
       });
