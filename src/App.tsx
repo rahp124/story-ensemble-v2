@@ -30,6 +30,7 @@ import SolutionNode from './rf-components/SolutionNode';
 import StoryboardNode from './rf-components/StoryboardNode';
 import ContextEdge from './rf-components/ContextEdge';
 import { IterateModal } from './components/IterateModal';
+import { FirstGenerationModal } from './components/FirstGenerationModal';
 
 const nodeTypes = {
   [NodeType.Persona]: PersonaNode,
@@ -106,6 +107,9 @@ export default function App() {
   useEffect(() => {
     if (hydrated) fitView();
   }, [fitView, hydrated]);
+
+  const [firstGenerationModalOpened, setFirstGenerationModalOpened] =
+    useState(false);
 
   const [showGenerationModal, setShowGenerationModal] = useState(false);
   const [generationType, setGenerationType] = useState<
@@ -188,8 +192,7 @@ export default function App() {
           <div className="flex gap-4 items-center">
             <Button
               onClick={() => {
-                setGenerationType({ type: 'ideas' });
-                setShowGenerationModal(true);
+                setFirstGenerationModalOpened(true);
               }}
             >
               Start brainstorming
@@ -310,6 +313,10 @@ export default function App() {
           />
         )}
       </ReactFlow>
+      <FirstGenerationModal
+        opened={firstGenerationModalOpened}
+        onClose={() => setFirstGenerationModalOpened(false)}
+      />
       <GenerationModal
         opened={showGenerationModal}
         onClose={() => setShowGenerationModal(false)}

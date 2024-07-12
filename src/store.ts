@@ -111,7 +111,7 @@ type RFState = {
   generateProblemNodes: (
     context: string,
     personaIds: string[],
-    numberOfNodes?: number
+    oneNodeForEachPersona?: boolean
   ) => Promise<string[]>;
   generateSimilarProblemNodes: (
     instructions: string,
@@ -129,7 +129,7 @@ type RFState = {
   generateSolutionNodes: (
     context: string,
     problemIds: string[],
-    numberOfNodes?: number
+    oneNodeForEachProblem?: boolean
   ) => Promise<string[]>;
   generateSimilarSolutionNodes: (
     instructions: string,
@@ -505,7 +505,7 @@ const createStore: StateCreator<
     generateProblemNodes: async (
       context: string,
       personaIds: string[],
-      numberOfNodes?: number
+      oneNodeForEachPersona = false
     ) => {
       const personaNodes = get().nodes.filter(
         (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
@@ -517,9 +517,9 @@ const createStore: StateCreator<
           context,
           personas
         },
-        numberOfNodes
+        oneNodeForEachPersona ? personas.length : undefined
       );
-      numberOfNodes = problems.length;
+      const numberOfNodes = problems.length;
 
       const nodePositionAttributes = calculateDependentNodePositionAttributes(
         personaNodes,
@@ -535,13 +535,19 @@ const createStore: StateCreator<
           content: problem
         }
       }));
-      const edges = personaIds.flatMap((personaId) =>
-        nodes.map((node) => ({
-          id: `edge-${nanoid()}`,
-          source: personaId,
-          target: node.id
-        }))
-      );
+      const edges = oneNodeForEachPersona
+        ? personaIds.map((personaId, idx) => ({
+            id: `edge-${nanoid()}`,
+            source: personaId,
+            target: nodes[idx].id
+          }))
+        : personaIds.flatMap((personaId) =>
+            nodes.map((node) => ({
+              id: `edge-${nanoid()}`,
+              source: personaId,
+              target: node.id
+            }))
+          );
 
       get().takeSnapshot();
       set({
@@ -673,7 +679,7 @@ const createStore: StateCreator<
     generateSolutionNodes: async (
       context: string,
       problemIds: string[],
-      numberOfNodes?: number
+      oneNodeForEachProblem = false
     ) => {
       const problemNodes = get().nodes.filter(
         (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
@@ -685,9 +691,9 @@ const createStore: StateCreator<
           context,
           personas: problems
         },
-        numberOfNodes
+        oneNodeForEachProblem ? problems.length : undefined
       );
-      numberOfNodes = solutions.length;
+      const numberOfNodes = solutions.length;
 
       const nodePositionAttributes = calculateDependentNodePositionAttributes(
         problemNodes,
@@ -703,13 +709,19 @@ const createStore: StateCreator<
           content: solution
         }
       }));
-      const edges = problemIds.flatMap((problemId) =>
-        nodes.map((node) => ({
-          id: `edge-${nanoid()}`,
-          source: problemId,
-          target: node.id
-        }))
-      );
+      const edges = oneNodeForEachProblem
+        ? problemIds.map((problemId, idx) => ({
+            id: `edge-${nanoid()}`,
+            source: problemId,
+            target: nodes[idx].id
+          }))
+        : problemIds.flatMap((problemId) =>
+            nodes.map((node) => ({
+              id: `edge-${nanoid()}`,
+              source: problemId,
+              target: node.id
+            }))
+          );
 
       get().takeSnapshot();
       set({
@@ -849,20 +861,18 @@ const createStore: StateCreator<
       const personaNodes = get().nodes.filter(
         (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
       );
-      const personas = personaNodes.map((node) => node.data.content).join('\n');
+      const personas = personaNodes.map((node) => node.data.content);
 
       const problemNodes = get().nodes.filter(
         (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
       );
-      const problems = problemNodes.map((node) => node.data.content).join('\n');
+      const problems = problemNodes.map((node) => node.data.content);
 
       const solutionNodes = get().nodes.filter(
         (node) =>
           node.type === NodeType.Solution && solutionIds.includes(node.id)
       );
-      const solutions = solutionNodes
-        .map((node) => node.data.content)
-        .join('\n');
+      const solutions = solutionNodes.map((node) => node.data.content);
 
       const dependencyNodes = [
         ...personaNodes,
