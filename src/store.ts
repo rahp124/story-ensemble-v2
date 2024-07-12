@@ -93,6 +93,11 @@ type RFState = {
   globalShowImage: boolean;
   setGlobalShowImage: (show: boolean) => void;
 
+  iterateModalOpen: boolean;
+  setIterateModalOpen: (open: boolean) => void;
+  iterateModalTab: 'feedback' | 'regenerate' | 'edit' | null;
+  setIterateModalTab: (tab: 'feedback' | 'regenerate' | 'edit' | null) => void;
+
   setNodeOutOfSync: (id: string, outOfSync: boolean) => void;
 
   removeNodesFromGroup: (ids: string[]) => void;
@@ -401,6 +406,11 @@ const createStore: StateCreator<
     setGlobalShowImage: (showImage: boolean) => {
       set({ globalShowImage: showImage });
     },
+
+    iterateModalOpen: true,
+    setIterateModalOpen: (open) => set({ iterateModalOpen: open }),
+    iterateModalTab: null,
+    setIterateModalTab: (tab) => set({ iterateModalTab: tab }),
 
     setNodeOutOfSync: (id: string, outOfSync: boolean) => {
       updateNode(id, (draft) => {

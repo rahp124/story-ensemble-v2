@@ -76,6 +76,18 @@ ${JSON.stringify(storyboard, null, 2)}
   return feedback;
 }
 
+export async function generateMultipleNodeFeedback(nodes: unknown[]) {
+  const prompt = `You are an UX designer given a list of nodes representing personas, problems, solutions, and storyboards.
+Brainstorm questions to evaluate these nodes being used for design thinking.
+
+Nodes: """
+${JSON.stringify(nodes)}
+"""`;
+
+  const { feedback } = await generateStructured(feedbackSchema, prompt);
+  return feedback;
+}
+
 const connectedFeedbackSchema = z.object({
   feedbacks: z
     .object({

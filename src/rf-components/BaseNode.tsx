@@ -13,9 +13,7 @@ import {
   Modal,
   Button,
   Switch,
-  Loader,
   Textarea,
-  Table,
   Tabs,
   InputLabel,
   LoadingOverlay,
@@ -27,7 +25,6 @@ import {
   ImageOff,
   Info,
   Pencil,
-  MessageSquareShare,
   X,
   MessageSquareIcon
 } from 'lucide-react';
@@ -86,7 +83,12 @@ export default function BaseNode<T extends Record<string, string>>(
     );
   }, [scrollViewport]);
 
-  const { globalShowImage } = useStore();
+  const {
+    globalShowImage,
+    selectNodes,
+    setIterateModalOpen,
+    setIterateModalTab
+  } = useStore();
 
   function cardContent() {
     if (globalShowImage || showImage || zoomShowImage) {
@@ -134,39 +136,6 @@ export default function BaseNode<T extends Record<string, string>>(
       );
     }
   }
-
-  const feedbackTable = (
-    <Table>
-      <Table.Tbody>
-        {generatingFeedback ? (
-          <div className="px-4 pb-4 flex justify-center">
-            <Loader className="m-4" />
-          </div>
-        ) : (
-          feedback?.map((idea, idx) => (
-            <Table.Tr key={idx}>
-              <Table.Td>{idea}</Table.Td>
-
-              <Table.Td>
-                <Tooltip label="Incorporate feedback">
-                  <ActionIcon
-                    variant="subtle"
-                    size="sm"
-                    onClick={() => {
-                      setEditFeedback(idea);
-                      setActiveTab('edit');
-                    }}
-                  >
-                    <MessageSquareShare />
-                  </ActionIcon>
-                </Tooltip>
-              </Table.Td>
-            </Table.Tr>
-          ))
-        )}
-      </Table.Tbody>
-    </Table>
-  );
 
   const handleEditSubmit = async () => {
     if (editingNode) return;
@@ -248,11 +217,10 @@ export default function BaseNode<T extends Record<string, string>>(
       key: 'feedback',
       tooltip: 'Feedback',
       icon: <MessageSquareIcon />,
-      notification: !feedback || feedbackOutOfSync,
       onClick: () => {
-        setActiveTab('feedback');
-        setModalOpen(true);
-        generateFeedbackIfNeeded();
+        selectNodes([nodeProps.id]);
+        setIterateModalTab('feedback');
+        setIterateModalOpen(true);
       }
     },
     {
@@ -261,14 +229,9 @@ export default function BaseNode<T extends Record<string, string>>(
       icon: <Pencil />,
       notification: outOfSync,
       onClick: () => {
-        if (outOfSync) {
-          setEditInstructions(
-            'Update the node taking into account the updated dependencies.'
-          );
-        }
-
-        setActiveTab('edit');
-        setModalOpen(true);
+        selectNodes([nodeProps.id]);
+        setIterateModalTab('edit');
+        setIterateModalOpen(true);
       }
     }
   ].map(({ key, tooltip, icon, notification, loading, onClick }) => {
@@ -380,22 +343,9 @@ export default function BaseNode<T extends Record<string, string>>(
           }}
         >
           <Tabs.List>
-            <Tabs.Tab value="feedback">
-              Feedback
-              {(!feedback || feedbackOutOfSync) && <NotificationDot />}
-            </Tabs.Tab>
             <Tabs.Tab value="edit">Edit</Tabs.Tab>
           </Tabs.List>
 
-          <Tabs.Panel value="feedback">
-            {generatingFeedback ? (
-              <div className="p-4 flex justify-center">
-                <Loader />
-              </div>
-            ) : (
-              feedbackTable
-            )}
-          </Tabs.Panel>
           <Tabs.Panel value="edit">{editForm}</Tabs.Panel>
         </Tabs>
         <LoadingOverlay visible={editingNode} />

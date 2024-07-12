@@ -4,7 +4,9 @@ import { Button, Tooltip } from '@mantine/core';
 import {
   BlocksIcon,
   CopyIcon,
+  MessageSquareIcon,
   NetworkIcon,
+  PencilIcon,
   SquareStackIcon
 } from 'lucide-react';
 
@@ -19,6 +21,9 @@ export interface SelectionToolbarProps {
   onGenerateSimilarProblems: () => void;
   onGenerateSimilarSolutions: () => void;
   onGenerateSimilarStoryboard: () => void;
+
+  onFeedback: () => void;
+  onRegenerate: () => void;
 
   onDuplicate: () => void;
 
@@ -105,6 +110,18 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
       leftSection: <SquareStackIcon className="size-4" />,
       label: 'Storyboard 🎞',
       onClick: props.onGenerateSimilarStoryboard
+    },
+    {
+      show: nonParentNodes.length > 0,
+      tooltip: 'View feedback',
+      label: <MessageSquareIcon className="size-4" />,
+      onClick: props.onFeedback
+    },
+    {
+      show: nonParentNodes.length > 0,
+      tooltip: 'Regenerate',
+      label: <PencilIcon className="size-4" />,
+      onClick: props.onRegenerate
     },
     {
       show: true,

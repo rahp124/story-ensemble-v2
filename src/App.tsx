@@ -39,15 +39,16 @@ import ProblemNode from './rf-components/ProblemNode';
 import SolutionNode from './rf-components/SolutionNode';
 import StoryboardNode from './rf-components/StoryboardNode';
 import ContextEdge from './rf-components/ContextEdge';
+import { IterateModal } from './components/IterateModal';
 
-export const nodeTypes = {
+const nodeTypes = {
   [NodeType.Persona]: PersonaNode,
   [NodeType.Problem]: ProblemNode,
   [NodeType.Solution]: SolutionNode,
   [NodeType.Storyboard]: StoryboardNode
 };
 
-export const edgeTypes = {
+const edgeTypes = {
   [EdgeType.Context]: ContextEdge
 };
 
@@ -73,6 +74,9 @@ export default function App() {
     selectedNodes,
     selectNodes,
 
+    setIterateModalOpen,
+    setIterateModalTab,
+
     copy,
     paste
   } = useStore(
@@ -96,6 +100,9 @@ export default function App() {
 
       selectedNodes: state.nodes.filter(({ selected }) => selected),
       selectNodes: state.selectNodes,
+
+      setIterateModalOpen: state.setIterateModalOpen,
+      setIterateModalTab: state.setIterateModalTab,
 
       copy: state.copy,
       paste: state.paste
@@ -314,6 +321,14 @@ export default function App() {
               });
               setShowGenerationModal(true);
             }}
+            onFeedback={() => {
+              setIterateModalTab('feedback');
+              setIterateModalOpen(true);
+            }}
+            onRegenerate={() => {
+              setIterateModalTab('regenerate');
+              setIterateModalOpen(true);
+            }}
             onDuplicate={() => {
               copy();
               paste();
@@ -329,6 +344,7 @@ export default function App() {
         onClose={() => setShowGenerationModal(false)}
         generationType={generationType}
       />
+      <IterateModal />
       <Drawer
         opened={feedbackDrawerOpened}
         onClose={() => setFeedbackDrawerOpened(false)}
