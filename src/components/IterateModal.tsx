@@ -280,9 +280,7 @@ export function IterateModal() {
           <Tabs.List>
             <Tabs.Tab value="feedback">Feedback</Tabs.Tab>
             <Tabs.Tab value="regenerate">Regenerate</Tabs.Tab>
-            {selectedNodes.length === 1 && (
-              <Tabs.Tab value="edit">Edit</Tabs.Tab>
-            )}
+            {showEditForm && <Tabs.Tab value="edit">Edit</Tabs.Tab>}
           </Tabs.List>
 
           <Tabs.Panel value="feedback">
