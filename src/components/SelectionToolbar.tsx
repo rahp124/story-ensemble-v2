@@ -2,7 +2,6 @@ import { NodeType } from '@/rf-components';
 import { Node, NodeToolbar, Position } from 'reactflow';
 import { Button, Tooltip } from '@mantine/core';
 import {
-  BlocksIcon,
   CopyIcon,
   MessageSquareIcon,
   NetworkIcon,
@@ -26,8 +25,6 @@ export interface SelectionToolbarProps {
   onRegenerate: () => void;
 
   onDuplicate: () => void;
-
-  onRemoveFromGroup: () => void;
 }
 export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
   const nonParentNodes = props.selectedNodes.filter(
@@ -43,10 +40,6 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
   const showGenerateStoryboard =
     nonParentNodes.length > 0 &&
     !nonParentNodes.some((node) => node.type === NodeType.Storyboard);
-
-  const showRemoveFromGroup =
-    nonParentNodes.length > 0 &&
-    nonParentNodes.every((node) => !!node.parentId);
 
   const showGenerateSimilarPersonas =
     nonParentNodes.length > 0 &&
@@ -128,12 +121,6 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
       tooltip: 'Duplicate',
       label: <CopyIcon className="size-4" />,
       onClick: props.onDuplicate
-    },
-    {
-      show: showRemoveFromGroup,
-      tooltip: 'Remove from group',
-      label: <BlocksIcon className="size-4" />,
-      onClick: props.onRemoveFromGroup
     }
   ];
 
