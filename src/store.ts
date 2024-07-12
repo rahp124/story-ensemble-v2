@@ -42,7 +42,6 @@ import { generateProblems, regenerateProblems } from './api/problems';
 import { generateIllustrativeImage } from './api/images';
 import debounce from 'lodash/debounce';
 import { cloneDeep, merge } from 'lodash';
-import { ConnectedFeedback, generateConnectedFeedback } from './api/feedback';
 import { WritableDraft } from 'immer';
 import {
   calculateDependentNodePositionAttributes,
@@ -180,15 +179,6 @@ type RFState = {
   copiedNodeIds: string[];
   copy: () => void;
   paste: () => void;
-
-  // Node Groups
-  groupIdToNodeIds: Record<string, string[]>;
-  groupIdToEdges: Record<string, { source: string; target: string }[]>;
-  nodeIdToGroupId: Record<string, string>;
-  calculateNodeGroups: () => void;
-
-  groupFeedback: Record<string, ConnectedFeedback>;
-  generateGroupFeedback: () => Promise<void>;
 };
 
 function partialize(state: RFState): Partial<RFState> {
@@ -1186,130 +1176,6 @@ const createStore: StateCreator<
         ],
         edges: [...get().edges, ...newEdges]
       });
-    },
-
-    groupIdToNodeIds: {} as Record<string, string[]>,
-    groupIdToEdges: {} as Record<string, { source: string; target: string }[]>,
-    nodeIdToGroupId: {} as Record<string, string>,
-
-    calculateNodeGroups: () => {
-      const groupIdToNodeIds: Record<string, Set<string>> = {};
-      const groupIdToEdges: Record<
-        string,
-        { source: string; target: string }[]
-      > = {};
-      const nodeIdToGroupId: Record<string, string> = {};
-
-      get().edges.forEach(({ source, target }) => {
-        const sourceGroupId = nodeIdToGroupId[source];
-        const sourceNodeIds = groupIdToNodeIds[sourceGroupId];
-        const targetGroupId = nodeIdToGroupId[target];
-        const targetNodeIds = groupIdToNodeIds[targetGroupId];
-
-        if (sourceGroupId && targetGroupId) {
-          if (sourceGroupId !== targetGroupId) {
-            for (const nodeId of targetNodeIds) {
-              nodeIdToGroupId[nodeId] = sourceGroupId;
-            }
-
-            groupIdToNodeIds[sourceGroupId] = new Set([
-              ...sourceNodeIds,
-              ...targetNodeIds
-            ]);
-            delete groupIdToNodeIds[targetGroupId];
-
-            groupIdToEdges[sourceGroupId] = [
-              { source, target },
-              ...groupIdToEdges[sourceGroupId],
-              ...groupIdToEdges[targetGroupId]
-            ];
-            delete groupIdToEdges[targetGroupId];
-          }
-        } else if (sourceGroupId && !targetGroupId) {
-          nodeIdToGroupId[target] = sourceGroupId;
-          groupIdToNodeIds[sourceGroupId] = new Set([...sourceNodeIds, target]);
-          groupIdToEdges[sourceGroupId].push({ source, target });
-        } else if (!sourceGroupId && targetGroupId) {
-          nodeIdToGroupId[source] = targetGroupId;
-          groupIdToNodeIds[targetGroupId] = new Set([...targetNodeIds, source]);
-          groupIdToEdges[targetGroupId].push({ source, target });
-        } else {
-          const newGroupId = nanoid();
-          nodeIdToGroupId[source] = newGroupId;
-          nodeIdToGroupId[target] = newGroupId;
-          groupIdToNodeIds[newGroupId] = new Set([source, target]);
-          groupIdToEdges[newGroupId] = [{ source, target }];
-        }
-      });
-
-      const groupIdToNodeIdsArray = Object.fromEntries(
-        Object.entries(groupIdToNodeIds).map(([groupId, nodeIds]) => [
-          groupId,
-          [...nodeIds]
-        ])
-      );
-
-      set({
-        groupIdToNodeIds: groupIdToNodeIdsArray,
-        groupIdToEdges,
-        nodeIdToGroupId
-      });
-    },
-
-    groupFeedback: {} as Record<string, ConnectedFeedback>,
-    generateGroupFeedback: async () => {
-      const { groupIdToNodeIds, nodes, groupIdToEdges } = get();
-      return Promise.all(
-        Object.keys(groupIdToNodeIds).map(async (groupId) => {
-          const nodeIds = [...groupIdToNodeIds[groupId]];
-          const nodeContent = nodeIds
-            .map((nodeId) => nodes.find((node) => node.id === nodeId))
-            .filter((node) => node !== undefined)
-            .map((node) => {
-              if (node.type === NodeType.Storyboard) {
-                const storyboard: StoryboardNodeData['storyboard'] =
-                  node.data.storyboard;
-                const sanitizedStoryboard = {
-                  title: storyboard.title,
-                  outline: storyboard.outline.map((frame) => ({
-                    frameType: frame.frameType,
-                    description: frame.description,
-                    caption: frame.caption
-                  }))
-                };
-
-                return {
-                  id: node.id,
-                  type: node.type,
-                  content: JSON.stringify(sanitizedStoryboard)
-                };
-              } else {
-                return {
-                  id: node.id,
-                  type: node.type,
-                  content: node.data.content
-                };
-              }
-            });
-          const edges = groupIdToEdges[groupId];
-
-          const feedbacks = await generateConnectedFeedback(
-            nodeContent,
-            edges
-          ).then((feedbacks) =>
-            feedbacks.filter(({ affectedNodes }) =>
-              affectedNodes.every((nodeId) => nodeIds.includes(nodeId))
-            )
-          );
-
-          return [groupId, feedbacks] as const;
-        })
-      )
-        .then((groupFeedback) => {
-          const groupIdToFeedbacks = Object.fromEntries(groupFeedback);
-          return groupIdToFeedbacks;
-        })
-        .then((groupFeedback) => set({ groupFeedback }));
     }
   };
 };

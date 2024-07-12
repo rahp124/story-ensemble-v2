@@ -17,22 +17,12 @@ import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
 import { ImageIcon, ImageOff, Redo, Trash, Undo } from 'lucide-react';
-import {
-  Accordion,
-  Button,
-  Card,
-  Drawer,
-  ScrollArea,
-  Switch
-} from '@mantine/core';
+import { Button, Switch } from '@mantine/core';
 import { useShallow } from 'zustand/react/shallow';
-import { useNodeGroups } from './lib/useNodeGroups';
-import { useGroupFeedback } from './lib/useGroupFeedback';
 import {
   GenerationModal,
   GenerationModalProps
 } from './components/GenerationModal';
-import { NodeCountDisplayer } from './components/NodeCountDisplayer';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import PersonaNode from './rf-components/PersonaNode';
 import ProblemNode from './rf-components/ProblemNode';
@@ -70,7 +60,6 @@ export default function App() {
     redo,
 
     selectedNodes,
-    selectNodes,
 
     setIterateModalOpen,
     setIterateModalTab,
@@ -95,7 +84,6 @@ export default function App() {
       redo: state.redo,
 
       selectedNodes: state.nodes.filter(({ selected }) => selected),
-      selectNodes: state.selectNodes,
 
       setIterateModalOpen: state.setIterateModalOpen,
       setIterateModalTab: state.setIterateModalTab,
@@ -119,11 +107,6 @@ export default function App() {
     if (hydrated) fitView();
   }, [fitView, hydrated]);
 
-  const { groupIdToNodeIds } = useNodeGroups();
-  const { groupFeedback, generateGroupFeedback } = useGroupFeedback();
-  const [generatingFeedback, setGeneratingFeedback] = useState(false);
-
-  const [feedbackDrawerOpened, setFeedbackDrawerOpened] = useState(false);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
   const [generationType, setGenerationType] = useState<
     GenerationModalProps['generationType']
@@ -221,11 +204,6 @@ export default function App() {
               offLabel={<ImageOff className="w-3 h-3" />}
             />
           </div>
-        </Panel>
-        <Panel position="top-right">
-          <Button onClick={() => setFeedbackDrawerOpened(true)}>
-            View feedback
-          </Button>
         </Panel>
         <Controls position="bottom-right" showInteractive={false}>
           <ControlButton onClick={() => undo()}>
@@ -338,85 +316,6 @@ export default function App() {
         generationType={generationType}
       />
       <IterateModal />
-      <Drawer
-        opened={feedbackDrawerOpened}
-        onClose={() => setFeedbackDrawerOpened(false)}
-        title="Feedback"
-        position="right"
-        withOverlay={false}
-      >
-        <ScrollArea.Autosize scrollbars="y" maw="100%">
-          <div className="flex flex-col gap-4 w-full">
-            <Button
-              loading={generatingFeedback}
-              onClick={async () => {
-                setGeneratingFeedback(true);
-                await generateGroupFeedback();
-                setGeneratingFeedback(false);
-              }}
-            >
-              Generate feedback
-            </Button>
-            {Object.entries(groupIdToNodeIds).map(([groupId, nodeIds], idx) => {
-              const nodeIdsArr = [...nodeIds];
-
-              return (
-                <Card key={groupId} withBorder>
-                  <h3
-                    className="font-bold text-md mb-2 cursor-pointer"
-                    onClick={() => {
-                      selectNodes(nodeIdsArr);
-                      fitView({
-                        nodes: [...nodeIds].map((id) => ({ id })),
-                        duration: 1000,
-                        padding: 1.1
-                      });
-                    }}
-                  >
-                    Group {idx + 1}
-                  </h3>
-                  <NodeCountDisplayer nodeIds={nodeIdsArr} />
-
-                  {groupFeedback[groupId] && (
-                    <Accordion className="mt-4">
-                      {groupFeedback[groupId].map((feedback, idx) => (
-                        <Accordion.Item key={idx} value={`${idx}`}>
-                          <Accordion.Control>
-                            {feedback.feedbackSummary}
-                          </Accordion.Control>
-                          <Accordion.Panel>
-                            <NodeCountDisplayer
-                              nodeIds={feedback.affectedNodes}
-                            />
-
-                            <p className="mt-4">{feedback.feedback}</p>
-
-                            <Button
-                              className="mt-2"
-                              onClick={() => {
-                                selectNodes(feedback.affectedNodes);
-                                return fitView({
-                                  nodes: feedback.affectedNodes.map((id) => ({
-                                    id
-                                  })),
-                                  duration: 1000,
-                                  padding: 1.1
-                                });
-                              }}
-                            >
-                              Go to nodes
-                            </Button>
-                          </Accordion.Panel>
-                        </Accordion.Item>
-                      ))}
-                    </Accordion>
-                  )}
-                </Card>
-              );
-            })}
-          </div>
-        </ScrollArea.Autosize>
-      </Drawer>
       <ApiKeyModal />
     </div>
   );
