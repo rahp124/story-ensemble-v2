@@ -37,6 +37,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
   const [finalStep, setFinalStep] = useState<
     'Persona' | 'Problem' | 'Solution' | 'Storyboard'
   >('Persona');
+  const [designContext, setDesignContext] = useState('');
   const [personaDescription, setPersonaDescription] = useState('');
   const [problemDescription, setProblemDescription] = useState('');
   const [solutionDescription, setSolutionDescription] = useState('');
@@ -50,12 +51,14 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
 
     const nodesToFocus: string[] = [];
 
-    const personaIds = await generatePersonaNodes(personaDescription);
+    const personaIds = await generatePersonaNodes(
+      `${designContext}\n${personaDescription}`
+    );
     nodesToFocus.push(...personaIds);
 
     if (finalStep !== 'Persona') {
       const problemIds = await generateProblemNodes(
-        problemDescription,
+        `${designContext}\n${problemDescription}`,
         personaIds,
         true
       );
@@ -63,7 +66,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
 
       if (finalStep !== 'Problem') {
         const solutionIds = await generateSolutionNodes(
-          solutionDescription,
+          `${designContext}\n${solutionDescription}`,
           problemIds,
           true
         );
@@ -73,7 +76,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
           const middleIndex = Math.floor((personaIds.length - 1) / 2);
 
           const storyboardIds = await generateStoryboardNode(
-            storyboardDescription,
+            `${designContext}\n${storyboardDescription}`,
             [personaIds[middleIndex]],
             [problemIds[middleIndex]],
             [solutionIds[middleIndex]]
@@ -92,6 +95,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
     setGenerating(false);
     onClose();
 
+    setDesignContext('');
     setPersonaDescription('');
     setProblemDescription('');
     setSolutionDescription('');
@@ -118,13 +122,25 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
             label="Design thinking step"
             description="Select the design thinking step you want to generate up to. Starting from personas, ideas will be generated for each step up to and including the selected step."
             className="mb-4"
+            required
             data={['Persona', 'Problem', 'Solution', 'Storyboard']}
             value={finalStep}
             onChange={setFinalStep as (value: string | null) => void}
             allowDeselect={false}
           />
+          <Textarea
+            label="Design context"
+            description="Describe the context you are designing for. Descriptions for specific design thinking steps can be added below."
+            className="mb-4"
+            required
+            autosize
+            minRows={3}
+            maxRows={8}
+            value={designContext}
+            onChange={(event) => setDesignContext(event.currentTarget.value)}
+          />
 
-          <Divider my="lg" />
+          <Divider my="lg" label="Specific node descriptions (optional)" />
 
           {[
             {
@@ -168,7 +184,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
                 description={description}
                 className="mb-4"
                 autosize
-                minRows={3}
+                minRows={1}
                 maxRows={8}
                 value={value}
                 onChange={(event) => onChange(event.currentTarget.value)}
