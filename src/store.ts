@@ -384,7 +384,7 @@ const createStore: StateCreator<
       set({ globalShowImage: showImage });
     },
 
-    iterateModalOpen: true,
+    iterateModalOpen: false,
     setIterateModalOpen: (open) => set({ iterateModalOpen: open }),
     iterateModalTab: null,
     setIterateModalTab: (tab) => set({ iterateModalTab: tab }),
