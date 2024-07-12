@@ -6,28 +6,14 @@ import { StoryboardNodeData } from '@/types';
 import {
   ActionIcon,
   AspectRatio,
-  Button,
   Card,
   Input,
-  InputLabel,
-  Loader,
-  LoadingOverlay,
-  Modal,
   Skeleton,
   Switch,
-  Table,
-  Tabs,
   Textarea,
   Tooltip
 } from '@mantine/core';
-import {
-  ImageIcon,
-  ImageOff,
-  MessageSquareIcon,
-  MessageSquareShare,
-  Pencil,
-  X
-} from 'lucide-react';
+import { ImageIcon, ImageOff, MessageSquareIcon, Pencil } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
@@ -37,7 +23,7 @@ const displayAttributes = nodeTypeDisplayAttributes(NodeType.Storyboard);
 export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [showImage, setShowImage] = useState(false);
 
-  const { outOfSync, storyboard, feedback, feedbackOutOfSync } = props.data;
+  const { outOfSync, storyboard } = props.data;
 
   const [title, setTitle] = useState(storyboard.title);
   const [descriptions, setDescriptions] = useState<string[]>(
@@ -63,124 +49,31 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
 
   const {
     globalShowImage,
-    regenerateStoryboardNode,
+
     generateStoryboardImages,
-    generateStoryboardFeedback,
+
     updateStoryboardTitle,
     updateStoryboardDescription,
-    updateStoryboardCaption
+    updateStoryboardCaption,
+
+    selectNodes,
+
+    setIterateModalOpen,
+    setIterateModalTab
   } = useStore((state) => ({
     globalShowImage: state.globalShowImage,
-    regenerateStoryboardNode: state.regenerateStoryboardNode,
+
     generateStoryboardImages: state.generateStoryboardImages,
-    generateStoryboardFeedback: state.generateStoryboardFeedback,
+
     updateStoryboardTitle: state.updateStoryboardTitle,
     updateStoryboardDescription: state.updateStoryboardDescription,
-    updateStoryboardCaption: state.updateStoryboardCaption
+    updateStoryboardCaption: state.updateStoryboardCaption,
+
+    selectNodes: state.selectNodes,
+
+    setIterateModalOpen: state.setIterateModalOpen,
+    setIterateModalTab: state.setIterateModalTab
   }));
-
-  const [modalOpen, setModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<string | null>('feedback');
-  const [generatingFeedback, setGeneratingFeedback] = useState(false);
-
-  const [editInstructions, setEditInstructions] = useState('');
-  const [editFeedback, setEditFeedback] = useState<string | null>(null);
-  const [editingNode, setEditingNode] = useState(false);
-
-  const handleEditSubmit = async () => {
-    if (editingNode) return;
-
-    setEditingNode(true);
-
-    const instructions = editFeedback
-      ? `Feedback: ${editFeedback}\nResponse: ${editInstructions}`
-      : editInstructions;
-
-    await regenerateStoryboardNode(props.id, instructions);
-
-    setEditInstructions('');
-    setEditFeedback(null);
-
-    setModalOpen(false);
-    setEditingNode(false);
-  };
-
-  const editForm = (
-    <form
-      className="pt-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleEditSubmit();
-      }}
-    >
-      {editFeedback && (
-        <div className="mb-4 flex justify-between items-center gap-4">
-          <div>
-            <InputLabel>Feedback to incorporate</InputLabel>
-            <p className="italic text-md">{editFeedback}</p>
-          </div>
-          <ActionIcon
-            variant="subtle"
-            color="red"
-            onClick={() => setEditFeedback(null)}
-          >
-            <X />
-          </ActionIcon>
-        </div>
-      )}
-      <Textarea
-        label="Edit instructions"
-        description="Provide instructions for how to update this node, provide feedback, or respond to feedback."
-        className="mb-4"
-        required={true}
-        value={editInstructions}
-        onChange={(e) => setEditInstructions(e.target.value)}
-      />
-
-      <Button type="submit">Edit</Button>
-    </form>
-  );
-
-  const feedbackTable = (
-    <Table>
-      <Table.Tbody>
-        {generatingFeedback ? (
-          <div className="px-4 pb-4 flex justify-center">
-            <Loader className="m-4" />
-          </div>
-        ) : (
-          feedback?.map((idea, idx) => (
-            <Table.Tr key={idx}>
-              <Table.Td>{idea}</Table.Td>
-
-              <Table.Td>
-                <Tooltip label="Incorporate feedback">
-                  <ActionIcon
-                    variant="subtle"
-                    size="sm"
-                    onClick={() => {
-                      setEditFeedback(idea);
-                      setActiveTab('edit');
-                    }}
-                  >
-                    <MessageSquareShare />
-                  </ActionIcon>
-                </Tooltip>
-              </Table.Td>
-            </Table.Tr>
-          ))
-        )}
-      </Table.Tbody>
-    </Table>
-  );
-
-  async function generateFeedbackIfNeeded() {
-    if ((!feedback || feedbackOutOfSync) && !generatingFeedback) {
-      setGeneratingFeedback(true);
-      await generateStoryboardFeedback(props.id);
-      setGeneratingFeedback(false);
-    }
-  }
 
   const icons = [
     {
@@ -209,11 +102,10 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
       key: 'feedback',
       tooltip: 'Feedback',
       icon: <MessageSquareIcon />,
-      notification: !feedback || feedbackOutOfSync,
       onClick: () => {
-        setActiveTab('feedback');
-        setModalOpen(true);
-        generateFeedbackIfNeeded();
+        selectNodes([props.id]);
+        setIterateModalTab('feedback');
+        setIterateModalOpen(true);
       }
     },
     {
@@ -222,14 +114,15 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
       icon: <Pencil />,
       notification: outOfSync,
       onClick: () => {
-        if (outOfSync) {
-          setEditInstructions(
-            'Update the node taking into account the updated dependencies.'
-          );
-        }
+        // if (outOfSync) {
+        //   setEditInstructions(
+        //     'Update the node taking into account the updated dependencies.'
+        //   );
+        // }
 
-        setActiveTab('edit');
-        setModalOpen(true);
+        selectNodes([props.id]);
+        setIterateModalTab('edit');
+        setIterateModalOpen(true);
       }
     }
   ].map(({ key, tooltip, icon, notification, loading, onClick }) => {
@@ -383,44 +276,6 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
         </div>
       </Card>
       <TargetHandle />
-      <Modal
-        title={<b>Node content</b>}
-        size="lg"
-        opened={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-        }}
-      >
-        <Tabs
-          value={activeTab}
-          onChange={(value) => {
-            setActiveTab(value);
-            if (value === 'feedback') {
-              generateFeedbackIfNeeded();
-            }
-          }}
-        >
-          <Tabs.List>
-            <Tabs.Tab value="feedback">
-              Feedback
-              {(!feedback || feedbackOutOfSync) && <NotificationDot />}
-            </Tabs.Tab>
-            <Tabs.Tab value="edit">Edit</Tabs.Tab>
-          </Tabs.List>
-
-          <Tabs.Panel value="feedback">
-            {generatingFeedback ? (
-              <div className="p-4 flex justify-center">
-                <Loader />
-              </div>
-            ) : (
-              feedbackTable
-            )}
-          </Tabs.Panel>
-          <Tabs.Panel value="edit">{editForm}</Tabs.Panel>
-        </Tabs>
-        <LoadingOverlay visible={editingNode} />
-      </Modal>
     </>
   );
 }

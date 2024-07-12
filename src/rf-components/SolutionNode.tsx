@@ -7,12 +7,9 @@ import { NodeType, nodeTypeDisplayAttributes } from '.';
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Solution);
 
 export default function SolutionNode(props: NodeProps<NodeData>) {
-  const {
-    updateSolutionNode,
-    regenerateSolutionNodes,
-    generateSolutionImage,
-    generateSolutionFeedback
-  } = useStore();
+  const generateSolutionImage = useStore(
+    (state) => state.generateSolutionImage
+  );
 
   return (
     <BaseNode
@@ -24,12 +21,7 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
       nodeProps={props}
       nodeBackgroundClass={displayAttributes.backgroundClass}
       content={props.data.content}
-      onUpdateContent={(content) => updateSolutionNode(props.id, content)}
-      onRegenerateContent={(instructions) =>
-        regenerateSolutionNodes([props.id], instructions)
-      }
       onRegenerateImage={() => generateSolutionImage(props.id)}
-      onGenerateFeedback={() => generateSolutionFeedback(props.id)}
       targetHandle={true}
       sourceHandle={true}
     />

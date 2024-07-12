@@ -7,13 +7,7 @@ import { NodeType, nodeTypeDisplayAttributes } from '.';
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Persona);
 
 export default function PersonaNode(props: NodeProps<NodeData>) {
-  const {
-    updatePersonaNode,
-    regeneratePersonaNodes,
-
-    generatePersonaImage,
-    generatePersonaFeedback
-  } = useStore();
+  const generatePersonaImage = useStore((state) => state.generatePersonaImage);
 
   return (
     <BaseNode
@@ -25,12 +19,7 @@ export default function PersonaNode(props: NodeProps<NodeData>) {
       nodeProps={props}
       nodeBackgroundClass={displayAttributes.backgroundClass}
       content={props.data.content}
-      onUpdateContent={(content) => updatePersonaNode(props.id, content)}
       onRegenerateImage={() => generatePersonaImage(props.id)}
-      onRegenerateContent={async (instructions) =>
-        regeneratePersonaNodes([props.id], instructions)
-      }
-      onGenerateFeedback={() => generatePersonaFeedback(props.id)}
       targetHandle={false}
       sourceHandle={true}
     />

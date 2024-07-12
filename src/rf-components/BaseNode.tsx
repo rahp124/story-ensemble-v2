@@ -10,25 +10,17 @@ import {
   Tooltip,
   Image,
   Skeleton,
-  Modal,
-  Button,
   Switch,
-  Textarea,
-  Tabs,
-  InputLabel,
-  LoadingOverlay,
   ScrollArea
 } from '@mantine/core';
-import { useForm } from '@mantine/form';
 import {
   ImageIcon,
   ImageOff,
   Info,
   Pencil,
-  X,
   MessageSquareIcon
 } from 'lucide-react';
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { ReactNode, useCallback, useRef, useState } from 'react';
 import {
   NodeProps,
   NodeResizer,
@@ -45,11 +37,8 @@ export interface BaseNodeProps<T extends Record<string, string>> {
   nodeBackgroundClass: string;
 
   content: T;
-  onUpdateContent: (content: Partial<T>) => void;
-  onRegenerateContent: (instructions: string) => Promise<void>;
 
   onRegenerateImage: () => Promise<void>;
-  onGenerateFeedback: () => Promise<void>;
 
   targetHandle: boolean;
   sourceHandle: boolean;
@@ -58,20 +47,11 @@ export default function BaseNode<T extends Record<string, string>>(
   props: BaseNodeProps<T>
 ) {
   const { nodeProps } = props;
-  const { image, imageOutOfSync, outOfSync, feedback, feedbackOutOfSync } =
-    nodeProps.data;
+  const { image, imageOutOfSync, outOfSync } = nodeProps.data;
 
   const [regenerating, setRegenerating] = useState(false);
-  const [generatingFeedback, setGeneratingFeedback] = useState(false);
 
   const [showImage, setShowImage] = useState(false);
-
-  const [modalOpen, setModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<string | null>('feedback');
-
-  const [editInstructions, setEditInstructions] = useState('');
-  const [editFeedback, setEditFeedback] = useState<string | null>(null);
-  const [editingNode, setEditingNode] = useState(false);
 
   const zoom = useRfStore(zoomSelector);
   const zoomShowImage = zoom < 0.7;
@@ -137,66 +117,58 @@ export default function BaseNode<T extends Record<string, string>>(
     }
   }
 
-  const handleEditSubmit = async () => {
-    if (editingNode) return;
+  // const handleEditSubmit = async () => {
+  //   if (editingNode) return;
 
-    setEditingNode(true);
+  //   setEditingNode(true);
 
-    const instructions = editFeedback
-      ? `Feedback: ${editFeedback}\nResponse: ${editInstructions}`
-      : editInstructions;
-    await props.onRegenerateContent(instructions);
+  //   const instructions = editFeedback
+  //     ? `Feedback: ${editFeedback}\nResponse: ${editInstructions}`
+  //     : editInstructions;
+  //   await props.onRegenerateContent(instructions);
 
-    setEditInstructions('');
-    setEditFeedback(null);
+  //   setEditInstructions('');
+  //   setEditFeedback(null);
 
-    setModalOpen(false);
-    setEditingNode(false);
-  };
+  //   setModalOpen(false);
+  //   setEditingNode(false);
+  // };
 
-  const editForm = (
-    <form
-      className="pt-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleEditSubmit();
-      }}
-    >
-      {editFeedback && (
-        <div className="mb-4 flex justify-between items-center gap-4">
-          <div>
-            <InputLabel>Feedback to incorporate</InputLabel>
-            <p className="italic text-md">{editFeedback}</p>
-          </div>
-          <ActionIcon
-            variant="subtle"
-            color="red"
-            onClick={() => setEditFeedback(null)}
-          >
-            <X />
-          </ActionIcon>
-        </div>
-      )}
-      <Textarea
-        label="Edit instructions"
-        description="Provide instructions for how to update this node, provide feedback, or respond to feedback."
-        className="mb-4"
-        required={true}
-        value={editInstructions}
-        onChange={(e) => setEditInstructions(e.target.value)}
-      />
+  // const editForm = (
+  //   <form
+  //     className="pt-4"
+  //     onSubmit={(e) => {
+  //       e.preventDefault();
+  //       handleEditSubmit();
+  //     }}
+  //   >
+  //     {editFeedback && (
+  //       <div className="mb-4 flex justify-between items-center gap-4">
+  //         <div>
+  //           <InputLabel>Feedback to incorporate</InputLabel>
+  //           <p className="italic text-md">{editFeedback}</p>
+  //         </div>
+  //         <ActionIcon
+  //           variant="subtle"
+  //           color="red"
+  //           onClick={() => setEditFeedback(null)}
+  //         >
+  //           <X />
+  //         </ActionIcon>
+  //       </div>
+  //     )}
+  //     <Textarea
+  //       label="Edit instructions"
+  //       description="Provide instructions for how to update this node, provide feedback, or respond to feedback."
+  //       className="mb-4"
+  //       required={true}
+  //       value={editInstructions}
+  //       onChange={(e) => setEditInstructions(e.target.value)}
+  //     />
 
-      <Button type="submit">Edit</Button>
-    </form>
-  );
-
-  async function generateFeedbackIfNeeded() {
-    if ((!feedback || feedbackOutOfSync) && !generatingFeedback) {
-      setGeneratingFeedback(true);
-      await props.onGenerateFeedback();
-      setGeneratingFeedback(false);
-    }
-  }
+  //     <Button type="submit">Edit</Button>
+  //   </form>
+  // );
 
   const icons = [
     {
@@ -257,30 +229,30 @@ export default function BaseNode<T extends Record<string, string>>(
     );
   });
 
-  const nodeForm = useForm({
-    mode: 'uncontrolled',
-    // Spread initial values to avoid assignment error
-    // https://github.com/mantinedev/mantine/issues/4542
-    initialValues: { ...props.content }
-  });
-  const setFormValues = nodeForm.setValues;
-  useEffect(() => {
-    setFormValues({ ...props.content });
-  }, [setFormValues, props.content]);
+  // const nodeForm = useForm({
+  //   mode: 'uncontrolled',
+  //   // Spread initial values to avoid assignment error
+  //   // https://github.com/mantinedev/mantine/issues/4542
+  //   initialValues: { ...props.content }
+  // });
+  // const setFormValues = nodeForm.setValues;
+  // useEffect(() => {
+  //   setFormValues({ ...props.content });
+  // }, [setFormValues, props.content]);
 
-  const nodeFormElement = (
-    <form
-      onSubmit={nodeForm.onSubmit((values) => {
-        props.onUpdateContent(values);
-      })}
-    >
-      {Object.keys(props.content).map((key) => (
-        <Textarea key={key} label={key} {...nodeForm.getInputProps(key)} />
-      ))}
+  // const nodeFormElement = (
+  //   <form
+  //     onSubmit={nodeForm.onSubmit((values) => {
+  //       props.onUpdateContent(values);
+  //     })}
+  //   >
+  //     {Object.keys(props.content).map((key) => (
+  //       <Textarea key={key} label={key} {...nodeForm.getInputProps(key)} />
+  //     ))}
 
-      <Button type="submit">Submit</Button>
-    </form>
-  );
+  //     <Button type="submit">Submit</Button>
+  //   </form>
+  // );
 
   return (
     <>
@@ -320,36 +292,6 @@ export default function BaseNode<T extends Record<string, string>>(
       </div>
       {props.targetHandle && <TargetHandle />}
       {props.sourceHandle && <SourceHandle />}
-      <Modal
-        title={<b>Node content</b>}
-        size="lg"
-        opened={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-        }}
-      >
-        <div className={`p-2 ${props.nodeBackgroundClass} mb-4`}>
-          <h3 className="font-bold text-sm mb-2">{props.nodeName}</h3>
-          {nodeFormElement}
-        </div>
-
-        <Tabs
-          value={activeTab}
-          onChange={(value) => {
-            setActiveTab(value);
-            if (value === 'feedback') {
-              generateFeedbackIfNeeded();
-            }
-          }}
-        >
-          <Tabs.List>
-            <Tabs.Tab value="edit">Edit</Tabs.Tab>
-          </Tabs.List>
-
-          <Tabs.Panel value="edit">{editForm}</Tabs.Panel>
-        </Tabs>
-        <LoadingOverlay visible={editingNode} />
-      </Modal>
     </>
   );
 }

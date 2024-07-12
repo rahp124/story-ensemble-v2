@@ -7,12 +7,7 @@ import { NodeType, nodeTypeDisplayAttributes } from '.';
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Problem);
 
 export default function ProblemNode(props: NodeProps<NodeData>) {
-  const {
-    updateProblemNode,
-    regenerateProblemNodes,
-    generateProblemImage,
-    generateProblemFeedback
-  } = useStore();
+  const generateProblemImage = useStore((state) => state.generateProblemImage);
 
   return (
     <BaseNode
@@ -24,12 +19,7 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
       nodeProps={props}
       nodeBackgroundClass={displayAttributes.backgroundClass}
       content={props.data.content}
-      onUpdateContent={(content) => updateProblemNode(props.id, content)}
-      onRegenerateContent={(instructions) =>
-        regenerateProblemNodes([props.id], instructions)
-      }
       onRegenerateImage={() => generateProblemImage(props.id)}
-      onGenerateFeedback={() => generateProblemFeedback(props.id)}
       targetHandle={true}
       sourceHandle={true}
     />
