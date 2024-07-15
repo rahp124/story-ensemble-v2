@@ -7,6 +7,8 @@
   - [ ] Add a tooltip for editing individual frames
   - [ ] Add before and after panels
   - [ ] delete frame button
+  - [ ] Edit context button
+  - [ ] Wrap frames
   - [ ] Art style
   - [ ] Export screenshot image
 - [ ] Storyboard generation workflow

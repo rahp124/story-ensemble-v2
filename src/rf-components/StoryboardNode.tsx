@@ -6,8 +6,10 @@ import { StoryboardNodeData } from '@/types';
 import {
   ActionIcon,
   AspectRatio,
+  Button,
   Card,
   Input,
+  Popover,
   Skeleton,
   Switch,
   Textarea,
@@ -17,13 +19,13 @@ import { ImageIcon, ImageOff, RefreshCwIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
-import { useZoom } from '@/lib/useZoom';
+// import { useZoom } from '@/lib/useZoom';
 
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Storyboard);
 
 export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [showImage, setShowImage] = useState(false);
-  const { zoomShowImage } = useZoom();
+  // const { zoomShowImage } = useZoom();
 
   const { storyboard, outOfSync } = props.data;
 
@@ -53,7 +55,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const {
     regenerateStoryboardNode,
 
-    globalShowImage,
+    // globalShowImage,
 
     generateStoryboardImages,
 
@@ -203,6 +205,58 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 <p className="font-bold text-sm">
                   Frame {frameIdx + 1} - {frameTypeText(frame.frameType)}
                 </p>
+                <Popover width={350} position="left-end" withArrow>
+                  <Popover.Target>
+                    <ActionIcon size="sm">🔍</ActionIcon>
+                  </Popover.Target>
+                  <Popover.Dropdown>
+                    <form
+                      onSubmit={() => {
+                        console.log('do something');
+                      }}
+                    >
+                      <Textarea
+                        label="Description"
+                        description="Describes the contents and visuals of the frame. Update the description to regenerate the image."
+                        autosize
+                        minRows={3}
+                        maxRows={8}
+                        disabled={loading}
+                        value={descriptions[frameIdx]}
+                        onChange={(e) => {
+                          setDescriptions(
+                            descriptions.map((d, i) =>
+                              i === frameIdx ? e.target.value : d
+                            )
+                          );
+                        }}
+                        onBlur={() => {
+                          if (descriptions[frameIdx] !== frame.description) {
+                            updateStoryboardDescription(
+                              props.id,
+                              frameIdx,
+                              descriptions[frameIdx]
+                            );
+                          }
+                        }}
+                      />
+                      <div className="flex gap-2 mt-4">
+                        <Button
+                          size="compact-sm"
+                          onClick={() => alert('Not implemented yet')}
+                        >
+                          Regenerate image
+                        </Button>
+                        <Button
+                          size="compact-sm"
+                          onClick={() => alert('Not implemented yet')}
+                        >
+                          Regenerate all images
+                        </Button>
+                      </div>
+                    </form>
+                  </Popover.Dropdown>
+                </Popover>
               </div>
 
               <div
@@ -211,36 +265,10 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 )}`}
               >
                 <AspectRatio ratio={1}>
-                  {showImage || globalShowImage || zoomShowImage ? (
-                    <>
-                      {loadingMap[frameIdx] ? (
-                        <Skeleton />
-                      ) : (
-                        <img src={frame.image} />
-                      )}
-                    </>
+                  {loadingMap[frameIdx] ? (
+                    <Skeleton />
                   ) : (
-                    <textarea
-                      className="block size-full resize-none p-2 text-md flex-grow outline-none nodrag"
-                      disabled={loading}
-                      value={descriptions[frameIdx]}
-                      onChange={(e) => {
-                        setDescriptions(
-                          descriptions.map((d, i) =>
-                            i === frameIdx ? e.target.value : d
-                          )
-                        );
-                      }}
-                      onBlur={() => {
-                        if (descriptions[frameIdx] !== frame.description) {
-                          updateStoryboardDescription(
-                            props.id,
-                            frameIdx,
-                            descriptions[frameIdx]
-                          );
-                        }
-                      }}
-                    />
+                    <img src={frame.image} />
                   )}
                 </AspectRatio>
               </div>
