@@ -13,7 +13,7 @@ import {
   Textarea,
   Tooltip
 } from '@mantine/core';
-import { ImageIcon, ImageOff } from 'lucide-react';
+import { ImageIcon, ImageOff, RefreshCwIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
@@ -25,7 +25,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [showImage, setShowImage] = useState(false);
   const { zoomShowImage } = useZoom();
 
-  const { storyboard } = props.data;
+  const { storyboard, outOfSync } = props.data;
 
   const [title, setTitle] = useState(storyboard.title);
   const [descriptions, setDescriptions] = useState<string[]>(
@@ -48,8 +48,11 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const imagesOutOfSync = storyboard.outline.some(
     (frame) => frame.imageOutOfSync
   );
+  const [regenerating, setRegenerating] = useState(false);
 
   const {
+    regenerateStoryboardNode,
+
     globalShowImage,
 
     generateStoryboardImages,
@@ -58,6 +61,8 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     updateStoryboardDescription,
     updateStoryboardCaption
   } = useStore((state) => ({
+    regenerateStoryboardNode: state.regenerateStoryboardNode,
+
     globalShowImage: state.globalShowImage,
 
     generateStoryboardImages: state.generateStoryboardImages,
@@ -75,10 +80,11 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const icons = [
     {
       key: 'regenerate',
+      show: true,
       tooltip: 'Regenerate images',
       icon: <RefreshImageIcon />,
       notification: imagesOutOfSync,
-      loading,
+      loading: loading || regenerating,
       onClick: async () => {
         setLoadingMap(Array(storyboard.outline.length).fill(true));
 
@@ -94,29 +100,49 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
           });
         });
       }
-    }
-  ].map(({ key, tooltip, icon, notification, loading, onClick }) => {
-    const iconElement = (
-      <ActionIcon
-        key={key}
-        variant="subtle"
-        size="sm"
-        loading={loading}
-        onClick={onClick}
-      >
-        {icon}
-        {notification && <NotificationDot />}
-      </ActionIcon>
-    );
+    },
+    {
+      key: 'sync',
+      show: outOfSync,
+      tooltip: 'Dependencies updated. Regenerate node.',
+      icon: <RefreshCwIcon />,
+      notification: true,
+      loading: regenerating,
+      onClick: async () => {
+        if (regenerating) return;
 
-    return tooltip ? (
-      <Tooltip key={key} label={tooltip}>
-        {iconElement}
-      </Tooltip>
-    ) : (
-      iconElement
-    );
-  });
+        setRegenerating(true);
+        await regenerateStoryboardNode(
+          props.id,
+          'Regenerate storyboard based on updated personas, problems, and solutions'
+        );
+        setRegenerating(false);
+      }
+    }
+  ]
+    .filter(({ show }) => show)
+    .map(({ key, tooltip, icon, notification, loading, onClick }) => {
+      const iconElement = (
+        <ActionIcon
+          key={key}
+          variant="subtle"
+          size="sm"
+          loading={loading}
+          onClick={onClick}
+        >
+          {icon}
+          {notification && <NotificationDot />}
+        </ActionIcon>
+      );
+
+      return tooltip ? (
+        <Tooltip key={key} label={tooltip}>
+          {iconElement}
+        </Tooltip>
+      ) : (
+        iconElement
+      );
+    });
 
   return (
     <>

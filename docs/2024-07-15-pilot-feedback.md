@@ -2,16 +2,21 @@
 
 ## Development updates
 
+- [ ] Storyboard editing
+  - [x] Out of sync
+  - [ ] Add a tooltip for editing individual frames
+  - [ ] Add before and after panels
+  - [ ] delete frame button
+  - [ ] Art style
+  - [ ] Export screenshot image
 - [ ] Storyboard generation workflow
   - [ ] Allow users to generate with just a solution (but crawl up the edges)
   - [ ] Let's crawl up the dependencies (and add the edges)
   - Add helper functions for crawling dependencies
-- [ ] Storyboard editing
-  - [ ] Add a tooltip for editing individual frames
-  - [ ] Art style
-  - Add before and after panels
-  - [ ] delete button
-  - [ ] Export screenshot image
+
+---
+
+- [ ] Persist API keys in session storage
 - [ ] Prompt tuning
   - [ ] Less feedback
   - [ ] Do we need to save the user's intent to guide the future generations (array of instructions)

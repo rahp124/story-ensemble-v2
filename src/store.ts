@@ -1166,8 +1166,7 @@ const createStore: StateCreator<
           (node) =>
             node.type === NodeType.Persona && personaIds.includes(node.id)
         )
-        .map((node) => node.data.content)
-        .join('\n');
+        .map((node) => node.data.content);
 
       const problemIds = get()
         .edges.filter(
@@ -1179,8 +1178,7 @@ const createStore: StateCreator<
           (node) =>
             node.type === NodeType.Problem && problemIds.includes(node.id)
         )
-        .map((node) => node.data.content)
-        .join('\n');
+        .map((node) => node.data.content);
 
       const solutionIds = get()
         .edges.filter(
@@ -1192,8 +1190,7 @@ const createStore: StateCreator<
           (node) =>
             node.type === NodeType.Solution && solutionIds.includes(node.id)
         )
-        .map((node) => node.data.content)
-        .join('\n');
+        .map((node) => node.data.content);
 
       const storyboardData = await generateStoryboardOutline({
         personas,
