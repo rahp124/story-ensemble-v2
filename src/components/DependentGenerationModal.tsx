@@ -1,28 +1,32 @@
 import { NodeType } from '@/rf-components';
 import { useStore } from '@/store';
-import { Button, LoadingOverlay, Modal, Textarea } from '@mantine/core';
+import { Anchor, Button, LoadingOverlay, Modal, Textarea } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { useReactFlow } from 'reactflow';
 import { SelectedNodePreview } from './SelectedNodePreview';
 import { generateDependentNodeDescriptionRecommendations } from '@/api/recommendations';
 import { getSanitizedNodeContents } from '@/lib/getSanitizedNodeContent';
-import { PlusIcon } from 'lucide-react';
+import { CheckIcon, PlusIcon } from 'lucide-react';
+import { notifications } from '@mantine/notifications';
 
 const TEXT_CONTENT = {
   Problem: {
     title: 'Generate problems from personas',
     inputLabel: 'Problem description',
-    inputDescription: 'Roughly describe the problems to generate'
+    inputDescription: 'Roughly describe the problems to generate',
+    notificationTitle: 'Generating problems from personas'
   },
   Solution: {
     title: 'Generate solutions from problems',
     inputLabel: 'Solution description',
-    inputDescription: 'Roughly describe the solutions to generate'
+    inputDescription: 'Roughly describe the solutions to generate',
+    notificationTitle: 'Generating solutions from problems'
   },
   Storyboard: {
-    title: 'Generate storyboards from personas, problems, and solutions',
+    title: 'Generate storyboard from solutions',
     inputLabel: 'Storyboard description',
-    inputDescription: 'Roughly describe the storyboard to generate'
+    inputDescription: 'Roughly describe the storyboard to generate',
+    notificationTitle: 'Generating storyboard from solutions'
   }
 };
 
@@ -89,18 +93,24 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
     selectedNodes
   ]);
 
-  useEffect(() => {
-    if (!opened) {
-      setRecommendations(null);
-      setInstructions('');
-    }
-  }, [opened]);
-
   const [generating, setGenerating] = useState(false);
+
+  const { title, inputLabel, inputDescription, notificationTitle } =
+    TEXT_CONTENT[nodeToGenerate];
 
   async function generateIdeas() {
     if (generating) return;
     setGenerating(true);
+
+    const notificationId = notifications.show({
+      title: notificationTitle,
+      message: 'Generating...',
+
+      loading: true,
+      autoClose: false,
+      withCloseButton: false
+    });
+    onClose();
 
     const nodesToFocus =
       nodeToGenerate === 'Problem'
@@ -120,25 +130,48 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
             selectedSolutionNodes.map(({ id }) => id)
           );
 
-    fitView({
-      nodes: nodesToFocus.map((id) => ({ id })),
-      duration: 1000
+    notifications.update({
+      id: notificationId,
+      message: (
+        <>
+          Generation complete.{' '}
+          <Anchor
+            size="sm"
+            onClick={() => {
+              fitView({
+                nodes: nodesToFocus.map((id) => ({ id })),
+                duration: 1000
+              });
+              selectNodes(nodesToFocus);
+            }}
+          >
+            Jump to nodes.
+          </Anchor>
+        </>
+      ),
+
+      icon: <CheckIcon />,
+      loading: false,
+      withCloseButton: true
     });
-    selectNodes(nodesToFocus);
 
     setGenerating(false);
-    onClose();
 
     setRecommendations(null);
     setInstructions('');
   }
 
-  const { title, inputLabel, inputDescription } = TEXT_CONTENT[nodeToGenerate];
-
   return (
     <Modal
       opened={opened}
-      onClose={onClose}
+      onClose={() => {
+        onClose();
+
+        if (!generating) {
+          setRecommendations(null);
+          setInstructions('');
+        }
+      }}
       size="xl"
       title={<span className="text-lg font-bold">{title}</span>}
     >

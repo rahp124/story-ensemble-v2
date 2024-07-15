@@ -1,5 +1,6 @@
 import { useStore } from '@/store';
 import {
+  Anchor,
   Button,
   Divider,
   LoadingOverlay,
@@ -7,6 +8,8 @@ import {
   Select,
   Textarea
 } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { CheckIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useReactFlow } from 'reactflow';
 
@@ -49,6 +52,16 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
     if (generating) return;
     setGenerating(true);
 
+    const notificationId = notifications.show({
+      title: 'Generating ideas',
+      message: 'Generating personas...',
+
+      loading: true,
+      autoClose: false,
+      withCloseButton: false
+    });
+    onClose();
+
     const nodesToFocus: string[] = [];
 
     const personaIds = await generatePersonaNodes(
@@ -57,6 +70,11 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
     nodesToFocus.push(...personaIds);
 
     if (finalStep !== 'Persona') {
+      notifications.update({
+        id: notificationId,
+        message: 'Generating problems...'
+      });
+
       const problemIds = await generateProblemNodes(
         `${designContext}\n${problemDescription}`,
         personaIds,
@@ -65,6 +83,11 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
       nodesToFocus.push(...problemIds);
 
       if (finalStep !== 'Problem') {
+        notifications.update({
+          id: notificationId,
+          message: 'Generating solutions...'
+        });
+
         const solutionIds = await generateSolutionNodes(
           `${designContext}\n${solutionDescription}`,
           problemIds,
@@ -73,6 +96,11 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
         nodesToFocus.push(...solutionIds);
 
         if (finalStep !== 'Solution') {
+          notifications.update({
+            id: notificationId,
+            message: 'Generating storyboard...'
+          });
+
           const middleIndex = Math.floor((personaIds.length - 1) / 2);
 
           const storyboardIds = await generateStoryboardNode(
@@ -86,14 +114,32 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
       }
     }
 
-    fitView({
-      nodes: nodesToFocus.map((id) => ({ id })),
-      duration: 1000
+    notifications.update({
+      id: notificationId,
+      message: (
+        <>
+          Generation complete.{' '}
+          <Anchor
+            size="sm"
+            onClick={() => {
+              fitView({
+                nodes: nodesToFocus.map((id) => ({ id })),
+                duration: 1000
+              });
+              selectNodes(nodesToFocus);
+            }}
+          >
+            Jump to nodes.
+          </Anchor>
+        </>
+      ),
+
+      icon: <CheckIcon />,
+      loading: false,
+      withCloseButton: true
     });
-    selectNodes(nodesToFocus);
 
     setGenerating(false);
-    onClose();
 
     setDesignContext('');
     setPersonaDescription('');

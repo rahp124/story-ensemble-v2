@@ -3,10 +3,6 @@
 ## Development updates
 
 - [ ] Feedback regenerating after updates is distracting - Add labels to the loading states
-- [ ] Prevent closing modals while generating (DONT)
-  - Use the user's start location
-  - Use a loading notification to show it generating and add the ability to hop to the nodes
-  - Apply to first generation, generate more, dependent generation
 - [ ] Storyboard generation workflow
   - [ ] Allow users to generate with just a solution (but crawl up the edges)
   - [ ] Let's crawl up the dependencies (and add the edges)
@@ -36,4 +32,8 @@
 - Recommendations
   - [x] Select multiple recommendations
   - [x] Add recommendations to regenerate
+- [x] Prevent closing modals while generating (DONT)
+  - Use the user's start location
+  - Use a loading notification to show it generating and add the ability to hop to the nodes
+  - Apply to first generation, generate more, dependent generation
 - [ ] Rename regenerate to update eh

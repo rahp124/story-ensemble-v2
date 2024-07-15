@@ -1,37 +1,42 @@
 import { NodeType } from '@/rf-components';
 import { useStore } from '@/store';
-import { Button, LoadingOverlay, Modal, Textarea } from '@mantine/core';
+import { Anchor, Button, LoadingOverlay, Modal, Textarea } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { useReactFlow } from 'reactflow';
 import { SelectedNodePreview } from './SelectedNodePreview';
 import { generateMoreNodeDescriptionRecommendations } from '@/api/recommendations';
 import { getSanitizedNodeContents } from '@/lib/getSanitizedNodeContent';
-import { PlusIcon } from 'lucide-react';
+import { CheckIcon, PlusIcon } from 'lucide-react';
+import { notifications } from '@mantine/notifications';
 
 const TEXT_CONTENT = {
   Persona: {
     title: 'Generate more personas',
     inputLabel: 'Persona description',
     inputDescription:
-      'Roughly describe the personas to generate and how they differ from the existing personas'
+      'Roughly describe the personas to generate and how they differ from the existing personas',
+    notificationTitle: 'Generating more personas'
   },
   Problem: {
     title: 'Generate more problems',
     inputLabel: 'Problem description',
     inputDescription:
-      'Roughly describe the problems to generate and how they differ from the existing problems'
+      'Roughly describe the problems to generate and how they differ from the existing problems',
+    notificationTitle: 'Generating more problems'
   },
   Solution: {
     title: 'Generate more solutions',
     inputLabel: 'Solution description',
     inputDescription:
-      'Roughly describe the solutions to generate and how they differ from the existing solutions'
+      'Roughly describe the solutions to generate and how they differ from the existing solutions',
+    notificationTitle: 'Generating more solutions'
   },
   Storyboard: {
     title: 'Generate another storyboard',
     inputLabel: 'Storyboard description',
     inputDescription:
-      'Roughly describe the storyboard to generate and how it differs from the existing storyboards'
+      'Roughly describe the storyboard to generate and how it differs from the existing storyboards',
+    notificationTitle: 'Generating another storyboard'
   }
 };
 
@@ -103,18 +108,24 @@ export function GenerateMoreModal(props: GenerateMoreModalProps) {
     selectedNodes
   ]);
 
-  useEffect(() => {
-    if (!opened) {
-      setRecommendations(null);
-      setInstructions('');
-    }
-  }, [opened]);
-
   const [generating, setGenerating] = useState(false);
+
+  const { title, inputLabel, inputDescription, notificationTitle } =
+    TEXT_CONTENT[nodeToGenerate];
 
   async function generateIdeas() {
     if (generating) return;
     setGenerating(true);
+
+    const notificationId = notifications.show({
+      title: notificationTitle,
+      message: 'Generating...',
+
+      loading: true,
+      autoClose: false,
+      withCloseButton: false
+    });
+    onClose();
 
     const nodesToFocus =
       nodeToGenerate === 'Persona'
@@ -137,25 +148,48 @@ export function GenerateMoreModal(props: GenerateMoreModalProps) {
             selectedStoryboardNodes.map(({ id }) => id)
           );
 
-    fitView({
-      nodes: nodesToFocus.map((id) => ({ id })),
-      duration: 1000
+    notifications.update({
+      id: notificationId,
+      message: (
+        <>
+          Generation complete.{' '}
+          <Anchor
+            size="sm"
+            onClick={() => {
+              fitView({
+                nodes: nodesToFocus.map((id) => ({ id })),
+                duration: 1000
+              });
+              selectNodes(nodesToFocus);
+            }}
+          >
+            Jump to nodes.
+          </Anchor>
+        </>
+      ),
+
+      icon: <CheckIcon />,
+      loading: false,
+      withCloseButton: true
     });
-    selectNodes(nodesToFocus);
 
     setGenerating(false);
-    onClose();
 
     setRecommendations(null);
     setInstructions('');
   }
 
-  const { title, inputLabel, inputDescription } = TEXT_CONTENT[nodeToGenerate];
-
   return (
     <Modal
       opened={opened}
-      onClose={onClose}
+      onClose={() => {
+        onClose();
+
+        if (!generating) {
+          setRecommendations(null);
+          setInstructions('');
+        }
+      }}
       size="xl"
       title={<span className="text-lg font-bold">{title}</span>}
     >

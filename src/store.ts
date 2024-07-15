@@ -408,10 +408,11 @@ const createStore: StateCreator<
       set({ nodes: [...get().nodes, node] });
     },
     generatePersonaNodes: async (context: string, numberOfNodes?: number) => {
+      const center = get().centerPosition;
+
       const personas = await generatePersonas(context, numberOfNodes);
       numberOfNodes = personas.length;
 
-      const center = get().centerPosition;
       const nodePositionAttributes = calculateNodePositionAttributes(
         center,
         numberOfNodes
