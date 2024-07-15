@@ -18,11 +18,11 @@
 
 ---
 
-- [ ] Persist API keys in session storage
 - [ ] Prompt tuning
   - [ ] Less feedback
   - [ ] Do we need to save the user's intent to guide the future generations (array of instructions)
   - [ ] Switch to using system messages
+- [x] Persist API keys in session storage
 - [x] Add empty nodes - right click to open a context menu and select from one of four nodes
   - [ ] Add ability to regenerate/fill in missing values
 - [x] Generate/regenerate multiple storyboards - Leave it and see if there is anymore feedback

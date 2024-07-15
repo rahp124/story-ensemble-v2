@@ -1,19 +1,14 @@
 import OpenAI from 'openai';
 
-const localKeys = {
-  openaiKey: '',
-  stabilityKey: ''
-};
-
 export function getOpenAiKey() {
   if (import.meta.env['VITE_OPENAI_API_KEY']) {
     return import.meta.env['VITE_OPENAI_API_KEY'];
   }
 
-  return localKeys.openaiKey;
+  return sessionStorage.getItem('openaiKey') ?? '';
 }
 export function setOpenAiKey(key: string) {
-  localKeys.openaiKey = key;
+  sessionStorage.setItem('openaiKey', key);
 }
 
 export async function validateOpenAiKey(key: string) {
@@ -35,11 +30,11 @@ export function getStabilityAiKey() {
     return import.meta.env['VITE_STABILITY_API_KEY'];
   }
 
-  return localKeys.stabilityKey;
+  return sessionStorage.getItem('stabilityKey') ?? '';
 }
 
 export function setStabilityAiKey(key: string) {
-  localKeys.stabilityKey = key;
+  sessionStorage.setItem('stabilityKey', key);
 }
 
 export async function validateStabilityAiKey(key: string) {
