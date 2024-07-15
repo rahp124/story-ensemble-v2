@@ -1,5 +1,5 @@
 import { Tooltip } from '@mantine/core';
-import { capitalCase } from 'change-case';
+import { capitalCase, noCase } from 'change-case';
 export function NodeContent(props: {
   content: Record<string, string>;
   previousChangedValues?: Record<string, string>;
@@ -15,7 +15,7 @@ export function NodeContent(props: {
         <Tooltip
           label={
             <>
-              <b>Previous {key.toLowerCase()}:</b> {previousChangedValue}
+              <b>Previous {noCase(key)}:</b> {previousChangedValue}
             </>
           }
           disabled={previousChangedValue === undefined}

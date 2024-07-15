@@ -8,6 +8,7 @@ import {
   Modal,
   Table,
   Tabs,
+  Text,
   Textarea,
   Tooltip
 } from '@mantine/core';
@@ -350,8 +351,11 @@ export function IterateModal() {
 
           <Tabs.Panel value="feedback">
             {generatingFeedback ? (
-              <div className="px-4 pb-4 flex justify-center">
+              <div className="p-4 flex flex-col justify-center items-center">
                 <Loader className="m-4" />
+                <Text c="blue" size="sm" className="font-semibold">
+                  Generating feedback...
+                </Text>
               </div>
             ) : !feedbackToIncorporate ? (
               <Table>

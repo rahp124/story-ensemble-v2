@@ -2,10 +2,10 @@
 
 ## Development updates
 
-- [ ] Feedback regenerating after updates is distracting - Add labels to the loading states
 - [ ] Storyboard generation workflow
   - [ ] Allow users to generate with just a solution (but crawl up the edges)
   - [ ] Let's crawl up the dependencies (and add the edges)
+  - Add helper functions for crawling dependencies
 
 ---
 
@@ -36,4 +36,5 @@
   - Use the user's start location
   - Use a loading notification to show it generating and add the ability to hop to the nodes
   - Apply to first generation, generate more, dependent generation
+- [x] Feedback regenerating after updates is distracting - Add labels to the loading states
 - [ ] Rename regenerate to update eh
