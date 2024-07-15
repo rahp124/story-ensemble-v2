@@ -2,8 +2,6 @@
 
 ## Development updates
 
-- [ ] Add empty nodes - right click to open a context menu and select from one of four nodes
-  - [ ] Add ability to regenerate/fill in missing values
 - [ ] Feedback regenerating after updates is distracting - Add labels to the loading states
 - [ ] Prevent closing modals while generating (DONT)
   - Use the user's start location
@@ -29,6 +27,8 @@
   - Add before and after panels
   - [ ] delete button
   - [ ] Export screenshot image
+- [x] Add empty nodes - right click to open a context menu and select from one of four nodes
+  - [ ] Add ability to regenerate/fill in missing values
 - [x] Generate/regenerate multiple storyboards - Leave it and see if there is anymore feedback
 - [x] Copy and paste - add to tutorial DONE
 - [x] Make it clear what regenerate has updated - tweak the styling

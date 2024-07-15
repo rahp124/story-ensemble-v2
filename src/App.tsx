@@ -11,7 +11,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { EdgeType, NodeType } from './rf-components';
+import { displayConfigByNodeType, EdgeType, NodeType } from './rf-components';
 import { useCallback, useEffect, useState } from 'react';
 import SelectionToolbar from './components/SelectionToolbar';
 
@@ -19,12 +19,13 @@ import { useStore } from './store';
 import {
   ImageIcon,
   ImageOff,
+  PlusIcon,
   // Redo,
   Trash
   //  Undo
 } from 'lucide-react';
 
-import { Button, Switch } from '@mantine/core';
+import { Button, Menu, Switch } from '@mantine/core';
 import { useShallow } from 'zustand/react/shallow';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import PersonaNode from './rf-components/PersonaNode';
@@ -71,7 +72,12 @@ export default function App() {
     setIterateModalTab,
 
     copy,
-    paste
+    paste,
+
+    addEmptyPersonaNode,
+    addEmptyProblemNode,
+    addEmptySolutionNode,
+    addEmptyStoryboardNode
   } = useStore(
     useShallow((state) => ({
       nodes: state.nodes,
@@ -95,7 +101,12 @@ export default function App() {
       setIterateModalTab: state.setIterateModalTab,
 
       copy: state.copy,
-      paste: state.paste
+      paste: state.paste,
+
+      addEmptyPersonaNode: state.addEmptyPersonaNode,
+      addEmptyProblemNode: state.addEmptyProblemNode,
+      addEmptySolutionNode: state.addEmptySolutionNode,
+      addEmptyStoryboardNode: state.addEmptyStoryboardNode
     }))
   );
 
@@ -206,6 +217,38 @@ export default function App() {
             >
               Start brainstorming
             </Button>
+            <Menu position="bottom-start" trigger="click-hover">
+              <Menu.Target>
+                <Button variant="light">Add empty node</Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={<PlusIcon className="size-5" />}
+                  onClick={addEmptyPersonaNode}
+                >
+                  Persona {displayConfigByNodeType[NodeType.Persona].emoji}
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<PlusIcon className="size-5" />}
+                  onClick={addEmptyProblemNode}
+                >
+                  Problem {displayConfigByNodeType[NodeType.Problem].emoji}
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<PlusIcon className="size-5" />}
+                  onClick={addEmptySolutionNode}
+                >
+                  Solution {displayConfigByNodeType[NodeType.Solution].emoji}
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<PlusIcon className="size-5" />}
+                  onClick={addEmptyStoryboardNode}
+                >
+                  Storyboard{' '}
+                  {displayConfigByNodeType[NodeType.Storyboard].emoji}
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
             <Switch
               size="sm"
               checked={globalShowImage}

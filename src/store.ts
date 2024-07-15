@@ -31,7 +31,10 @@ import {
   FrameOutline,
   NodeData,
   Persona,
+  personaSchema,
   Problem,
+  problemSchema,
+  solutionSchema,
   Solution,
   StoryboardNodeData
 } from './types';
@@ -92,6 +95,7 @@ type RFState = {
   setNodeOutOfSync: (id: string, outOfSync: boolean) => void;
 
   /* Personas */
+  addEmptyPersonaNode: () => void;
   generatePersonaNodes: (
     context: string,
     numberOfNodes?: number
@@ -111,6 +115,7 @@ type RFState = {
   generatePersonaImage: (id: string) => Promise<void>;
 
   /* Problems */
+  addEmptyProblemNode: () => void;
   generateProblemNodes: (
     context: string,
     personaIds: string[],
@@ -131,6 +136,7 @@ type RFState = {
   generateProblemImage: (id: string) => Promise<void>;
 
   /* Solutions */
+  addEmptySolutionNode: () => void;
   generateSolutionNodes: (
     context: string,
     problemIds: string[],
@@ -151,6 +157,7 @@ type RFState = {
   generateSolutionImage: (id: string) => Promise<void>;
 
   /* Storyboards */
+  addEmptyStoryboardNode: () => void;
   generateStoryboardNode: (
     context: string,
     personaIds: string[],
@@ -378,6 +385,28 @@ const createStore: StateCreator<
       });
     },
 
+    addEmptyPersonaNode: () => {
+      const center = get().centerPosition;
+      const nodePositionAttributes = calculateNodePositionAttributes(
+        center,
+        1
+      )[0];
+
+      const personaKeys = Object.keys(personaSchema.shape);
+      const persona = Object.fromEntries(personaKeys.map((key) => [key, '']));
+
+      const node: Node<NodeData> = {
+        id: `persona-${nanoid()}`,
+        type: NodeType.Persona,
+        ...nodePositionAttributes,
+        data: {
+          content: persona
+        }
+      };
+
+      get().takeSnapshot();
+      set({ nodes: [...get().nodes, node] });
+    },
     generatePersonaNodes: async (context: string, numberOfNodes?: number) => {
       const personas = await generatePersonas(context, numberOfNodes);
       numberOfNodes = personas.length;
@@ -526,6 +555,28 @@ const createStore: StateCreator<
       });
     },
 
+    addEmptyProblemNode: () => {
+      const center = get().centerPosition;
+      const nodePositionAttributes = calculateNodePositionAttributes(
+        center,
+        1
+      )[0];
+
+      const problemKeys = Object.keys(problemSchema.shape);
+      const problem = Object.fromEntries(problemKeys.map((key) => [key, '']));
+
+      const node: Node<NodeData> = {
+        id: `problem-${nanoid()}`,
+        type: NodeType.Problem,
+        ...nodePositionAttributes,
+        data: {
+          content: problem
+        }
+      };
+
+      get().takeSnapshot();
+      set({ nodes: [...get().nodes, node] });
+    },
     generateProblemNodes: async (
       context: string,
       personaIds: string[],
@@ -717,6 +768,28 @@ const createStore: StateCreator<
       });
     },
 
+    addEmptySolutionNode: () => {
+      const center = get().centerPosition;
+      const nodePositionAttributes = calculateNodePositionAttributes(
+        center,
+        1
+      )[0];
+
+      const solutionKeys = Object.keys(solutionSchema.shape);
+      const solution = Object.fromEntries(solutionKeys.map((key) => [key, '']));
+
+      const node: Node<NodeData> = {
+        id: `solution-${nanoid()}`,
+        type: NodeType.Solution,
+        ...nodePositionAttributes,
+        data: {
+          content: solution
+        }
+      };
+
+      get().takeSnapshot();
+      set({ nodes: [...get().nodes, node] });
+    },
     generateSolutionNodes: async (
       context: string,
       problemIds: string[],
@@ -910,6 +983,38 @@ const createStore: StateCreator<
       });
     },
 
+    addEmptyStoryboardNode: () => {
+      const center = get().centerPosition;
+      const nodePositionAttributes = calculateNodePositionAttributes(
+        center,
+        1,
+        {
+          width: 1200,
+          height: 600,
+          gap: 0
+        }
+      )[0];
+
+      const data: StoryboardNodeData = {
+        content: {},
+        storyboard: {
+          title: '',
+          outline: [],
+          numberOfFrames: NaN,
+          artStyle: 'TODO'
+        }
+      };
+
+      const node: Node<NodeData> = {
+        id: `storyboard-${nanoid()}`,
+        type: NodeType.Storyboard,
+        ...nodePositionAttributes,
+        data
+      };
+
+      get().takeSnapshot();
+      set({ nodes: [...get().nodes, node] });
+    },
     generateStoryboardNode: async (
       context: string,
       personaIds: string[],

@@ -6,7 +6,7 @@ export const NodeType = {
 } as const;
 export type NodeType = (typeof NodeType)[keyof typeof NodeType];
 
-const nodeTypeToDisplay = {
+export const displayConfigByNodeType = {
   [NodeType.Persona]: {
     emoji: '👤',
     backgroundClass: 'bg-yellow-100'
@@ -26,7 +26,9 @@ const nodeTypeToDisplay = {
 };
 
 export function nodeTypeDisplayAttributes(type: NodeType) {
-  return nodeTypeToDisplay[type] || { emoji: '', backgroundClass: 'bg-white' };
+  return (
+    displayConfigByNodeType[type] || { emoji: '', backgroundClass: 'bg-white' }
+  );
 }
 
 export const EdgeType = {
