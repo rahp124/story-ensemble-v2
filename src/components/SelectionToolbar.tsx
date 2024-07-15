@@ -55,15 +55,15 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
   const buttons = [
     {
       show: selectedNodes.length > 0,
-      tooltip: 'Regenerate',
-      label: <PencilIcon className="size-4" />,
-      onClick: props.onRegenerate
-    },
-    {
-      show: selectedNodes.length > 0,
       tooltip: 'View feedback',
       label: <MessageSquareIcon className="size-4" />,
       onClick: props.onFeedback
+    },
+    {
+      show: selectedNodes.length > 0,
+      tooltip: 'Regenerate',
+      label: <PencilIcon className="size-4" />,
+      onClick: props.onRegenerate
     },
     {
       show: showGenerateProblems,
