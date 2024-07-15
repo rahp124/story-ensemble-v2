@@ -2,18 +2,31 @@ import { Tooltip } from '@mantine/core';
 import { capitalCase } from 'change-case';
 export function NodeContent(props: {
   content: Record<string, string>;
-  changedKeys?: string[];
+  previousChangedValues?: Record<string, string>;
 }) {
-  const { content, changedKeys = [] } = props;
+  const { content, previousChangedValues = {} } = props;
 
   return Object.entries(content).map(([key, value]) => {
-    const changed = changedKeys.includes(key);
+    const previousChangedValue = previousChangedValues[key];
 
     return (
       <div key={key}>
         <b>{capitalCase(key)}</b>:{' '}
-        <Tooltip label="Value changed" disabled={!changed}>
-          <span className={changed ? 'underline italic' : ''}>{value}</span>
+        <Tooltip
+          label={
+            <>
+              <b>Previous {key.toLowerCase()}:</b> {previousChangedValue}
+            </>
+          }
+          disabled={previousChangedValue === undefined}
+        >
+          <span
+            className={
+              previousChangedValue ? 'underline decoration-dotted italic' : ''
+            }
+          >
+            {value}
+          </span>
         </Tooltip>
       </div>
     );

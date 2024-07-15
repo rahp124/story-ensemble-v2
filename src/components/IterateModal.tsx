@@ -25,6 +25,7 @@ import {
   generateStoryboardFeedback
 } from '@/api/feedback';
 import { NodeData, StoryboardNodeData } from '@/types';
+import { calculatePreviousChangedValues } from '@/lib/calculatePreviousChangedValues';
 
 export interface IterateModalProps {}
 export function IterateModal() {
@@ -70,8 +71,8 @@ export function IterateModal() {
     string | null
   >(null);
 
-  const [changedKeysById, setChangedKeysById] = useState<
-    Record<string, string[]>
+  const [previousChangedValuesById, setPreviousChangedValuesById] = useState<
+    Record<string, Record<string, string>>
   >({});
 
   const generateFeedback = useCallback(async () => {
@@ -164,7 +165,7 @@ export function IterateModal() {
   const regenerateNodes = async (context: string) => {
     if (regenerating) return;
     setRegenerating(true);
-    setChangedKeysById({});
+    setPreviousChangedValuesById({});
 
     const personaIds = selectedNodes
       .filter((node) => node.type === NodeType.Persona)
@@ -180,27 +181,30 @@ export function IterateModal() {
       .map((node) => node.id);
 
     if (personaIds.length > 0) {
-      const { changedKeysById } = await regeneratePersonaNodes(
-        personaIds,
-        context
-      );
-      setChangedKeysById((prev) => ({ ...prev, ...changedKeysById }));
+      const { previousChangedValuesById: _previousChangedValuesById } =
+        await regeneratePersonaNodes(personaIds, context);
+      setPreviousChangedValuesById((prev) => ({
+        ...prev,
+        ..._previousChangedValuesById
+      }));
     }
 
     if (problemIds.length > 0) {
-      const { changedKeysById } = await regenerateProblemNodes(
-        problemIds,
-        context
-      );
-      setChangedKeysById((prev) => ({ ...prev, ...changedKeysById }));
+      const { previousChangedValuesById: _previousChangedValuesById } =
+        await regenerateProblemNodes(problemIds, context);
+      setPreviousChangedValuesById((prev) => ({
+        ...prev,
+        ..._previousChangedValuesById
+      }));
     }
 
     if (solutionIds.length > 0) {
-      const { changedKeysById } = await regenerateSolutionNodes(
-        solutionIds,
-        context
-      );
-      setChangedKeysById((prev) => ({ ...prev, ...changedKeysById }));
+      const { previousChangedValuesById: _previousChangedValuesById } =
+        await regenerateSolutionNodes(solutionIds, context);
+      setPreviousChangedValuesById((prev) => ({
+        ...prev,
+        ..._previousChangedValuesById
+      }));
     }
 
     if (storyboardIds.length > 0) {
@@ -245,12 +249,12 @@ export function IterateModal() {
               updateSolutionNode(nodeToEdit.id, values);
             }
 
-            const changedKeys = Object.keys(values).filter(
-              (key) => values[key] !== nodeToEdit.data.content[key]
-            );
-            setChangedKeysById((prev) => ({
+            setPreviousChangedValuesById((prev) => ({
               ...prev,
-              [nodeToEdit.id]: changedKeys
+              [nodeToEdit.id]: calculatePreviousChangedValues(
+                nodeToEdit.data.content,
+                values
+              )
             }));
 
             resetInputs();
@@ -280,7 +284,7 @@ export function IterateModal() {
   useEffect(() => {
     if (!iterateModalOpen) {
       resetInputs();
-      setChangedKeysById({});
+      setPreviousChangedValuesById({});
     }
   }, [iterateModalOpen]);
 
@@ -299,7 +303,7 @@ export function IterateModal() {
           <h2 className="text-md font-bold mb-2">Selected nodes:</h2>
           <SelectedNodePreview
             selectedNodes={selectedNodes}
-            changedKeysById={changedKeysById}
+            previousChangedValuesById={previousChangedValuesById}
           />
         </div>
 

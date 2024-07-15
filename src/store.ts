@@ -47,6 +47,7 @@ import {
   calculateDependentNodePositionAttributes,
   calculateNodePositionAttributes
 } from './lib/positioningUtils';
+import { calculatePreviousChangedValues } from './lib/calculatePreviousChangedValues';
 
 const indexDbStorage: StateStorage = {
   getItem: async (name) => {
@@ -102,7 +103,9 @@ type RFState = {
   regeneratePersonaNodes: (
     personaIds: string[],
     context: string
-  ) => Promise<{ changedKeysById: Record<string, string[]> }>;
+  ) => Promise<{
+    previousChangedValuesById: Record<string, Record<string, string>>;
+  }>;
   updatePersonaNode: (id: string, persona: Partial<Persona>) => Promise<void>;
 
   generatePersonaImage: (id: string) => Promise<void>;
@@ -120,7 +123,9 @@ type RFState = {
   regenerateProblemNodes: (
     problemIds: string[],
     context: string
-  ) => Promise<{ changedKeysById: Record<string, string[]> }>;
+  ) => Promise<{
+    previousChangedValuesById: Record<string, Record<string, string>>;
+  }>;
   updateProblemNode: (id: string, problem: Partial<Problem>) => void;
 
   generateProblemImage: (id: string) => Promise<void>;
@@ -138,7 +143,9 @@ type RFState = {
   regenerateSolutionNodes: (
     solutionIds: string[],
     context: string
-  ) => Promise<{ changedKeysById: Record<string, string[]> }>;
+  ) => Promise<{
+    previousChangedValuesById: Record<string, Record<string, string>>;
+  }>;
   updateSolutionNode: (id: string, solution: Partial<Solution>) => void;
 
   generateSolutionImage: (id: string) => Promise<void>;
@@ -449,15 +456,20 @@ const createStore: StateCreator<
 
       const newPersonas = await regeneratePersonas(personas, context);
 
-      const changedKeysById: Record<string, string[]> = {};
+      const previousChangedValuesById: Record<
+        string,
+        Record<string, string>
+      > = {};
 
       get().takeSnapshot();
       personaIds.forEach((id, idx) => {
-        changedKeysById[personaIds[idx]] = Object.keys(newPersonas[idx]).filter(
-          (key) =>
-            (newPersonas[idx] as Record<string, string>)[key] !==
-            personas[idx][key]
+        const persona = personas[idx];
+        const newPersona = newPersonas[idx];
+        previousChangedValuesById[id] = calculatePreviousChangedValues(
+          persona,
+          newPersona
         );
+
         get().updatePersonaNode(id, newPersonas[idx]);
         updateNode(id, (draft) => {
           draft.data.outOfSync = false;
@@ -465,7 +477,7 @@ const createStore: StateCreator<
         get().generatePersonaImage(id);
       });
 
-      return { changedKeysById };
+      return { previousChangedValuesById };
     },
     updatePersonaNode: async (id: string, persona: Partial<Persona>) => {
       get().takeSnapshot();
@@ -651,15 +663,20 @@ const createStore: StateCreator<
 
       const newProblems = await regenerateProblems(problems, context);
 
-      const changedKeysById: Record<string, string[]> = {};
+      const previousChangedValuesById: Record<
+        string,
+        Record<string, string>
+      > = {};
 
       get().takeSnapshot();
       problemIds.forEach((id, idx) => {
-        changedKeysById[problemIds[idx]] = Object.keys(newProblems[idx]).filter(
-          (key) =>
-            (newProblems[idx] as Record<string, string>)[key] !==
-            problems[idx].problem[key]
+        const problem = problems[idx].problem;
+        const newProblem = newProblems[idx];
+        previousChangedValuesById[id] = calculatePreviousChangedValues(
+          problem,
+          newProblem
         );
+
         get().updateProblemNode(id, newProblems[idx]);
         updateNode(id, (draft) => {
           draft.data.outOfSync = false;
@@ -667,7 +684,7 @@ const createStore: StateCreator<
         get().generateProblemImage(id);
       });
 
-      return { changedKeysById };
+      return { previousChangedValuesById };
     },
     updateProblemNode: (id, problem) => {
       get().takeSnapshot();
@@ -824,17 +841,20 @@ const createStore: StateCreator<
 
       const newSolutions = await regenerateSolutions(solutions, context);
 
-      const changedKeysById: Record<string, string[]> = {};
+      const previousChangedValuesById: Record<
+        string,
+        Record<string, string>
+      > = {};
 
       get().takeSnapshot();
       solutionIds.forEach((id, idx) => {
-        changedKeysById[solutionIds[idx]] = Object.keys(
-          newSolutions[idx]
-        ).filter(
-          (key) =>
-            (newSolutions[idx] as Record<string, string>)[key] !==
-            solutions[idx].solution[key]
+        const solution = solutions[idx].solution;
+        const newSolution = newSolutions[idx];
+        previousChangedValuesById[id] = calculatePreviousChangedValues(
+          solution,
+          newSolution
         );
+
         get().updateSolutionNode(id, newSolutions[idx]);
         updateNode(id, (draft) => {
           draft.data.outOfSync = false;
@@ -842,7 +862,7 @@ const createStore: StateCreator<
         get().generateSolutionImage(id);
       });
 
-      return { changedKeysById };
+      return { previousChangedValuesById };
     },
     updateSolutionNode: (id, solution) => {
       get().takeSnapshot();
