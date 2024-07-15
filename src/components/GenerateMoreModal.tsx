@@ -6,6 +6,7 @@ import { useReactFlow } from 'reactflow';
 import { SelectedNodePreview } from './SelectedNodePreview';
 import { generateMoreNodeDescriptionRecommendations } from '@/api/recommendations';
 import { getSanitizedNodeContents } from '@/lib/getSanitizedNodeContent';
+import { PlusIcon } from 'lucide-react';
 
 const TEXT_CONTENT = {
   Persona: {
@@ -193,7 +194,14 @@ export function GenerateMoreModal(props: GenerateMoreModalProps) {
                   radius="xl"
                   size="compact-sm"
                   color="gray"
-                  onClick={() => setInstructions(recommendation)}
+                  leftSection={<PlusIcon className="size-5" />}
+                  disabled={instructions.includes(recommendation)}
+                  onClick={() =>
+                    setInstructions((curr) => {
+                      if (curr) return curr + '\n' + recommendation;
+                      return recommendation;
+                    })
+                  }
                 >
                   {recommendation}
                 </Button>

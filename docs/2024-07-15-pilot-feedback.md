@@ -3,7 +3,7 @@
 ## Development updates
 
 - Recommendations
-  - [ ] Select multiple recommendations
+  - [x] Select multiple recommendations
   - [ ] Add recommendations to regenerate
 - [ ] Add empty nodes - right click to open a context menu and select from one of four nodes
   - [ ] Add ability to regenerate/fill in missing values
