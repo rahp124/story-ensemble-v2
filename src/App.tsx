@@ -16,7 +16,14 @@ import { useCallback, useEffect, useState } from 'react';
 import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
-import { ImageIcon, ImageOff, Redo, Trash, Undo } from 'lucide-react';
+import {
+  ImageIcon,
+  ImageOff,
+  // Redo,
+  Trash
+  //  Undo
+} from 'lucide-react';
+
 import { Button, Switch } from '@mantine/core';
 import { useShallow } from 'zustand/react/shallow';
 import { ApiKeyModal } from './components/ApiKeyModal';
@@ -55,8 +62,8 @@ export default function App() {
     globalShowImage,
     setGlobalShowImage,
 
-    undo,
-    redo,
+    // undo,
+    // redo,
 
     selectedNodes,
 
@@ -92,8 +99,8 @@ export default function App() {
     }))
   );
 
-  useHotkeys('mod+z', () => undo(), { preventDefault: true });
-  useHotkeys('mod+y', () => redo(), { preventDefault: true });
+  // useHotkeys('mod+z', () => undo(), { preventDefault: true });
+  // useHotkeys('mod+y', () => redo(), { preventDefault: true });
   useHotkeys('mod+c', () => copy(), { preventDefault: true });
   useHotkeys('mod+v', () => paste(), { preventDefault: true });
 
@@ -211,12 +218,12 @@ export default function App() {
           </div>
         </Panel>
         <Controls position="bottom-right" showInteractive={false}>
-          <ControlButton onClick={() => undo()}>
+          {/* <ControlButton onClick={() => undo()}>
             <Undo />
           </ControlButton>
           <ControlButton onClick={() => redo()}>
             <Redo />
-          </ControlButton>
+          </ControlButton> */}
           <ControlButton
             onClick={() => {
               const confirmation = confirm(

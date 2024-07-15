@@ -2,7 +2,6 @@
 
 ## Development updates
 
-- [ ] Undo-and-redo - disable feature
 - Recommendations
   - [ ] Select multiple recommendations
   - [ ] Add recommendations to regenerate
@@ -35,4 +34,5 @@
 - [x] Generate/regenerate multiple storyboards - Leave it and see if there is anymore feedback
 - [x] Copy and paste - add to tutorial DONE
 - [x] Make it clear what regenerate has updated - tweak the styling
+- [x] Undo-and-redo - disable feature
 - [ ] Rename regenerate to update eh
