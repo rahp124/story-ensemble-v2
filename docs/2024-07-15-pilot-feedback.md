@@ -2,9 +2,6 @@
 
 ## Development updates
 
-- Recommendations
-  - [x] Select multiple recommendations
-  - [ ] Add recommendations to regenerate
 - [ ] Add empty nodes - right click to open a context menu and select from one of four nodes
   - [ ] Add ability to regenerate/fill in missing values
 - [ ] Feedback regenerating after updates is distracting - Add labels to the loading states
@@ -23,6 +20,7 @@
 - Prompt tuning
   - [ ] Less feedback
   - [ ] Do we need to save the user's intent to guide the future generations (array of instructions)
+  - [ ] Switch to using system messages
 - Storyboard editing
   - Caption & description confusion that both influence the image generation
   - Show the image while users change the description
@@ -35,4 +33,7 @@
 - [x] Copy and paste - add to tutorial DONE
 - [x] Make it clear what regenerate has updated - tweak the styling
 - [x] Undo-and-redo - disable feature
+- Recommendations
+  - [x] Select multiple recommendations
+  - [x] Add recommendations to regenerate
 - [ ] Rename regenerate to update eh

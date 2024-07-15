@@ -16,7 +16,7 @@ import { notifications } from '@mantine/notifications';
 import { SelectedNodePreview } from './SelectedNodePreview';
 import { useStore } from '@/store';
 import { useCallback, useEffect, useState } from 'react';
-import { MessageSquareShare, X } from 'lucide-react';
+import { MessageSquareShare, PlusIcon, X } from 'lucide-react';
 import { NodeType } from '@/rf-components';
 import {
   generateMultipleNodeFeedback,
@@ -26,6 +26,8 @@ import {
 } from '@/api/feedback';
 import { NodeData, StoryboardNodeData } from '@/types';
 import { calculatePreviousChangedValues } from '@/lib/calculatePreviousChangedValues';
+import { generateUpdateNodeDescriptionRecommendations } from '@/api/recommendations';
+import { getSanitizedNodeContents } from '@/lib/getSanitizedNodeContent';
 
 export interface IterateModalProps {}
 export function IterateModal() {
@@ -153,12 +155,41 @@ export function IterateModal() {
   const [feedbackResponse, setFeedbackResponse] = useState('');
 
   const [editInstructions, setEditInstructions] = useState('');
+  const [recommendations, setRecommendations] = useState<string[] | null>(null);
+  const [generatingRecommendations, setGeneratingRecommendations] =
+    useState(false);
+
+  useEffect(() => {
+    if (
+      !iterateModalOpen ||
+      recommendations !== null ||
+      iterateModalTab !== 'regenerate'
+    )
+      return;
+
+    if (generatingRecommendations) return;
+    setGeneratingRecommendations(true);
+
+    generateUpdateNodeDescriptionRecommendations(
+      getSanitizedNodeContents(selectedNodes)
+    ).then((recommendations) => {
+      setRecommendations(recommendations);
+      setGeneratingRecommendations(false);
+    });
+  }, [
+    iterateModalOpen,
+    recommendations,
+    iterateModalTab,
+    generatingRecommendations,
+    selectedNodes
+  ]);
 
   const resetInputs = () => {
     setFeedback(null);
     setFeedbackToIncorporate(null);
     setFeedbackResponse('');
     setEditInstructions('');
+    setRecommendations(null);
   };
 
   const [regenerating, setRegenerating] = useState(false);
@@ -402,11 +433,41 @@ export function IterateModal() {
                 description="Enter instructions to regenerate the selected node(s)"
                 className="mb-4"
                 required
+                autosize
+                minRows={3}
+                maxRows={8}
                 value={editInstructions}
                 onChange={(e) => setEditInstructions(e.target.value)}
               />
+              {generatingRecommendations ? (
+                <p>Generating recommendations...</p>
+              ) : recommendations ? (
+                <div className="flex gap-2 flex-wrap">
+                  {recommendations.map((recommendation) => (
+                    <Button
+                      key={recommendation}
+                      variant="outline"
+                      radius="xl"
+                      size="compact-sm"
+                      color="gray"
+                      leftSection={<PlusIcon className="size-5" />}
+                      disabled={editInstructions.includes(recommendation)}
+                      onClick={() =>
+                        setEditInstructions((curr) => {
+                          if (curr) return curr + '\n' + recommendation;
+                          return recommendation;
+                        })
+                      }
+                    >
+                      {recommendation}
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
 
-              <Button type="submit">Regenerate</Button>
+              <Button type="submit" className="mt-4">
+                Regenerate
+              </Button>
             </form>
           </Tabs.Panel>
           {editFormTab()}

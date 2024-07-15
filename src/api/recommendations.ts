@@ -86,3 +86,24 @@ ${JSON.stringify(dependencyNodes)}
   );
   return recommendations;
 }
+
+const UPDATE_NODE_PROMPT = `Generate suggestions for specific instructions to update/change the following design thinking nodes.
+Nodes will be either personas, problems, solutions, or storyboards.
+Suggestions should focus on variations or edits to existing nodes.
+Constrain suggestions to 100 characters.`;
+
+export async function generateUpdateNodeDescriptionRecommendations(
+  nodes: unknown[]
+) {
+  const prompt = `${UPDATE_NODE_PROMPT}
+
+Nodes: """
+${JSON.stringify(nodes)}
+"""`;
+
+  const { recommendations } = await generateStructured(
+    recommendationsSchema,
+    prompt
+  );
+  return recommendations;
+}
