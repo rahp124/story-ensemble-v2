@@ -7,7 +7,12 @@ import { NodeType, nodeTypeDisplayAttributes } from '.';
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Problem);
 
 export default function ProblemNode(props: NodeProps<NodeData>) {
-  const generateProblemImage = useStore((state) => state.generateProblemImage);
+  const { generateProblemImage, regenerateProblemNodes } = useStore(
+    (state) => ({
+      generateProblemImage: state.generateProblemImage,
+      regenerateProblemNodes: state.regenerateProblemNodes
+    })
+  );
 
   return (
     <BaseNode
@@ -20,6 +25,14 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
       nodeBackgroundClass={displayAttributes.backgroundClass}
       content={props.data.content}
       onRegenerateImage={() => generateProblemImage(props.id)}
+      onSync={async () => {
+        const { id } = props;
+        const { previousChangedValuesById } = await regenerateProblemNodes(
+          [id],
+          'Regenerate problem based on updated personas'
+        );
+        return { previousChangedValues: previousChangedValuesById[id] };
+      }}
       targetHandle={true}
       sourceHandle={true}
     />

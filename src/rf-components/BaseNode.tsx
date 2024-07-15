@@ -14,8 +14,8 @@ import {
   Switch,
   ScrollArea
 } from '@mantine/core';
-import { ImageIcon, ImageOff, Info } from 'lucide-react';
-import { ReactNode, useCallback, useRef, useState } from 'react';
+import { ImageIcon, ImageOff, Info, RefreshCwIcon } from 'lucide-react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 
 export interface BaseNodeProps<T extends Record<string, string>> {
@@ -27,6 +27,7 @@ export interface BaseNodeProps<T extends Record<string, string>> {
   content: T;
 
   onRegenerateImage: () => Promise<void>;
+  onSync?: () => Promise<{ previousChangedValues: Record<string, string> }>;
 
   targetHandle: boolean;
   sourceHandle: boolean;
@@ -35,7 +36,7 @@ export default function BaseNode<T extends Record<string, string>>(
   props: BaseNodeProps<T>
 ) {
   const { nodeProps } = props;
-  const { image, imageOutOfSync } = nodeProps.data;
+  const { outOfSync, image, imageOutOfSync } = nodeProps.data;
 
   const [regenerating, setRegenerating] = useState(false);
 
@@ -51,6 +52,13 @@ export default function BaseNode<T extends Record<string, string>>(
   }, [scrollViewport]);
 
   const globalShowImage = useStore((state) => state.globalShowImage);
+
+  const [previousChangedValues, setPreviousChangedValues] = useState<
+    Record<string, string>
+  >({});
+  useEffect(() => {
+    setPreviousChangedValues({});
+  }, [props.content]);
 
   function cardContent() {
     if (globalShowImage || showImage || zoomShowImage) {
@@ -92,7 +100,10 @@ export default function BaseNode<T extends Record<string, string>>(
               }
             }}
           >
-            <NodeContent content={props.content} />
+            <NodeContent
+              content={props.content}
+              previousChangedValues={previousChangedValues}
+            />
           </ScrollArea>
         </Tooltip.Floating>
       );
@@ -102,6 +113,7 @@ export default function BaseNode<T extends Record<string, string>>(
   const icons = [
     {
       key: 'regenerate',
+      show: true,
       tooltip: 'Regenerate illustrative image',
       icon: <RefreshImageIcon />,
       notification: imageOutOfSync,
@@ -113,29 +125,48 @@ export default function BaseNode<T extends Record<string, string>>(
         await props.onRegenerateImage();
         setRegenerating(false);
       }
-    }
-  ].map(({ key, tooltip, icon, notification, loading, onClick }) => {
-    const iconElement = (
-      <ActionIcon
-        key={key}
-        variant="subtle"
-        size="sm"
-        loading={loading}
-        onClick={onClick}
-      >
-        {icon}
-        {notification && <NotificationDot />}
-      </ActionIcon>
-    );
+    },
+    {
+      key: 'sync',
+      show: outOfSync,
+      tooltip: 'Dependencies updated. Regenerate node.',
+      icon: <RefreshCwIcon />,
+      notification: true,
+      loading: regenerating,
+      onClick: async () => {
+        if (regenerating || !props.onSync) return;
 
-    return tooltip ? (
-      <Tooltip key={key} label={tooltip}>
-        {iconElement}
-      </Tooltip>
-    ) : (
-      iconElement
-    );
-  });
+        setRegenerating(true);
+        const { previousChangedValues: _previousChangedValues } =
+          await props.onSync();
+        setPreviousChangedValues(_previousChangedValues);
+        setRegenerating(false);
+      }
+    }
+  ]
+    .filter(({ show }) => show)
+    .map(({ key, tooltip, icon, notification, loading, onClick }) => {
+      const iconElement = (
+        <ActionIcon
+          key={key}
+          variant="subtle"
+          size="sm"
+          loading={loading}
+          onClick={onClick}
+        >
+          {icon}
+          {notification && <NotificationDot />}
+        </ActionIcon>
+      );
+
+      return tooltip ? (
+        <Tooltip key={key} label={tooltip}>
+          {iconElement}
+        </Tooltip>
+      ) : (
+        iconElement
+      );
+    });
 
   return (
     <>

@@ -6,23 +6,16 @@
   - [ ] Allow users to generate with just a solution (but crawl up the edges)
   - [ ] Let's crawl up the dependencies (and add the edges)
   - Add helper functions for crawling dependencies
-
----
-
-- [ ] Out of sync
-  - Add back regenerate button for out of sync nodes (w/o modal)
-- Prompt tuning
-  - [ ] Less feedback
-  - [ ] Do we need to save the user's intent to guide the future generations (array of instructions)
-  - [ ] Switch to using system messages
-- Storyboard editing
-  - Caption & description confusion that both influence the image generation
-  - Show the image while users change the description
+- [ ] Storyboard editing
   - [ ] Add a tooltip for editing individual frames
   - [ ] Art style
   - Add before and after panels
   - [ ] delete button
   - [ ] Export screenshot image
+- [ ] Prompt tuning
+  - [ ] Less feedback
+  - [ ] Do we need to save the user's intent to guide the future generations (array of instructions)
+  - [ ] Switch to using system messages
 - [x] Add empty nodes - right click to open a context menu and select from one of four nodes
   - [ ] Add ability to regenerate/fill in missing values
 - [x] Generate/regenerate multiple storyboards - Leave it and see if there is anymore feedback
@@ -37,4 +30,6 @@
   - Use a loading notification to show it generating and add the ability to hop to the nodes
   - Apply to first generation, generate more, dependent generation
 - [x] Feedback regenerating after updates is distracting - Add labels to the loading states
+- [x] Out of sync
+  - Add back regenerate button for out of sync nodes (w/o modal)
 - [ ] Rename regenerate to update eh
