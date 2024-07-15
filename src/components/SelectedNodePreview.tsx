@@ -6,9 +6,10 @@ import { NodeContent } from './NodeContent';
 
 interface SelectedNodePreviewProps {
   selectedNodes: Node<NodeData>[];
+  changedKeysById?: Record<string, string[]>;
 }
 export function SelectedNodePreview(props: SelectedNodePreviewProps) {
-  const { selectedNodes } = props;
+  const { selectedNodes, changedKeysById = {} } = props;
 
   if (selectedNodes.length === 0) return null;
 
@@ -61,7 +62,10 @@ export function SelectedNodePreview(props: SelectedNodePreviewProps) {
                   {content.Name}
                 </Accordion.Control>
                 <Accordion.Panel>
-                  <NodeContent content={content} />
+                  <NodeContent
+                    content={content}
+                    changedKeys={changedKeysById[node.id]}
+                  />
                 </Accordion.Panel>
               </>
             )}

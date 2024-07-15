@@ -102,7 +102,7 @@ type RFState = {
   regeneratePersonaNodes: (
     personaIds: string[],
     context: string
-  ) => Promise<void>;
+  ) => Promise<{ changedKeysById: Record<string, string[]> }>;
   updatePersonaNode: (id: string, persona: Partial<Persona>) => Promise<void>;
 
   generatePersonaImage: (id: string) => Promise<void>;
@@ -120,7 +120,7 @@ type RFState = {
   regenerateProblemNodes: (
     problemIds: string[],
     context: string
-  ) => Promise<void>;
+  ) => Promise<{ changedKeysById: Record<string, string[]> }>;
   updateProblemNode: (id: string, problem: Partial<Problem>) => void;
 
   generateProblemImage: (id: string) => Promise<void>;
@@ -138,7 +138,7 @@ type RFState = {
   regenerateSolutionNodes: (
     solutionIds: string[],
     context: string
-  ) => Promise<void>;
+  ) => Promise<{ changedKeysById: Record<string, string[]> }>;
   updateSolutionNode: (id: string, solution: Partial<Solution>) => void;
 
   generateSolutionImage: (id: string) => Promise<void>;
@@ -449,14 +449,23 @@ const createStore: StateCreator<
 
       const newPersonas = await regeneratePersonas(personas, context);
 
+      const changedKeysById: Record<string, string[]> = {};
+
       get().takeSnapshot();
       personaIds.forEach((id, idx) => {
+        changedKeysById[personaIds[idx]] = Object.keys(newPersonas[idx]).filter(
+          (key) =>
+            (newPersonas[idx] as Record<string, string>)[key] !==
+            personas[idx][key]
+        );
         get().updatePersonaNode(id, newPersonas[idx]);
         updateNode(id, (draft) => {
           draft.data.outOfSync = false;
         });
         get().generatePersonaImage(id);
       });
+
+      return { changedKeysById };
     },
     updatePersonaNode: async (id: string, persona: Partial<Persona>) => {
       get().takeSnapshot();
@@ -642,14 +651,23 @@ const createStore: StateCreator<
 
       const newProblems = await regenerateProblems(problems, context);
 
+      const changedKeysById: Record<string, string[]> = {};
+
       get().takeSnapshot();
       problemIds.forEach((id, idx) => {
+        changedKeysById[problemIds[idx]] = Object.keys(newProblems[idx]).filter(
+          (key) =>
+            (newProblems[idx] as Record<string, string>)[key] !==
+            problems[idx].problem[key]
+        );
         get().updateProblemNode(id, newProblems[idx]);
         updateNode(id, (draft) => {
           draft.data.outOfSync = false;
         });
         get().generateProblemImage(id);
       });
+
+      return { changedKeysById };
     },
     updateProblemNode: (id, problem) => {
       get().takeSnapshot();
@@ -806,14 +824,25 @@ const createStore: StateCreator<
 
       const newSolutions = await regenerateSolutions(solutions, context);
 
+      const changedKeysById: Record<string, string[]> = {};
+
       get().takeSnapshot();
       solutionIds.forEach((id, idx) => {
+        changedKeysById[solutionIds[idx]] = Object.keys(
+          newSolutions[idx]
+        ).filter(
+          (key) =>
+            (newSolutions[idx] as Record<string, string>)[key] !==
+            solutions[idx].solution[key]
+        );
         get().updateSolutionNode(id, newSolutions[idx]);
         updateNode(id, (draft) => {
           draft.data.outOfSync = false;
         });
         get().generateSolutionImage(id);
       });
+
+      return { changedKeysById };
     },
     updateSolutionNode: (id, solution) => {
       get().takeSnapshot();

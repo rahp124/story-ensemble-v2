@@ -70,6 +70,10 @@ export function IterateModal() {
     string | null
   >(null);
 
+  const [changedKeysById, setChangedKeysById] = useState<
+    Record<string, string[]>
+  >({});
+
   const generateFeedback = useCallback(async () => {
     if (selectedNodes.length === 0) {
       return [];
@@ -160,6 +164,7 @@ export function IterateModal() {
   const regenerateNodes = async (context: string) => {
     if (regenerating) return;
     setRegenerating(true);
+    setChangedKeysById({});
 
     const personaIds = selectedNodes
       .filter((node) => node.type === NodeType.Persona)
@@ -175,15 +180,27 @@ export function IterateModal() {
       .map((node) => node.id);
 
     if (personaIds.length > 0) {
-      await regeneratePersonaNodes(personaIds, context);
+      const { changedKeysById } = await regeneratePersonaNodes(
+        personaIds,
+        context
+      );
+      setChangedKeysById((prev) => ({ ...prev, ...changedKeysById }));
     }
 
     if (problemIds.length > 0) {
-      await regenerateProblemNodes(problemIds, context);
+      const { changedKeysById } = await regenerateProblemNodes(
+        problemIds,
+        context
+      );
+      setChangedKeysById((prev) => ({ ...prev, ...changedKeysById }));
     }
 
     if (solutionIds.length > 0) {
-      await regenerateSolutionNodes(solutionIds, context);
+      const { changedKeysById } = await regenerateSolutionNodes(
+        solutionIds,
+        context
+      );
+      setChangedKeysById((prev) => ({ ...prev, ...changedKeysById }));
     }
 
     if (storyboardIds.length > 0) {
@@ -228,7 +245,16 @@ export function IterateModal() {
               updateSolutionNode(nodeToEdit.id, values);
             }
 
+            const changedKeys = Object.keys(values).filter(
+              (key) => values[key] !== nodeToEdit.data.content[key]
+            );
+            setChangedKeysById((prev) => ({
+              ...prev,
+              [nodeToEdit.id]: changedKeys
+            }));
+
             resetInputs();
+
             notifications.show({
               message: `${nodeToEdit.type} edited`,
               autoClose: 5000
@@ -254,6 +280,7 @@ export function IterateModal() {
   useEffect(() => {
     if (!iterateModalOpen) {
       resetInputs();
+      setChangedKeysById({});
     }
   }, [iterateModalOpen]);
 
@@ -270,7 +297,10 @@ export function IterateModal() {
         <LoadingOverlay visible={regenerating} />
         <div className="mb-8">
           <h2 className="text-md font-bold mb-2">Selected nodes:</h2>
-          <SelectedNodePreview selectedNodes={selectedNodes} />
+          <SelectedNodePreview
+            selectedNodes={selectedNodes}
+            changedKeysById={changedKeysById}
+          />
         </div>
 
         <Tabs
