@@ -5,11 +5,12 @@
 - [ ] Storyboard editing
   - [x] Out of sync
   - [ ] Add a tooltip for editing individual frames
-  - [ ] Add before and after panels
-  - [ ] delete frame button
+  - [x] Add before and after panels
+  - [x] delete frame button
   - [x] Edit frame type button
-  - [ ] Wrap frames
+  - [x] Wrap frames
   - [ ] Art style
+  - [x] Storyboard loading state + images loading state
   - [ ] Export screenshot image
 - [ ] Storyboard generation workflow
   - [ ] Allow users to generate with just a solution (but crawl up the edges)
@@ -26,7 +27,6 @@
   - Edit (with feedback, with instructions, manually)
   - [ ] Two separate toolbars one above and below
 - [ ] Regenerate multiple (might not be useful) - keep editing on the card
-- [ ] Storyboard loading state + images loading state
 - [ ] Telemetry
   - What do we want to track specifically
   - Export telemetry

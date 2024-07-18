@@ -8,19 +8,17 @@ import {
   AspectRatio,
   Button,
   Card,
-  Divider,
   Input,
+  Loader,
   Popover,
   Select,
-  Skeleton,
   Textarea,
   Tooltip
 } from '@mantine/core';
-import { Pencil, RefreshCwIcon } from 'lucide-react';
+import { Pencil, RefreshCwIcon, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
-// import { useZoom } from '@/lib/useZoom';
 
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Storyboard);
 
@@ -58,7 +56,10 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     updateStoryboardTitle,
     updateStoryboardDescription,
     updateStoryboardCaption,
-    updateStoryboardFrameType
+    updateStoryboardFrameType,
+
+    addStoryboardFrame,
+    deleteStoryboardFrame
   } = useStore((state) => ({
     regenerateStoryboardNode: state.regenerateStoryboardNode,
 
@@ -68,6 +69,9 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     updateStoryboardDescription: state.updateStoryboardDescription,
     updateStoryboardCaption: state.updateStoryboardCaption,
     updateStoryboardFrameType: state.updateStoryboardFrameType,
+
+    addStoryboardFrame: state.addStoryboardFrame,
+    deleteStoryboardFrame: state.deleteStoryboardFrame,
 
     selectNodes: state.selectNodes,
 
@@ -184,10 +188,12 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
             }}
           />
         </div>
-        <div className="w-full grid grid-cols-4 gap-4">
-          {' '}
+        <div className="w-full flex flex-wrap justify-center gap-6 px-6">
           {storyboard.outline.map((frame, frameIdx) => (
-            <div key={frameIdx} className="flex flex-col gap-2 pb-2 relative">
+            <div
+              key={frameIdx}
+              className="w-[350px] flex flex-col gap-2 pb-2 relative"
+            >
               <div className="flex justify-between mb-2">
                 <p className="font-bold text-sm">
                   Frame {frameIdx + 1} - {frameTypeText(frame.frameType)}
@@ -199,7 +205,9 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                     </ActionIcon>
                   </Popover.Target>
                   <Popover.Dropdown>
-                    <h4 className="font-bold mb-4">Edit frame</h4>
+                    <h4 className="font-bold mb-4">
+                      Edit frame {frameIdx + 1}
+                    </h4>
                     <div>
                       <Select
                         label="Edit Frame Type"
@@ -271,17 +279,21 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                       </div>
                     </div>
 
-                    <Divider my="md" />
-
-                    {/* <div>
-                      <Button size="compact-sm">Add frame before</Button>
-                      <Button size="compact-sm">Add frame after</Button>
-                    </div> */}
-
-                    <Divider my="md" />
-
                     <div>
-                      <Button size="compact-sm" color="red">
+                      <Button
+                        size="compact-sm"
+                        color="red"
+                        leftSection={<Trash2 className="size-4" />}
+                        onClick={() => {
+                          if (
+                            confirm(
+                              'Are you sure you want to delete this frame?'
+                            )
+                          ) {
+                            deleteStoryboardFrame(props.id, frameIdx);
+                          }
+                        }}
+                      >
                         Delete frame
                       </Button>
                     </div>
@@ -296,7 +308,18 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               >
                 <AspectRatio ratio={1}>
                   {loadingMap[frameIdx] ? (
-                    <Skeleton />
+                    <div className="size-full flex items-center justify-center">
+                      <Loader />
+                    </div>
+                  ) : !frame.image ? (
+                    <div className="size-full flex items-center justify-center">
+                      <p className="text-center">
+                        This frame has no image.
+                        <br />
+                        Click the <Pencil className="inline size-4" /> icon to
+                        generate one.
+                      </p>
+                    </div>
                   ) : (
                     <img src={frame.image} />
                   )}
@@ -325,7 +348,27 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                   }
                 }}
               />
+              {frameIdx === 0 && (
+                <button
+                  className="absolute top-0 -left-3 h-full flex items-center px-1 hover:bg-slate-100 -translate-x-1/2 rounded-sm"
+                  onClick={() => {
+                    addStoryboardFrame(props.id, frameIdx);
+                  }}
+                >
+                  +
+                </button>
+              )}
+              <button
+                className="absolute top-0 -right-3 h-full flex items-center px-1 hover:bg-slate-100 translate-x-1/2 rounded-sm"
+                onClick={() => {
+                  addStoryboardFrame(props.id, frameIdx + 1);
+                }}
+              >
+                +
+              </button>
+              {/* <FrameButton frameIdx={frameIdx} /> */}
             </div>
+            // {frameIdx && <FrameButton frameIdx={0} />}
           ))}
         </div>
       </Card>
