@@ -4,13 +4,13 @@
 
 - [ ] Storyboard editing
   - [x] Out of sync
-  - [ ] Add a tooltip for editing individual frames
+  - [x] Add a tooltip for editing individual frames
   - [x] Add before and after panels
   - [x] delete frame button
   - [x] Edit frame type button
   - [x] Wrap frames
-  - [ ] Art style
   - [x] Storyboard loading state + images loading state
+  - [ ] Art style
   - [ ] Export screenshot image
 - [ ] Storyboard generation workflow
   - [ ] Allow users to generate with just a solution (but crawl up the edges)

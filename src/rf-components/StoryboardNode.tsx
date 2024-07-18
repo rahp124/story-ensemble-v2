@@ -8,6 +8,7 @@ import {
   AspectRatio,
   Button,
   Card,
+  Divider,
   Input,
   Loader,
   Popover,
@@ -52,6 +53,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     regenerateStoryboardNode,
 
     generateStoryboardImages,
+    regenerateStoryboardImage,
 
     updateStoryboardTitle,
     updateStoryboardDescription,
@@ -64,6 +66,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     regenerateStoryboardNode: state.regenerateStoryboardNode,
 
     generateStoryboardImages: state.generateStoryboardImages,
+    regenerateStoryboardImage: state.regenerateStoryboardImage,
 
     updateStoryboardTitle: state.updateStoryboardTitle,
     updateStoryboardDescription: state.updateStoryboardDescription,
@@ -79,6 +82,24 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     setIterateModalTab: state.setIterateModalTab
   }));
 
+  const regenerateAllImages = async () => {
+    if (regenerating) return;
+
+    setLoadingMap(Array(storyboard.outline.length).fill(true));
+
+    generateStoryboardImages(props.id).then((imagePromises) => {
+      imagePromises.forEach((imagePromise) => {
+        imagePromise.then((idx) => {
+          setLoadingMap(
+            loadingMap.map((regenerating, i) =>
+              i === idx ? false : regenerating
+            )
+          );
+        });
+      });
+    });
+  };
+
   const icons = [
     {
       key: 'regenerate',
@@ -87,21 +108,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
       icon: <RefreshImageIcon />,
       notification: imagesOutOfSync,
       loading: loading || regenerating,
-      onClick: async () => {
-        setLoadingMap(Array(storyboard.outline.length).fill(true));
-
-        generateStoryboardImages(props.id).then((imagePromises) => {
-          imagePromises.forEach((imagePromise) => {
-            imagePromise.then((idx) => {
-              setLoadingMap(
-                loadingMap.map((regenerating, i) =>
-                  i === idx ? false : regenerating
-                )
-              );
-            });
-          });
-        });
-      }
+      onClick: regenerateAllImages
     },
     {
       key: 'sync',
@@ -171,7 +178,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
           <Input
             placeholder="Storyboard Title"
             className="nodrag"
-            disabled={loading}
+            disabled={regenerating || loading}
             value={title}
             onChange={(e) => setTitle(e.currentTarget.value)}
             onBlur={() => {
@@ -191,16 +198,26 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
         <div className="w-full flex flex-wrap justify-center gap-6 px-6">
           {storyboard.outline.map((frame, frameIdx) => (
             <div
-              key={frameIdx}
+              key={frame.id}
               className="w-[350px] flex flex-col gap-2 pb-2 relative"
             >
               <div className="flex justify-between mb-2">
                 <p className="font-bold text-sm">
                   Frame {frameIdx + 1} - {frameTypeText(frame.frameType)}
                 </p>
-                <Popover width={350} position="left-end" withArrow shadow="md">
+                <Popover
+                  width={350}
+                  position="left-end"
+                  withArrow
+                  shadow="md"
+                  disabled={regenerating || loadingMap[frameIdx]}
+                >
                   <Popover.Target>
-                    <ActionIcon size="sm" variant="outline">
+                    <ActionIcon
+                      size="sm"
+                      variant="outline"
+                      disabled={regenerating || loadingMap[frameIdx]}
+                    >
                       <Pencil className="size-4" />
                     </ActionIcon>
                   </Popover.Target>
@@ -244,7 +261,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                         autosize
                         minRows={3}
                         maxRows={8}
-                        disabled={loading}
+                        disabled={regenerating || loadingMap[frameIdx]}
                         value={descriptions[frameIdx]}
                         onChange={(e) => {
                           setDescriptions(
@@ -266,18 +283,34 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                       <div className="flex gap-2 mt-4">
                         <Button
                           size="compact-sm"
-                          onClick={() => alert('Not implemented yet')}
+                          onClick={async () => {
+                            if (loadingMap[frameIdx]) return;
+
+                            setLoadingMap(
+                              loadingMap.map((regenerating, i) =>
+                                i === frameIdx ? true : regenerating
+                              )
+                            );
+                            await regenerateStoryboardImage(props.id, frameIdx);
+                            setLoadingMap(
+                              loadingMap.map((regenerating, i) =>
+                                i === frameIdx ? false : regenerating
+                              )
+                            );
+                          }}
                         >
                           Regenerate image
                         </Button>
                         <Button
                           size="compact-sm"
-                          onClick={() => alert('Not implemented yet')}
+                          onClick={async () => regenerateAllImages()}
                         >
                           Regenerate all images
                         </Button>
                       </div>
                     </div>
+
+                    <Divider my="md" />
 
                     <div>
                       <Button
@@ -329,7 +362,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               <Textarea
                 className="nodrag"
                 autosize
-                disabled={loading}
+                disabled={regenerating || loadingMap[frameIdx]}
                 value={captions[frameIdx]}
                 onChange={(e) => {
                   setCaptions(
@@ -351,6 +384,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               {frameIdx === 0 && (
                 <button
                   className="absolute top-0 -left-3 h-full flex items-center px-1 hover:bg-slate-100 -translate-x-1/2 rounded-sm"
+                  disabled={regenerating || loading}
                   onClick={() => {
                     addStoryboardFrame(props.id, frameIdx);
                   }}
@@ -360,15 +394,14 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               )}
               <button
                 className="absolute top-0 -right-3 h-full flex items-center px-1 hover:bg-slate-100 translate-x-1/2 rounded-sm"
+                disabled={regenerating || loading}
                 onClick={() => {
                   addStoryboardFrame(props.id, frameIdx + 1);
                 }}
               >
                 +
               </button>
-              {/* <FrameButton frameIdx={frameIdx} /> */}
             </div>
-            // {frameIdx && <FrameButton frameIdx={0} />}
           ))}
         </div>
       </Card>

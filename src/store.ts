@@ -1010,7 +1010,6 @@ const createStore: StateCreator<
         storyboard: {
           title: '',
           outline: [],
-          numberOfFrames: NaN,
           artStyle: 'TODO'
         }
       };
@@ -1079,8 +1078,11 @@ const createStore: StateCreator<
         data: {
           content: {},
           storyboard: {
-            ...storyboardData,
-            numberOfFrames: storyboardData.outline.length,
+            title: storyboardData.title,
+            outline: storyboardData.outline.map((frame) => ({
+              id: nanoid(),
+              ...frame
+            })),
             artStyle: 'TODO'
           }
         }
@@ -1145,8 +1147,11 @@ const createStore: StateCreator<
         data: {
           content: {},
           storyboard: {
-            ...storyboardData,
-            numberOfFrames: storyboardData.outline.length,
+            title: storyboardData.title,
+            outline: storyboardData.outline.map((frame) => ({
+              id: nanoid(),
+              ...frame
+            })),
             artStyle: 'TODO'
           }
         }
@@ -1288,6 +1293,7 @@ const createStore: StateCreator<
     addStoryboardFrame: (id, frameIndex) => {
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline.splice(frameIndex, 0, {
+          id: nanoid(),
           frameType: 'Context',
           description: '',
           caption: ''

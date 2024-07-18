@@ -67,11 +67,10 @@ export type StoryboardNodeData = NodeData & {
   storyboard: {
     title: string;
     outline: (FrameOutline & {
+      id: string;
       image?: string;
       imageOutOfSync?: boolean;
     })[];
-
-    numberOfFrames: number;
     artStyle: string;
   };
 };
