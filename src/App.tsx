@@ -67,6 +67,7 @@ export default function App() {
     // redo,
 
     selectedNodes,
+    selectNodes,
 
     setIterateModalOpen,
     setIterateModalTab,
@@ -96,6 +97,7 @@ export default function App() {
       redo: state.redo,
 
       selectedNodes: state.nodes.filter(({ selected }) => selected),
+      selectNodes: state.selectNodes,
 
       setIterateModalOpen: state.setIterateModalOpen,
       setIterateModalTab: state.setIterateModalTab,
@@ -310,6 +312,39 @@ export default function App() {
               setDependentGenerationModalOpened(true);
             }}
             onGenerateStoryboard={() => {
+              const selectedIds = selectedNodes.map((node) => node.id);
+
+              const selectedSolutions = selectedNodes.filter(
+                (node) => node.type === NodeType.Solution
+              );
+              const solutionIds = selectedSolutions.map((node) => node.id);
+
+              const missingProblemIds = edges
+                .filter(
+                  (edge) =>
+                    edge.source.startsWith('problem-') &&
+                    edge.target.startsWith('solution-') &&
+                    solutionIds.includes(edge.target) &&
+                    !selectedIds.includes(edge.source)
+                )
+                .map((edge) => edge.source);
+
+              const missingPersonaIds = edges
+                .filter(
+                  (edge) =>
+                    edge.source.startsWith('persona-') &&
+                    edge.target.startsWith('problem-') &&
+                    missingProblemIds.includes(edge.target) &&
+                    !selectedIds.includes(edge.source)
+                )
+                .map((edge) => edge.source);
+
+              selectNodes([
+                ...selectedIds,
+                ...missingProblemIds,
+                ...missingPersonaIds
+              ]);
+
               setDependentNodeToGenerate('Storyboard');
               setDependentGenerationModalOpened(true);
             }}

@@ -2,26 +2,12 @@
 
 ## Development updates
 
-- [ ] Storyboard editing
-  - [x] Out of sync
-  - [x] Add a tooltip for editing individual frames
-  - [x] Add before and after panels
-  - [x] delete frame button
-  - [x] Edit frame type button
-  - [x] Wrap frames
-  - [x] Storyboard loading state + images loading state
-  - [ ] Art style
-  - [ ] Export screenshot image
-- [ ] Storyboard generation workflow
-  - [ ] Allow users to generate with just a solution (but crawl up the edges)
-  - [ ] Let's crawl up the dependencies (and add the edges)
-  - Add helper functions for crawling dependencies
 - [ ] Switch illustrative image art style
-- [ ] Add illustrative image to the selected node preview
 - [ ] Change labels to describe a brainstorm of solutions rather than a single solution
 
 ---
 
+- [ ] Add illustrative image to the selected node preview
 - Regenerate and update and regenerate image are confusing
   - Combine regenerate and edit (confusing) - give it feedback and other features higher priority
   - Edit (with feedback, with instructions, manually)
@@ -56,3 +42,16 @@
 - [x] Out of sync
   - Add back regenerate button for out of sync nodes (w/o modal)
 - [ ] Rename regenerate to update eh
+- [ ] Storyboard editing
+  - [x] Out of sync
+  - [x] Add a tooltip for editing individual frames
+  - [x] Add before and after panels
+  - [x] delete frame button
+  - [x] Edit frame type button
+  - [x] Wrap frames
+  - [x] Storyboard loading state + images loading state
+  - [ ] Art style
+  - [ ] Export screenshot image
+- [x] Storyboard generation workflow
+  - [x] Allow users to generate with just a solution (but crawl up the edges)
+  - [x] Let's crawl up the dependencies (and add the edges)
