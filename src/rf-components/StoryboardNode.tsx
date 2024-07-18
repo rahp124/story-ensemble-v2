@@ -33,6 +33,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [captions, setCaptions] = useState<string[]>(
     storyboard.outline.map((frame) => frame.caption)
   );
+  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
   useEffect(() => {
     setTitle(storyboard.title);
@@ -211,12 +212,23 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                   withArrow
                   shadow="md"
                   disabled={regenerating || loadingMap[frameIdx]}
+                  opened={openPopoverId === frame.id}
+                  onChange={(change) =>
+                    setOpenPopoverId(change ? frame.id : null)
+                  }
                 >
                   <Popover.Target>
                     <ActionIcon
                       size="sm"
                       variant="outline"
                       disabled={regenerating || loadingMap[frameIdx]}
+                      onClick={() => {
+                        if (openPopoverId === frame.id) {
+                          setOpenPopoverId(null);
+                        } else {
+                          setOpenPopoverId(frame.id);
+                        }
+                      }}
                     >
                       <Pencil className="size-4" />
                     </ActionIcon>
@@ -340,11 +352,11 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 )}`}
               >
                 <AspectRatio ratio={1}>
-                  {loadingMap[frameIdx] ? (
+                  {loadingMap[frameIdx] || frame.image === '' ? (
                     <div className="size-full flex items-center justify-center">
                       <Loader />
                     </div>
-                  ) : !frame.image ? (
+                  ) : frame.image === undefined ? (
                     <div className="size-full flex items-center justify-center">
                       <p className="text-center">
                         This frame has no image.

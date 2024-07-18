@@ -1081,7 +1081,8 @@ const createStore: StateCreator<
             title: storyboardData.title,
             outline: storyboardData.outline.map((frame) => ({
               id: nanoid(),
-              ...frame
+              ...frame,
+              image: ''
             })),
             artStyle: 'TODO'
           }
@@ -1150,7 +1151,8 @@ const createStore: StateCreator<
             title: storyboardData.title,
             outline: storyboardData.outline.map((frame) => ({
               id: nanoid(),
-              ...frame
+              ...frame,
+              image: ''
             })),
             artStyle: 'TODO'
           }
