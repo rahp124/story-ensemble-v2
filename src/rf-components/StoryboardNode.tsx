@@ -8,14 +8,15 @@ import {
   AspectRatio,
   Button,
   Card,
+  Divider,
   Input,
   Popover,
+  Select,
   Skeleton,
-  Switch,
   Textarea,
   Tooltip
 } from '@mantine/core';
-import { ImageIcon, ImageOff, RefreshCwIcon } from 'lucide-react';
+import { Pencil, RefreshCwIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
@@ -24,9 +25,6 @@ import { NodeType, nodeTypeDisplayAttributes } from '.';
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Storyboard);
 
 export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
-  const [showImage, setShowImage] = useState(false);
-  // const { zoomShowImage } = useZoom();
-
   const { storyboard, outOfSync } = props.data;
 
   const [title, setTitle] = useState(storyboard.title);
@@ -55,23 +53,21 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const {
     regenerateStoryboardNode,
 
-    // globalShowImage,
-
     generateStoryboardImages,
 
     updateStoryboardTitle,
     updateStoryboardDescription,
-    updateStoryboardCaption
+    updateStoryboardCaption,
+    updateStoryboardFrameType
   } = useStore((state) => ({
     regenerateStoryboardNode: state.regenerateStoryboardNode,
-
-    globalShowImage: state.globalShowImage,
 
     generateStoryboardImages: state.generateStoryboardImages,
 
     updateStoryboardTitle: state.updateStoryboardTitle,
     updateStoryboardDescription: state.updateStoryboardDescription,
     updateStoryboardCaption: state.updateStoryboardCaption,
+    updateStoryboardFrameType: state.updateStoryboardFrameType,
 
     selectNodes: state.selectNodes,
 
@@ -165,16 +161,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
           <p className="font-bold text-sm">
             <span className="mr-1">{displayAttributes.emoji}</span> Storyboard
           </p>
-          <div className="flex gap-2 items-center nodrag">
-            <Switch
-              size="sm"
-              checked={showImage}
-              onChange={(event) => setShowImage(event.currentTarget.checked)}
-              onLabel={<ImageIcon className="w-3 h-3" />}
-              offLabel={<ImageOff className="w-3 h-3" />}
-            />
-            {icons}
-          </div>
+          <div className="flex gap-2 items-center nodrag">{icons}</div>
         </div>
         <div className="mb-4">
           <Input
@@ -205,16 +192,44 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 <p className="font-bold text-sm">
                   Frame {frameIdx + 1} - {frameTypeText(frame.frameType)}
                 </p>
-                <Popover width={350} position="left-end" withArrow>
+                <Popover width={350} position="left-end" withArrow shadow="md">
                   <Popover.Target>
-                    <ActionIcon size="sm">🔍</ActionIcon>
+                    <ActionIcon size="sm" variant="outline">
+                      <Pencil className="size-4" />
+                    </ActionIcon>
                   </Popover.Target>
                   <Popover.Dropdown>
-                    <form
-                      onSubmit={() => {
-                        console.log('do something');
-                      }}
-                    >
+                    <h4 className="font-bold mb-4">Edit frame</h4>
+                    <div>
+                      <Select
+                        label="Edit Frame Type"
+                        comboboxProps={{ withinPortal: false }}
+                        className="mb-2"
+                        allowDeselect={false}
+                        data={(
+                          [
+                            'Context',
+                            'Problem',
+                            'Solution',
+                            'Resolution'
+                          ] as const
+                        ).map((value) => ({
+                          value,
+                          label: frameTypeText(value) ?? ''
+                        }))}
+                        value={frame.frameType}
+                        onChange={(value) => {
+                          updateStoryboardFrameType(
+                            props.id,
+                            frameIdx,
+                            value as
+                              | 'Context'
+                              | 'Problem'
+                              | 'Solution'
+                              | 'Resolution'
+                          );
+                        }}
+                      />
                       <Textarea
                         label="Description"
                         description="Describes the contents and visuals of the frame. Update the description to regenerate the image."
@@ -254,7 +269,22 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                           Regenerate all images
                         </Button>
                       </div>
-                    </form>
+                    </div>
+
+                    <Divider my="md" />
+
+                    {/* <div>
+                      <Button size="compact-sm">Add frame before</Button>
+                      <Button size="compact-sm">Add frame after</Button>
+                    </div> */}
+
+                    <Divider my="md" />
+
+                    <div>
+                      <Button size="compact-sm" color="red">
+                        Delete frame
+                      </Button>
+                    </div>
                   </Popover.Dropdown>
                 </Popover>
               </div>
@@ -305,19 +335,19 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
 }
 
 function frameTypeText(
-  frameType: 'context' | 'problem' | 'solution' | 'resolution'
+  frameType: 'Context' | 'Problem' | 'Solution' | 'Resolution'
 ) {
-  if (frameType === 'context') return 'Context 👤';
-  if (frameType === 'problem') return 'Problem 🚨';
-  if (frameType === 'solution') return 'Solution 💡';
-  if (frameType === 'resolution') return 'Resolution 🎉';
+  if (frameType === 'Context') return 'Context 👤';
+  if (frameType === 'Problem') return 'Problem 🚨';
+  if (frameType === 'Solution') return 'Solution 💡';
+  if (frameType === 'Resolution') return 'Resolution 🎉';
 }
 
 function frameTypeBorder(
-  frameType: 'context' | 'problem' | 'solution' | 'resolution'
+  frameType: 'Context' | 'Problem' | 'Solution' | 'Resolution'
 ) {
-  if (frameType === 'context') return 'border-yellow-500';
-  if (frameType === 'problem') return 'border-red-500';
-  if (frameType === 'solution') return 'border-blue-500';
-  if (frameType === 'resolution') return 'border-green-500';
+  if (frameType === 'Context') return 'border-yellow-500';
+  if (frameType === 'Problem') return 'border-red-500';
+  if (frameType === 'Solution') return 'border-blue-500';
+  if (frameType === 'Resolution') return 'border-green-500';
 }

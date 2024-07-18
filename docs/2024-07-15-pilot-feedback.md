@@ -7,7 +7,7 @@
   - [ ] Add a tooltip for editing individual frames
   - [ ] Add before and after panels
   - [ ] delete frame button
-  - [ ] Edit context button
+  - [x] Edit frame type button
   - [ ] Wrap frames
   - [ ] Art style
   - [ ] Export screenshot image
@@ -18,6 +18,9 @@
 - [ ] Switch illustrative image art style
 - [ ] Add illustrative image to the selected node preview
 - [ ] Change labels to describe a brainstorm of solutions rather than a single solution
+
+---
+
 - Regenerate and update and regenerate image are confusing
   - Combine regenerate and edit (confusing) - give it feedback and other features higher priority
   - Edit (with feedback, with instructions, manually)

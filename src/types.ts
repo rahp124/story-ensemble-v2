@@ -42,10 +42,10 @@ export type Solution = z.infer<typeof solutionSchema>;
 
 const frameOutlineSchema = z.object({
   frameType: z.union([
-    z.literal('context'),
-    z.literal('problem'),
-    z.literal('solution'),
-    z.literal('resolution')
+    z.literal('Context'),
+    z.literal('Problem'),
+    z.literal('Solution'),
+    z.literal('Resolution')
   ]),
   description: z.string(),
   caption: z.string()

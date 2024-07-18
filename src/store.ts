@@ -180,8 +180,17 @@ type RFState = {
     frameIdx: number,
     caption: string
   ) => void;
+  updateStoryboardFrameType: (
+    id: string,
+    frameIdx: number,
+    frameType: FrameOutline['frameType']
+  ) => void;
+
+  addStoryboardFrame: (id: string, frameIdx: number) => void;
+  deleteStoryboardFrame: (id: string, frameIdx: number) => void;
 
   generateStoryboardImages: (id: string) => Promise<Promise<number>[]>;
+  regenerateStoryboardImage: (id: string, frameIdx: number) => Promise<void>;
 
   pastStates: Partial<RFState>[];
   futureStates: Partial<RFState>[];
@@ -1228,6 +1237,27 @@ const createStore: StateCreator<
         return idx;
       });
     },
+    async regenerateStoryboardImage(id, frameIdx) {
+      const outline: FrameOutline[] =
+        get().nodes.find((node) => node.id === id)?.data.storyboard.outline ||
+        [];
+
+      const imagePrompts = await generateStoryboardImagePrompts(outline);
+
+      await Promise.all(
+        imagePrompts.map(async (prompt, idx) => {
+          if (idx !== frameIdx) return;
+
+          const image = await generateImage(prompt);
+
+          get().takeSnapshot();
+          updateNode<StoryboardNodeData>(id, (draft) => {
+            draft.data.storyboard.outline[idx].image = image;
+            draft.data.storyboard.outline[idx].imageOutOfSync = false;
+          });
+        })
+      );
+    },
     updateStoryboardTitle: (id, title) => {
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.title = title;
@@ -1246,6 +1276,27 @@ const createStore: StateCreator<
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline[frameIndex].caption = caption;
         draft.data.storyboard.outline[frameIndex].imageOutOfSync = true;
+      });
+    },
+    updateStoryboardFrameType: (id, frameIndex, frameType) => {
+      updateNode<StoryboardNodeData>(id, (draft) => {
+        draft.data.storyboard.outline[frameIndex].frameType = frameType;
+        draft.data.storyboard.outline[frameIndex].imageOutOfSync = true;
+      });
+    },
+
+    addStoryboardFrame: (id, frameIndex) => {
+      updateNode<StoryboardNodeData>(id, (draft) => {
+        draft.data.storyboard.outline.splice(frameIndex, 0, {
+          frameType: 'Context',
+          description: '',
+          caption: ''
+        });
+      });
+    },
+    deleteStoryboardFrame: (id, frameIndex) => {
+      updateNode<StoryboardNodeData>(id, (draft) => {
+        draft.data.storyboard.outline.splice(frameIndex, 1);
       });
     },
 
