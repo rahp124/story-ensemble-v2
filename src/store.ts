@@ -1035,7 +1035,7 @@ const createStore: StateCreator<
               caption: ''
             }
           ],
-          artStyle: 'TODO'
+          artStyle: 'digital-art'
         }
       };
 
@@ -1109,7 +1109,7 @@ const createStore: StateCreator<
               ...frame,
               image: ''
             })),
-            artStyle: 'TODO'
+            artStyle: 'digital-art'
           }
         }
       };
@@ -1179,7 +1179,7 @@ const createStore: StateCreator<
               ...frame,
               image: ''
             })),
-            artStyle: 'TODO'
+            artStyle: 'digital-art'
           }
         }
       };
@@ -1250,15 +1250,21 @@ const createStore: StateCreator<
     },
 
     async generateStoryboardImages(id) {
-      const outline: FrameOutline[] =
-        get().nodes.find((node) => node.id === id)?.data.storyboard.outline ||
-        [];
+      const storyboard: Node<StoryboardNodeData> | undefined = get().nodes.find(
+        (node) => node.id === id && node.type === NodeType.Storyboard
+      );
+      if (!storyboard) return [];
+
+      const outline = storyboard.data.storyboard.outline;
       if (outline.length === 0) return [];
 
       const imagePrompts = await generateStoryboardImagePrompts(outline);
 
       return imagePrompts.map(async (prompt, idx) => {
-        const image = await generateImage(prompt);
+        const image = await generateImage({
+          ...prompt,
+          stylePreset: storyboard.data.storyboard.artStyle
+        });
 
         get().takeSnapshot();
         updateNode<StoryboardNodeData>(id, (draft) => {
@@ -1270,9 +1276,13 @@ const createStore: StateCreator<
       });
     },
     async regenerateStoryboardImage(id, frameIdx) {
-      const outline: FrameOutline[] =
-        get().nodes.find((node) => node.id === id)?.data.storyboard.outline ||
-        [];
+      const storyboard: Node<StoryboardNodeData> | undefined = get().nodes.find(
+        (node) => node.id === id && node.type === NodeType.Storyboard
+      );
+      if (!storyboard) return;
+
+      const outline = storyboard.data.storyboard.outline;
+      if (outline.length === 0) return;
 
       const imagePrompts = await generateStoryboardImagePrompts(outline);
 
@@ -1280,7 +1290,10 @@ const createStore: StateCreator<
         imagePrompts.map(async (prompt, idx) => {
           if (idx !== frameIdx) return;
 
-          const image = await generateImage(prompt);
+          const image = await generateImage({
+            ...prompt,
+            stylePreset: storyboard.data.storyboard.artStyle
+          });
 
           get().takeSnapshot();
           updateNode<StoryboardNodeData>(id, (draft) => {

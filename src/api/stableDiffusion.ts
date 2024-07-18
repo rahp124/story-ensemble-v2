@@ -1,17 +1,38 @@
 import { getStabilityAiKey } from '@/lib/envUtils';
 
+export type StylePreset =
+  | '3d-model'
+  | 'analog-film'
+  | 'anime'
+  | 'cinematic'
+  | 'comic-book'
+  | 'digital-art'
+  | 'enhance'
+  | 'fantasy-art'
+  | 'isometric'
+  | 'line-art'
+  | 'low-poly'
+  | 'modeling-compound'
+  | 'neon-punk'
+  | 'origami'
+  | 'photographic'
+  | 'pixel-art'
+  | 'tile-texture';
+
 export async function generateImage({
   prompt,
-  negativePrompt
+  negativePrompt,
+  stylePreset = 'digital-art'
 }: {
   prompt: string;
   negativePrompt: string;
+  stylePreset?: StylePreset;
 }) {
   const formData = new FormData();
   formData.set('prompt', prompt);
   formData.set('negative_prompt', negativePrompt);
   formData.set('aspect_ratio', '1:1');
-  formData.set('style_preset', 'digital-art');
+  formData.set('style_preset', stylePreset);
   formData.set('output_format', 'webp');
 
   const response = await fetch(

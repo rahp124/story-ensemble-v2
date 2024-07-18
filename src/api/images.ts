@@ -18,5 +18,5 @@ ${JSON.stringify(idea)}
 
   const imagePrompt = await generateStructured(imagePromptSchema, prompt);
 
-  return await generateImage(imagePrompt);
+  return await generateImage({ ...imagePrompt, stylePreset: 'isometric' });
 }

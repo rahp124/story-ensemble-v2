@@ -2,8 +2,12 @@
 
 ## Development updates
 
-- [ ] Switch illustrative image art style
 - [ ] Change labels to describe a brainstorm of solutions rather than a single solution
+- [ ] StoryEnsemble name
+- [ ] Prompt tuning
+  - [ ] Less feedback
+  - [ ] Do we need to save the user's intent to guide the future generations (array of instructions)
+  - [ ] Switch to using system messages
 
 ---
 
@@ -12,18 +16,12 @@
   - Combine regenerate and edit (confusing) - give it feedback and other features higher priority
   - Edit (with feedback, with instructions, manually)
   - [ ] Two separate toolbars one above and below
-- [ ] Regenerate multiple (might not be useful) - keep editing on the card
 - [ ] Telemetry
   - What do we want to track specifically
   - Export telemetry
 
 ---
 
-- [ ] StoryEnsemble name
-- [ ] Prompt tuning
-  - [ ] Less feedback
-  - [ ] Do we need to save the user's intent to guide the future generations (array of instructions)
-  - [ ] Switch to using system messages
 - [x] Persist API keys in session storage
 - [x] Add empty nodes - right click to open a context menu and select from one of four nodes
   - [ ] Add ability to regenerate/fill in missing values
@@ -41,7 +39,7 @@
 - [x] Feedback regenerating after updates is distracting - Add labels to the loading states
 - [x] Out of sync
   - Add back regenerate button for out of sync nodes (w/o modal)
-- [ ] Rename regenerate to update eh
+- [ ] Rename regenerate to update
 - [ ] Storyboard editing
   - [x] Out of sync
   - [x] Add a tooltip for editing individual frames
@@ -50,8 +48,9 @@
   - [x] Edit frame type button
   - [x] Wrap frames
   - [x] Storyboard loading state + images loading state
-  - [ ] Art style
+  - [ ] Art style select (didn't implement didn't seem to have a huge impact)
   - [ ] Export screenshot image
 - [x] Storyboard generation workflow
   - [x] Allow users to generate with just a solution (but crawl up the edges)
   - [x] Let's crawl up the dependencies (and add the edges)
+- [x] Switch illustrative image art style

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { StylePreset } from './api/stableDiffusion';
 
 export type NodeData = {
   outOfSync?: boolean;
@@ -71,6 +72,6 @@ export type StoryboardNodeData = NodeData & {
       image?: string;
       imageOutOfSync?: boolean;
     })[];
-    artStyle: string;
+    artStyle: StylePreset;
   };
 };
