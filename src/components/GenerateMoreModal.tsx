@@ -170,7 +170,8 @@ export function GenerateMoreModal(props: GenerateMoreModalProps) {
 
       icon: <CheckIcon />,
       loading: false,
-      withCloseButton: true
+      withCloseButton: true,
+      autoClose: 6 * 1000
     });
 
     setGenerating(false);

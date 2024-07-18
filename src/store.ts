@@ -999,7 +999,7 @@ const createStore: StateCreator<
         center,
         1,
         {
-          width: 1200,
+          width: 1600,
           height: 600,
           gap: 0
         }
@@ -1009,7 +1009,32 @@ const createStore: StateCreator<
         content: {},
         storyboard: {
           title: '',
-          outline: [],
+          outline: [
+            {
+              id: nanoid(),
+              frameType: 'Context',
+              description: '',
+              caption: ''
+            },
+            {
+              id: nanoid(),
+              frameType: 'Problem',
+              description: '',
+              caption: ''
+            },
+            {
+              id: nanoid(),
+              frameType: 'Solution',
+              description: '',
+              caption: ''
+            },
+            {
+              id: nanoid(),
+              frameType: 'Resolution',
+              description: '',
+              caption: ''
+            }
+          ],
           artStyle: 'TODO'
         }
       };
@@ -1057,7 +1082,7 @@ const createStore: StateCreator<
         'bottom',
         1,
         {
-          width: 1200,
+          width: 1600,
           height: 600,
           gap: 0,
           margin: 100
@@ -1134,7 +1159,7 @@ const createStore: StateCreator<
         'right',
         1,
         {
-          width: 1200,
+          width: 1600,
           height: 600,
           gap: 0,
           margin: 100

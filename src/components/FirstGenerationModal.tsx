@@ -136,7 +136,8 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
 
       icon: <CheckIcon />,
       loading: false,
-      withCloseButton: true
+      withCloseButton: true,
+      autoClose: 6 * 1000
     });
 
     setGenerating(false);
