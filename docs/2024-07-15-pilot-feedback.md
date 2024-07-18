@@ -15,9 +15,22 @@
   - [ ] Allow users to generate with just a solution (but crawl up the edges)
   - [ ] Let's crawl up the dependencies (and add the edges)
   - Add helper functions for crawling dependencies
+- [ ] Switch illustrative image art style
+- [ ] Add illustrative image to the selected node preview
+- [ ] Change labels to describe a brainstorm of solutions rather than a single solution
+- Regenerate and update and regenerate image are confusing
+  - Combine regenerate and edit (confusing) - give it feedback and other features higher priority
+  - Edit (with feedback, with instructions, manually)
+  - [ ] Two separate toolbars one above and below
+- [ ] Regenerate multiple (might not be useful) - keep editing on the card
+- [ ] Storyboard loading state + images loading state
+- [ ] Telemetry
+  - What do we want to track specifically
+  - Export telemetry
 
 ---
 
+- [ ] StoryEnsemble name
 - [ ] Prompt tuning
   - [ ] Less feedback
   - [ ] Do we need to save the user's intent to guide the future generations (array of instructions)
