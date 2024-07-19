@@ -30,6 +30,8 @@ import { calculatePreviousChangedValues } from '@/lib/calculatePreviousChangedVa
 import { generateUpdateNodeDescriptionRecommendations } from '@/api/recommendations';
 import { getSanitizedNodeContents } from '@/lib/getSanitizedNodeContent';
 
+const MISSING_VALUE_INSTRUCTIONS = 'Fill in missing values';
+
 export interface IterateModalProps {}
 export function IterateModal() {
   const {
@@ -253,6 +255,9 @@ export function IterateModal() {
       [NodeType.Persona, NodeType.Problem, NodeType.Solution] as string[]
     ).includes(selectedNodes[0].type ?? '');
   const nodeToEdit: Node<NodeData> = selectedNodes[0];
+  const nodeToEditHasEmptyFields =
+    nodeToEdit &&
+    Object.values(nodeToEdit.data.content).some((value) => value === '');
   const editForm = useForm({
     mode: 'controlled'
   });
@@ -312,6 +317,20 @@ export function IterateModal() {
       </Tabs.Panel>
     );
   }
+
+  useEffect(() => {
+    if (!iterateModalOpen || iterateModalTab !== 'regenerate') return;
+
+    if (nodeToEditHasEmptyFields && !editInstructions) {
+      setEditInstructions(MISSING_VALUE_INSTRUCTIONS);
+    }
+  }, [
+    editInstructions,
+    iterateModalOpen,
+    iterateModalTab,
+    nodeToEditHasEmptyFields,
+    showEditForm
+  ]);
 
   useEffect(() => {
     if (!iterateModalOpen) {
