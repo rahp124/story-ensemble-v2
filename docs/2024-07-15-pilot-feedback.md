@@ -3,15 +3,20 @@
 ## Development updates
 
 - [ ] Change labels to describe a brainstorm of solutions rather than a single solution
-- [ ] StoryEnsemble name
 - [ ] Prompt tuning
   - [ ] Less feedback
   - [ ] Do we need to save the user's intent to guide the future generations (array of instructions)
   - [ ] Switch to using system messages
-
----
-
-- [ ] Add illustrative image to the selected node preview
+  - [ ] gpt-4o mini
+- [ ] Storyboard global art style toggle
+- [ ] Rename feedback to reflection questions (reflections, reflective prompts)
+  - Reflect/Regenerate/Edit manually
+  - Reflect/Direct/Edit
+- [ ] Modals might look a little too similar
+- [ ] Add a timed highlight to nodes to show that they've changed (replace selected with a recentlyHighlighted boolean)
+  - [ ] Make it clear that multiple regenerate is in sequence rather than in parallel
+- [ ] Out of sync image bug
+- [ ] Storyboard node - resize after updating nodes
 - Regenerate and update and regenerate image are confusing
   - Combine regenerate and edit (confusing) - give it feedback and other features higher priority
   - Edit (with feedback, with instructions, manually)
@@ -19,6 +24,11 @@
 - [ ] Telemetry
   - What do we want to track specifically
   - Export telemetry
+
+---
+
+- [ ] StoryEnsemble name
+- [ ] Add illustrative image to the selected node preview
 
 ---
 
