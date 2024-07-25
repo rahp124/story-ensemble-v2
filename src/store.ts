@@ -1332,12 +1332,47 @@ const createStore: StateCreator<
 
     addStoryboardFrame: (id, frameIndex) => {
       updateNode<StoryboardNodeData>(id, (draft) => {
+        const prevNode = draft.data.storyboard.outline.at(frameIndex - 1);
+        const nextNode = draft.data.storyboard.outline.at(frameIndex);
+        const frameType =
+          prevNode?.frameType || nextNode?.frameType || 'Context';
+
         draft.data.storyboard.outline.splice(frameIndex, 0, {
           id: nanoid(),
-          frameType: 'Context',
+          frameType,
           description: '',
           caption: ''
         });
+
+        const { width, height } = draft;
+
+        const widthPerFrame = 350;
+        const heightPerFrame = 450;
+
+        const availableWidth = width! - 80;
+        let framesPerRow = 1;
+        while ((framesPerRow + 1) * (widthPerFrame + 24) < availableWidth) {
+          framesPerRow++;
+        }
+        const availableHeight = height! - 24 - 40;
+        let numRows = 1;
+        while ((numRows + 1) * (24 + heightPerFrame) < availableHeight) {
+          numRows++;
+        }
+
+        const maxFrames = framesPerRow * numRows;
+        if (draft.data.storyboard.outline.length > maxFrames) {
+          const heightToAdd = heightPerFrame + 24;
+          const newY = draft.position.y + heightToAdd / 2;
+
+          const newHeight = draft.height! + heightToAdd;
+
+          draft.height! = newHeight;
+          if (draft.style && draft.style.height) {
+            draft.style.height = newHeight;
+          }
+          draft.position.y = newY;
+        }
       });
     },
     deleteStoryboardFrame: (id, frameIndex) => {

@@ -13,7 +13,6 @@
 - [ ] Add a timed highlight to nodes to show that they've changed (replace selected with a recentlyHighlighted boolean)
   - [ ] Make it clear that multiple regenerate is in sequence rather than in parallel
 - [ ] Out of sync image bug
-- [ ] Storyboard node - resize after updating nodes
 
 ---
 
@@ -70,3 +69,4 @@
   - [x] Allow users to generate with just a solution (but crawl up the edges)
   - [x] Let's crawl up the dependencies (and add the edges)
 - [x] Switch illustrative image art style
+- [x] Storyboard node - resize after updating nodes
