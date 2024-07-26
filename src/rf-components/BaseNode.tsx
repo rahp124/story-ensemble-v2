@@ -15,7 +15,13 @@ import {
   Switch,
   ScrollArea
 } from '@mantine/core';
-import { ImageIcon, ImageOff, Info, RefreshCwIcon } from 'lucide-react';
+import {
+  ArrowDownFromLineIcon,
+  ImageIcon,
+  ImageOff,
+  Info,
+  RefreshCwIcon
+} from 'lucide-react';
 import { ReactNode, useCallback, useRef, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 
@@ -28,7 +34,8 @@ export interface BaseNodeProps<T extends Record<string, string>> {
   content: T;
 
   onRegenerateImage: () => Promise<void>;
-  onSync?: () => Promise<{ previousChangedValues: Record<string, string> }>;
+  onSync?: () => Promise<void>;
+  onSyncAll?: () => Promise<void>;
 
   targetHandle: boolean;
   sourceHandle: boolean;
@@ -39,18 +46,15 @@ export default function BaseNode<T extends Record<string, string>>(
   const { nodeProps } = props;
   const { outOfSync, image, imageOutOfSync } = nodeProps.data;
 
-  const {
-    regenerating,
-    setRegeneratingNode,
-    previousChangedValues,
-    setPreviousChangedValuesById
-  } = useDisplayStore((state) => ({
-    regenerating: state.regeneratingNodes.has(nodeProps.id),
-    setRegeneratingNode: state.setRegeneratingNode,
+  const { regenerating, setRegeneratingNode, previousChangedValues } =
+    useDisplayStore((state) => ({
+      regenerating: state.regeneratingNodes.has(nodeProps.id),
+      setRegeneratingNode: state.setRegeneratingNode,
 
-    previousChangedValues: state.previousChangedValuesById[nodeProps.id] || {},
-    setPreviousChangedValuesById: state.setPreviousChangedValuesById
-  }));
+      previousChangedValues:
+        state.previousChangedValuesById[nodeProps.id] || {},
+      setPreviousChangedValuesById: state.setPreviousChangedValuesById
+    }));
 
   const [showImage, setShowImage] = useState(false);
 
@@ -138,19 +142,16 @@ export default function BaseNode<T extends Record<string, string>>(
       icon: <RefreshCwIcon />,
       notification: true,
       loading: regenerating,
-      onClick: async () => {
-        if (regenerating || !props.onSync) return;
-
-        setRegeneratingNode(nodeProps.id, true);
-
-        const { previousChangedValues: _previousChangedValues } =
-          await props.onSync();
-        setPreviousChangedValuesById({
-          [nodeProps.id]: _previousChangedValues
-        });
-
-        setRegeneratingNode(nodeProps.id, false);
-      }
+      onClick: props.onSync
+    },
+    {
+      key: 'syncAll',
+      show: outOfSync && props.onSyncAll,
+      tooltip: 'Dependencies updated. Regenerate node and all dependents',
+      icon: <ArrowDownFromLineIcon />,
+      notification: true,
+      loading: regenerating,
+      onClick: props.onSyncAll
     }
   ]
     .filter(({ show }) => show)

@@ -20,6 +20,7 @@ import { Pencil, RefreshCwIcon, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
+import { useDisplayStore } from '@/lib/displayStore';
 
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Storyboard);
 
@@ -44,11 +45,14 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [loadingMap, setLoadingMap] = useState<boolean[]>(
     Array(storyboard.outline.length).fill(false)
   );
-  const loading = loadingMap.some((regenerating) => regenerating);
+  const someLoading = loadingMap.some((regenerating) => regenerating);
   const imagesOutOfSync = storyboard.outline.some(
     (frame) => frame.imageOutOfSync
   );
-  const [regenerating, setRegenerating] = useState(false);
+  const { regenerating, setRegeneratingNode } = useDisplayStore((state) => ({
+    regenerating: state.regeneratingNodes.has(props.id),
+    setRegeneratingNode: state.setRegeneratingNode
+  }));
 
   const {
     regenerateStoryboardNode,
@@ -108,7 +112,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
       tooltip: 'Regenerate images',
       icon: <RefreshImageIcon />,
       notification: imagesOutOfSync,
-      loading: loading || regenerating,
+      loading: regenerating || someLoading,
       onClick: regenerateAllImages
     },
     {
@@ -121,12 +125,12 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
       onClick: async () => {
         if (regenerating) return;
 
-        setRegenerating(true);
+        setRegeneratingNode(props.id, true);
         await regenerateStoryboardNode(
           props.id,
           'Regenerate storyboard based on updated personas, problems, and solutions'
         );
-        setRegenerating(false);
+        setRegeneratingNode(props.id, false);
       }
     }
   ]
@@ -179,7 +183,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
           <Input
             placeholder="Storyboard Title"
             className="nodrag"
-            disabled={regenerating || loading}
+            disabled={regenerating || someLoading}
             value={title}
             onChange={(e) => setTitle(e.currentTarget.value)}
             onBlur={() => {
@@ -352,7 +356,9 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 )}`}
               >
                 <AspectRatio ratio={1}>
-                  {loadingMap[frameIdx] || frame.image === '' ? (
+                  {regenerating ||
+                  loadingMap[frameIdx] ||
+                  frame.image === '' ? (
                     <div className="size-full flex items-center justify-center">
                       <Loader />
                     </div>
@@ -396,7 +402,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               {frameIdx === 0 && (
                 <button
                   className="absolute top-0 -left-3 h-full flex items-center px-1 hover:bg-slate-100 -translate-x-1/2 rounded-sm"
-                  disabled={regenerating || loading}
+                  disabled={regenerating || someLoading}
                   onClick={() => {
                     addStoryboardFrame(props.id, frameIdx);
                   }}
@@ -406,7 +412,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               )}
               <button
                 className="absolute top-0 -right-3 h-full flex items-center px-1 hover:bg-slate-100 translate-x-1/2 rounded-sm"
-                disabled={regenerating || loading}
+                disabled={regenerating || someLoading}
                 onClick={() => {
                   addStoryboardFrame(props.id, frameIdx + 1);
                 }}

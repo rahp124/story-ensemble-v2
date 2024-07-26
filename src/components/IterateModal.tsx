@@ -290,7 +290,6 @@ export function IterateModal() {
             }
 
             setPreviousChangedValuesById({
-              ...previousChangedValuesById,
               [nodeToEdit.id]: calculatePreviousChangedValues(
                 nodeToEdit.data.content,
                 values

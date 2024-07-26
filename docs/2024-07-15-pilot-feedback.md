@@ -2,9 +2,6 @@
 
 ## Development updates
 
-- [ ] Extend regenerate out of sync to regenerate the entire tree
-- [ ] Store visualize changes globally and display inside and outside of the modal
-  - [ ] Out of sync image bug - part of refactor - bad loading states
 - [ ] Add a timed highlight to nodes to show that they've changed (replace selected with a recentlyHighlighted boolean)
   - [ ] Make it clear that multiple regenerate is in sequence rather than in parallel
 
@@ -74,3 +71,6 @@
 - [x] Storyboard node - resize after updating nodes
 - [x] Change labels to describe a brainstorm of solutions rather than a single solution
 - [x] Extend generate dependent to add the option to generate the entire chain
+- [x] Extend regenerate out of sync to regenerate the entire tree
+- [x] Store visualize changes globally and display inside and outside of the modal
+  - [x] Out of sync image bug - part of refactor - bad loading states
