@@ -346,7 +346,9 @@ export function IterateModal() {
 
   const modalRef = useRef<HTMLDivElement | null>(null);
   const scrollAreaComponent = useCallback(
-    ({ ...props }) => <ScrollAreaAutosize {...props} viewportRef={modalRef} />,
+    ({ ...props }) => (
+      <ScrollAreaAutosize {...props} viewportRef={modalRef} scrollbars={'y'} />
+    ),
     []
   );
   const scrollToTop = () =>
@@ -358,7 +360,7 @@ export function IterateModal() {
   return (
     <Modal
       title="Iterate"
-      size="lg"
+      size="xl"
       opened={iterateModalOpen}
       onClose={() => {
         setIterateModalOpen(false);

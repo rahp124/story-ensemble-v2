@@ -51,6 +51,7 @@ import {
   calculateNodePositionAttributes
 } from './lib/positioningUtils';
 import { calculatePreviousChangedValues } from './lib/calculatePreviousChangedValues';
+import { findDirectDependencies } from './lib/graphHelper';
 
 const indexDbStorage: StateStorage = {
   getItem: async (name) => {
@@ -229,6 +230,18 @@ const createStore: StateCreator<
       setter(state.nodes[index]);
     });
   };
+  const updateNodes = <T = NodeData>(
+    ids: string[],
+    setter: (nodeDraft: WritableDraft<Node<T>>) => void
+  ) => {
+    set((state) => {
+      state.nodes.forEach((node) => {
+        if (ids.includes(node.id)) {
+          setter(node);
+        }
+      });
+    });
+  };
 
   return {
     nodes: [],
@@ -286,19 +299,9 @@ const createStore: StateCreator<
         const disconnectedNodeIds = get()
           .edges.filter((edge) => edgesIdsToRemove.includes(edge.id))
           .map((edge) => edge.target);
-        set({
-          nodes: get().nodes.map((node) => {
-            if (disconnectedNodeIds.includes(node.id)) {
-              return {
-                ...node,
-                data: {
-                  ...node.data,
-                  outOfSync: true
-                }
-              };
-            }
-            return node;
-          })
+
+        updateNodes(disconnectedNodeIds, (draft) => {
+          draft.data.outOfSync = true;
         });
       }
 
@@ -324,19 +327,8 @@ const createStore: StateCreator<
 
       const targetNode = get().nodes.find((node) => node.id === target);
       if (!targetNode) return;
-      set({
-        nodes: get().nodes.map((node) => {
-          if (node.id === target) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                outOfSync: true
-              }
-            };
-          }
-          return node;
-        })
+      updateNode(targetNode.id, (draft) => {
+        draft.data.outOfSync = true;
       });
     },
     onSelectionChange: (params) => {
@@ -364,11 +356,8 @@ const createStore: StateCreator<
       get().selectNodes([...selectedNodeIds, ...unselectedChildrenIds]);
     },
     selectNodes: (ids: string[]) => {
-      set({
-        nodes: get().nodes.map((node) => ({
-          ...node,
-          selected: ids.includes(node.id)
-        }))
+      updateNodes(ids, (draft) => {
+        draft.selected = true;
       });
     },
 
@@ -529,23 +518,8 @@ const createStore: StateCreator<
       });
 
       // Update dependencies
-      const dependencyIds = get()
-        .edges.filter((edge) => edge.source === id)
-        .map((edge) => edge.target);
-
-      set({
-        nodes: get().nodes.map((node) => {
-          if (dependencyIds.includes(node.id)) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                outOfSync: true
-              }
-            };
-          }
-          return node;
-        })
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.outOfSync = true;
       });
     },
     generatePersonaImage: async (id: string) => {
@@ -758,23 +732,8 @@ const createStore: StateCreator<
       });
 
       // Update dependencies
-      const dependencyIds = get()
-        .edges.filter((edge) => edge.source === id)
-        .map((edge) => edge.target);
-
-      set({
-        nodes: get().nodes.map((node) => {
-          if (dependencyIds.includes(node.id)) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                outOfSync: true
-              }
-            };
-          }
-          return node;
-        })
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.outOfSync = true;
       });
     },
 
@@ -957,23 +916,9 @@ const createStore: StateCreator<
         draft.data.imageOutOfSync = true;
       });
 
-      const dependencyIds = get()
-        .edges.filter((edge) => edge.source === id)
-        .map((edge) => edge.target);
-
-      set({
-        nodes: get().nodes.map((node) => {
-          if (dependencyIds.includes(node.id)) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                outOfSync: true
-              }
-            };
-          }
-          return node;
-        })
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.outOfSync = true;
       });
     },
     generateSolutionImage: async (id) => {
