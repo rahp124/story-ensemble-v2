@@ -51,7 +51,7 @@ import {
   calculateNodePositionAttributes
 } from './lib/positioningUtils';
 import { calculatePreviousChangedValues } from './lib/calculatePreviousChangedValues';
-import { findDirectDependencies } from './lib/graphHelper';
+import { findDirectDependents } from './lib/graphHelper';
 
 const indexDbStorage: StateStorage = {
   getItem: async (name) => {
@@ -518,7 +518,7 @@ const createStore: StateCreator<
       });
 
       // Update dependencies
-      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+      updateNodes(findDirectDependents([id], get().edges), (draft) => {
         draft.data.outOfSync = true;
       });
     },
@@ -732,7 +732,7 @@ const createStore: StateCreator<
       });
 
       // Update dependencies
-      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+      updateNodes(findDirectDependents([id], get().edges), (draft) => {
         draft.data.outOfSync = true;
       });
     },
@@ -917,7 +917,7 @@ const createStore: StateCreator<
       });
 
       // Update dependencies
-      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+      updateNodes(findDirectDependents([id], get().edges), (draft) => {
         draft.data.outOfSync = true;
       });
     },

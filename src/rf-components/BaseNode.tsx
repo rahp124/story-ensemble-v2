@@ -3,6 +3,7 @@ import NotificationDot from '@/components/NotificationDot';
 import { RefreshImageIcon } from '@/components/RefreshImageIcon';
 import SourceHandle from '@/components/SourceHandle';
 import TargetHandle from '@/components/TargetHandle';
+import { useDisplayStore } from '@/lib/displayStore';
 import { useZoom } from '@/lib/useZoom';
 import { useStore } from '@/store';
 import { NodeData } from '@/types';
@@ -15,7 +16,7 @@ import {
   ScrollArea
 } from '@mantine/core';
 import { ImageIcon, ImageOff, Info, RefreshCwIcon } from 'lucide-react';
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { ReactNode, useCallback, useRef, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 
 export interface BaseNodeProps<T extends Record<string, string>> {
@@ -38,7 +39,18 @@ export default function BaseNode<T extends Record<string, string>>(
   const { nodeProps } = props;
   const { outOfSync, image, imageOutOfSync } = nodeProps.data;
 
-  const [regenerating, setRegenerating] = useState(false);
+  const {
+    regenerating,
+    setRegeneratingNode,
+    previousChangedValues,
+    setPreviousChangedValuesById
+  } = useDisplayStore((state) => ({
+    regenerating: state.regeneratingNodes.has(nodeProps.id),
+    setRegeneratingNode: state.setRegeneratingNode,
+
+    previousChangedValues: state.previousChangedValuesById[nodeProps.id] || {},
+    setPreviousChangedValuesById: state.setPreviousChangedValuesById
+  }));
 
   const [showImage, setShowImage] = useState(false);
 
@@ -52,13 +64,6 @@ export default function BaseNode<T extends Record<string, string>>(
   }, [scrollViewport]);
 
   const globalShowImage = useStore((state) => state.globalShowImage);
-
-  const [previousChangedValues, setPreviousChangedValues] = useState<
-    Record<string, string>
-  >({});
-  useEffect(() => {
-    setPreviousChangedValues({});
-  }, [props.content]);
 
   function cardContent() {
     if (globalShowImage || showImage || zoomShowImage) {
@@ -121,9 +126,9 @@ export default function BaseNode<T extends Record<string, string>>(
       onClick: async () => {
         if (regenerating) return;
 
-        setRegenerating(true);
+        setRegeneratingNode(nodeProps.id, true);
         await props.onRegenerateImage();
-        setRegenerating(false);
+        setRegeneratingNode(nodeProps.id, false);
       }
     },
     {
@@ -136,11 +141,15 @@ export default function BaseNode<T extends Record<string, string>>(
       onClick: async () => {
         if (regenerating || !props.onSync) return;
 
-        setRegenerating(true);
+        setRegeneratingNode(nodeProps.id, true);
+
         const { previousChangedValues: _previousChangedValues } =
           await props.onSync();
-        setPreviousChangedValues(_previousChangedValues);
-        setRegenerating(false);
+        setPreviousChangedValuesById({
+          [nodeProps.id]: _previousChangedValues
+        });
+
+        setRegeneratingNode(nodeProps.id, false);
       }
     }
   ]

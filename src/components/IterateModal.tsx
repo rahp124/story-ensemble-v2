@@ -30,6 +30,7 @@ import { NodeData, StoryboardNodeData } from '@/types';
 import { calculatePreviousChangedValues } from '@/lib/calculatePreviousChangedValues';
 import { generateUpdateNodeDescriptionRecommendations } from '@/api/recommendations';
 import { getSanitizedNodeContents } from '@/lib/getSanitizedNodeContent';
+import { useDisplayStore } from '@/lib/displayStore';
 
 const MISSING_VALUE_INSTRUCTIONS = 'Fill in missing values';
 
@@ -77,9 +78,8 @@ export function IterateModal() {
     string | null
   >(null);
 
-  const [previousChangedValuesById, setPreviousChangedValuesById] = useState<
-    Record<string, Record<string, string>>
-  >({});
+  const { previousChangedValuesById, setPreviousChangedValuesById } =
+    useDisplayStore();
 
   const generateFeedback = useCallback(async () => {
     if (selectedNodes.length === 0) {
@@ -218,28 +218,28 @@ export function IterateModal() {
     if (personaIds.length > 0) {
       const { previousChangedValuesById: _previousChangedValuesById } =
         await regeneratePersonaNodes(personaIds, context);
-      setPreviousChangedValuesById((prev) => ({
-        ...prev,
+      setPreviousChangedValuesById({
+        ...previousChangedValuesById,
         ..._previousChangedValuesById
-      }));
+      });
     }
 
     if (problemIds.length > 0) {
       const { previousChangedValuesById: _previousChangedValuesById } =
         await regenerateProblemNodes(problemIds, context);
-      setPreviousChangedValuesById((prev) => ({
-        ...prev,
+      setPreviousChangedValuesById({
+        ...previousChangedValuesById,
         ..._previousChangedValuesById
-      }));
+      });
     }
 
     if (solutionIds.length > 0) {
       const { previousChangedValuesById: _previousChangedValuesById } =
         await regenerateSolutionNodes(solutionIds, context);
-      setPreviousChangedValuesById((prev) => ({
-        ...prev,
+      setPreviousChangedValuesById({
+        ...previousChangedValuesById,
         ..._previousChangedValuesById
-      }));
+      });
     }
 
     if (storyboardIds.length > 0) {
@@ -289,13 +289,13 @@ export function IterateModal() {
               updateSolutionNode(nodeToEdit.id, values);
             }
 
-            setPreviousChangedValuesById((prev) => ({
-              ...prev,
+            setPreviousChangedValuesById({
+              ...previousChangedValuesById,
               [nodeToEdit.id]: calculatePreviousChangedValues(
                 nodeToEdit.data.content,
                 values
               )
-            }));
+            });
 
             resetInputs();
 
@@ -340,7 +340,6 @@ export function IterateModal() {
   useEffect(() => {
     if (!iterateModalOpen) {
       resetInputs();
-      setPreviousChangedValuesById({});
     }
   }, [iterateModalOpen]);
 
