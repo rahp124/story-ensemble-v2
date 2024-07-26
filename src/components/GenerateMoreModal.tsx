@@ -163,7 +163,7 @@ export function GenerateMoreModal(props: GenerateMoreModalProps) {
               selectNodes(nodesToFocus);
             }}
           >
-            Jump to nodes.
+            Jump to nodes
           </Anchor>
         </>
       ),

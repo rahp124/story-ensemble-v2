@@ -6,6 +6,7 @@ import {
   Loader,
   LoadingOverlay,
   Modal,
+  ScrollAreaAutosize,
   Table,
   Tabs,
   Text,
@@ -16,7 +17,7 @@ import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { SelectedNodePreview } from './SelectedNodePreview';
 import { useStore } from '@/store';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { MessageSquareShare, PlusIcon, X } from 'lucide-react';
 import { NodeType } from '@/rf-components';
 import {
@@ -245,6 +246,8 @@ export function IterateModal() {
       await regenerateStoryboardNode(storyboardIds[0], context);
     }
 
+    scrollToTop();
+
     setRegenerating(false);
     resetInputs();
   };
@@ -300,6 +303,8 @@ export function IterateModal() {
               message: `${nodeToEdit.type} edited`,
               autoClose: 5000
             });
+
+            scrollToTop();
           })}
         >
           <h2 className="text-md font-bold mb-2">
@@ -339,6 +344,17 @@ export function IterateModal() {
     }
   }, [iterateModalOpen]);
 
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const scrollAreaComponent = useCallback(
+    ({ ...props }) => <ScrollAreaAutosize {...props} viewportRef={modalRef} />,
+    []
+  );
+  const scrollToTop = () =>
+    modalRef.current?.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+
   return (
     <Modal
       title="Iterate"
@@ -347,6 +363,7 @@ export function IterateModal() {
       onClose={() => {
         setIterateModalOpen(false);
       }}
+      scrollAreaComponent={scrollAreaComponent}
     >
       <div className="relative">
         <LoadingOverlay visible={regenerating} />

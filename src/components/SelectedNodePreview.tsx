@@ -60,6 +60,7 @@ export function SelectedNodePreview(props: SelectedNodePreviewProps) {
               <>
                 <Accordion.Control icon={emoji}>
                   {content.Name}
+                  {previousChangedValuesById[node.id] && '*'}
                 </Accordion.Control>
                 <Accordion.Panel>
                   <NodeContent
