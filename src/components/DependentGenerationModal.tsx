@@ -12,14 +12,16 @@ import { notifications } from '@mantine/notifications';
 const TEXT_CONTENT = {
   Problem: {
     title: 'Generate problems from personas',
-    inputLabel: 'Problem description',
-    inputDescription: 'Roughly describe the problems to generate',
+    inputLabel: 'Problem ideas',
+    inputDescription:
+      'Provide initial ideas and context for the problems to generate.',
     notificationTitle: 'Generating problems from personas'
   },
   Solution: {
     title: 'Generate solutions from problems',
     inputLabel: 'Solution description',
-    inputDescription: 'Roughly describe the solutions to generate',
+    inputDescription:
+      'Provide initial ideas and context for the solutions to generate.',
     notificationTitle: 'Generating solutions from problems'
   },
   Storyboard: {

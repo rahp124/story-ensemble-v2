@@ -187,30 +187,30 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
             onChange={(event) => setDesignContext(event.currentTarget.value)}
           />
 
-          <Divider my="lg" label="Specific node descriptions (optional)" />
+          <Divider my="lg" label="Specific node ideas (optional)" />
 
           {[
             {
               show: true,
-              label: 'Persona description',
+              label: 'Persona ideas',
               description:
-                'Roughly describe the personas you want to generate.',
+                'Provide initial ideas and context for the personas you want to generate.',
               value: personaDescription,
               onChange: setPersonaDescription
             },
             {
               show: finalStep !== 'Persona',
-              label: 'Problem description',
+              label: 'Problem ideas',
               description:
-                'Roughly describe the problems you want to generate.',
+                'Provide initial ideas and context for the problems you want to generate.',
               value: problemDescription,
               onChange: setProblemDescription
             },
             {
               show: finalStep !== 'Persona' && finalStep !== 'Problem',
-              label: 'Solution description',
+              label: 'Solution ideas',
               description:
-                'Roughly describe the solutions you want to generate.',
+                'Provide initial ideas and context for the solutions you want to generate.',
               value: solutionDescription,
               onChange: setSolutionDescription
             },

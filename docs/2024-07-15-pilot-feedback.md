@@ -5,14 +5,16 @@
 - [ ] Extend generate dependent to add the option to generate the entire chain
 - [ ] Extend regenerate out of sync to regenerate the entire tree
 - [ ] Store visualize changes globally and display inside and outside of the modal
-- [ ] Change labels to describe a brainstorm of solutions rather than a single solution
+  - [ ] Out of sync image bug - part of refactor - bad loading states
+- [ ] Add a timed highlight to nodes to show that they've changed (replace selected with a recentlyHighlighted boolean)
+  - [ ] Make it clear that multiple regenerate is in sequence rather than in parallel
+
+---
+
 - [ ] Storyboard global art style toggle
 - [ ] Rename feedback to reflection questions (reflections, reflective prompts)
   - Reflect/Regenerate/Edit manually
   - Reflect/Direct/Edit
-- [ ] Add a timed highlight to nodes to show that they've changed (replace selected with a recentlyHighlighted boolean)
-  - [ ] Make it clear that multiple regenerate is in sequence rather than in parallel
-- [ ] Out of sync image bug
 
 ---
 
@@ -26,6 +28,7 @@
 
 ---
 
+- [ ] Prompt tuning - adjust fields to be generated
 - [ ] Prompt tuning - Less feedback
 - [ ] Switch to using system messages
 - [ ] gpt-4o mini
@@ -70,3 +73,4 @@
   - [x] Let's crawl up the dependencies (and add the edges)
 - [x] Switch illustrative image art style
 - [x] Storyboard node - resize after updating nodes
+- [x] Change labels to describe a brainstorm of solutions rather than a single solution

@@ -12,30 +12,30 @@ import { notifications } from '@mantine/notifications';
 const TEXT_CONTENT = {
   Persona: {
     title: 'Generate more personas',
-    inputLabel: 'Persona description',
+    inputLabel: 'Persona ideas',
     inputDescription:
-      'Roughly describe the personas to generate and how they differ from the existing personas',
+      'Provide initial ideas and context for personas to generate and how they differ from the existing personas.',
     notificationTitle: 'Generating more personas'
   },
   Problem: {
     title: 'Generate more problems',
-    inputLabel: 'Problem description',
+    inputLabel: 'Problem ideas',
     inputDescription:
-      'Roughly describe the problems to generate and how they differ from the existing problems',
+      'Provide initial ideas and context for problems to generate and how they differ from the existing problems.',
     notificationTitle: 'Generating more problems'
   },
   Solution: {
     title: 'Generate more solutions',
-    inputLabel: 'Solution description',
+    inputLabel: 'Solution ideas',
     inputDescription:
-      'Roughly describe the solutions to generate and how they differ from the existing solutions',
+      'Provide initial ideas and context for solutions to generate and how they differ from the existing solutions.',
     notificationTitle: 'Generating more solutions'
   },
   Storyboard: {
     title: 'Generate another storyboard',
     inputLabel: 'Storyboard description',
     inputDescription:
-      'Roughly describe the storyboard to generate and how it differs from the existing storyboards',
+      'Roughly describe the storyboard to generate and how it differs from the existing storyboards.',
     notificationTitle: 'Generating another storyboard'
   }
 };
