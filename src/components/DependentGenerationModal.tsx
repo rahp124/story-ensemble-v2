@@ -8,7 +8,7 @@ import { generateDependentNodeDescriptionRecommendations } from '@/api/recommend
 import { getSanitizedNodeContents } from '@/lib/getSanitizedNodeContent';
 import { CheckIcon, PlusIcon } from 'lucide-react';
 import { notifications } from '@mantine/notifications';
-import { findDependentNodes } from '@/lib/graphHelper';
+import { findDirectDependencies } from '@/lib/graphHelper';
 
 const TEXT_CONTENT = {
   Problem: {
@@ -233,12 +233,17 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
 
     const middleIndex = Math.floor((solutionIds.length - 1) / 2);
     const solution = solutionIds[middleIndex];
-    const dependentNodes = findDependentNodes([solution], edges);
+
+    const dependentProblemIds = findDirectDependencies([solution], edges);
+    const dependentPersonaIds = findDirectDependencies(
+      dependentProblemIds,
+      edges
+    );
 
     const storyboardIds = await generateStoryboardNode(
       instructions,
-      dependentNodes.personaIds,
-      dependentNodes.problemIds,
+      dependentPersonaIds,
+      dependentProblemIds,
       [solution]
     );
     nodesToFocus.push(...storyboardIds);

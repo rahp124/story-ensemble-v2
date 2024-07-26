@@ -37,7 +37,7 @@ import { IterateModal } from './components/IterateModal';
 import { FirstGenerationModal } from './components/FirstGenerationModal';
 import { DependentGenerationModal } from './components/DependentGenerationModal';
 import { GenerateMoreModal } from './components/GenerateMoreModal';
-import { findDependentNodes } from './lib/graphHelper';
+import { findDirectDependencies } from './lib/graphHelper';
 
 const nodeTypes = {
   [NodeType.Persona]: PersonaNode,
@@ -320,10 +320,9 @@ export default function App() {
               );
               const solutionIds = selectedSolutions.map((node) => node.id);
 
-              const { personaIds, problemIds } = findDependentNodes(
-                solutionIds,
-                edges
-              );
+              const problemIds = findDirectDependencies(solutionIds, edges);
+              const personaIds = findDirectDependencies(problemIds, edges);
+
               const missingPersonaIds = personaIds.filter(
                 (id) => !selectedIds.includes(id)
               );
