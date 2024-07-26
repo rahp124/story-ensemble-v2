@@ -37,6 +37,7 @@ import { IterateModal } from './components/IterateModal';
 import { FirstGenerationModal } from './components/FirstGenerationModal';
 import { DependentGenerationModal } from './components/DependentGenerationModal';
 import { GenerateMoreModal } from './components/GenerateMoreModal';
+import { findDependentNodes } from './lib/graphHelper';
 
 const nodeTypes = {
   [NodeType.Persona]: PersonaNode,
@@ -319,30 +320,21 @@ export default function App() {
               );
               const solutionIds = selectedSolutions.map((node) => node.id);
 
-              const missingProblemIds = edges
-                .filter(
-                  (edge) =>
-                    edge.source.startsWith('problem-') &&
-                    edge.target.startsWith('solution-') &&
-                    solutionIds.includes(edge.target) &&
-                    !selectedIds.includes(edge.source)
-                )
-                .map((edge) => edge.source);
-
-              const missingPersonaIds = edges
-                .filter(
-                  (edge) =>
-                    edge.source.startsWith('persona-') &&
-                    edge.target.startsWith('problem-') &&
-                    missingProblemIds.includes(edge.target) &&
-                    !selectedIds.includes(edge.source)
-                )
-                .map((edge) => edge.source);
+              const { personaIds, problemIds } = findDependentNodes(
+                solutionIds,
+                edges
+              );
+              const missingPersonaIds = personaIds.filter(
+                (id) => !selectedIds.includes(id)
+              );
+              const missingProblemIds = problemIds.filter(
+                (id) => !selectedIds.includes(id)
+              );
 
               selectNodes([
                 ...selectedIds,
-                ...missingProblemIds,
-                ...missingPersonaIds
+                ...missingPersonaIds,
+                ...missingProblemIds
               ]);
 
               setDependentNodeToGenerate('Storyboard');

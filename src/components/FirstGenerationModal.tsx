@@ -129,7 +129,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
               selectNodes(nodesToFocus);
             }}
           >
-            Jump to nodes.
+            Jump to nodes
           </Anchor>
         </>
       ),

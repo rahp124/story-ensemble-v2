@@ -1,4 +1,4 @@
-import { NodeType } from '@/rf-components';
+import { displayConfigByNodeType, NodeType } from '@/rf-components';
 import { useStore } from '@/store';
 import { Anchor, Button, LoadingOverlay, Modal, Textarea } from '@mantine/core';
 import { useEffect, useState } from 'react';
@@ -8,6 +8,7 @@ import { generateDependentNodeDescriptionRecommendations } from '@/api/recommend
 import { getSanitizedNodeContents } from '@/lib/getSanitizedNodeContent';
 import { CheckIcon, PlusIcon } from 'lucide-react';
 import { notifications } from '@mantine/notifications';
+import { findDependentNodes } from '@/lib/graphHelper';
 
 const TEXT_CONTENT = {
   Problem: {
@@ -15,6 +16,9 @@ const TEXT_CONTENT = {
     inputLabel: 'Problem ideas',
     inputDescription:
       'Provide initial ideas and context for the problems to generate.',
+    buttonText: `Generate problems ${
+      displayConfigByNodeType[NodeType.Problem].emoji
+    }`,
     notificationTitle: 'Generating problems from personas'
   },
   Solution: {
@@ -22,12 +26,18 @@ const TEXT_CONTENT = {
     inputLabel: 'Solution description',
     inputDescription:
       'Provide initial ideas and context for the solutions to generate.',
+    buttonText: `Generate solutions ${
+      displayConfigByNodeType[NodeType.Solution].emoji
+    }`,
     notificationTitle: 'Generating solutions from problems'
   },
   Storyboard: {
     title: 'Generate storyboard from solutions',
     inputLabel: 'Storyboard description',
     inputDescription: 'Roughly describe the storyboard to generate',
+    buttonText: `Generate storyboard ${
+      displayConfigByNodeType[NodeType.Storyboard].emoji
+    }`,
     notificationTitle: 'Generating storyboard from solutions'
   }
 };
@@ -42,6 +52,8 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
   const { opened, onClose, nodeToGenerate } = props;
 
   const {
+    edges,
+
     generateProblemNodes,
     generateSolutionNodes,
     generateStoryboardNode,
@@ -49,6 +61,8 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
     selectedNodes,
     selectNodes
   } = useStore((state) => ({
+    edges: state.edges,
+
     generateProblemNodes: state.generateProblemNodes,
     generateSolutionNodes: state.generateSolutionNodes,
     generateStoryboardNode: state.generateStoryboardNode,
@@ -97,7 +111,7 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
 
   const [generating, setGenerating] = useState(false);
 
-  const { title, inputLabel, inputDescription, notificationTitle } =
+  const { title, inputLabel, inputDescription, notificationTitle, buttonText } =
     TEXT_CONTENT[nodeToGenerate];
 
   async function generateIdeas() {
@@ -147,7 +161,104 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
               selectNodes(nodesToFocus);
             }}
           >
-            Jump to nodes.
+            Jump to nodes
+          </Anchor>
+        </>
+      ),
+
+      icon: <CheckIcon />,
+      loading: false,
+      withCloseButton: true,
+      autoClose: 6 * 1000
+    });
+
+    setGenerating(false);
+
+    setRecommendations(null);
+    setInstructions('');
+  }
+
+  async function generateUpToStoryboard() {
+    if (generating) return;
+    setGenerating(true);
+
+    const notificationId = notifications.show({
+      title: 'Generating up to storyboard',
+      message: 'Generating...',
+
+      loading: true,
+      autoClose: false,
+      withCloseButton: false
+    });
+    onClose();
+
+    const nodesToFocus: string[] = [];
+
+    const personaIds = selectedPersonaNodes.map(({ id }) => id);
+    let problemIds = selectedProblemNodes.map(({ id }) => id);
+    let solutionIds = selectedSolutionNodes.map(({ id }) => id);
+
+    if (nodeToGenerate === 'Problem') {
+      notifications.update({
+        id: notificationId,
+        message: 'Generating problems...'
+      });
+
+      problemIds = await generateProblemNodes(
+        instructions,
+        personaIds,
+        nodeToGenerate !== 'Problem'
+      );
+      nodesToFocus.push(...problemIds);
+    }
+
+    if (nodeToGenerate === 'Problem' || nodeToGenerate === 'Solution') {
+      notifications.update({
+        id: notificationId,
+        message: 'Generating solutions...'
+      });
+
+      solutionIds = await generateSolutionNodes(
+        instructions,
+        problemIds,
+        nodeToGenerate !== 'Solution'
+      );
+      nodesToFocus.push(...solutionIds);
+    }
+
+    notifications.update({
+      id: notificationId,
+      message: 'Generating storyboard...'
+    });
+
+    const middleIndex = Math.floor((solutionIds.length - 1) / 2);
+    const solution = solutionIds[middleIndex];
+    const dependentNodes = findDependentNodes([solution], edges);
+
+    const storyboardIds = await generateStoryboardNode(
+      instructions,
+      dependentNodes.personaIds,
+      dependentNodes.problemIds,
+      [solution]
+    );
+    nodesToFocus.push(...storyboardIds);
+
+    notifications.update({
+      id: notificationId,
+      message: (
+        <>
+          Generate complete.{' '}
+          <Anchor
+            size="sm"
+            onClick={() => {
+              fitView({
+                nodes: nodesToFocus.map((id) => ({ id })),
+                duration: 1000
+              });
+              selectNodes(nodesToFocus);
+            }}
+          >
+            Jump to nodes
           </Anchor>
         </>
       ),
@@ -228,9 +339,15 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
             </div>
           ) : null}
 
-          <Button type="submit" className="mt-4">
-            Generate ideas
-          </Button>
+          <div className="flex gap-2 mt-6">
+            <Button type="submit">{buttonText}</Button>
+            {nodeToGenerate !== 'Storyboard' && (
+              <Button variant="outline" onClick={generateUpToStoryboard}>
+                Generate up to storyboard{' '}
+                {displayConfigByNodeType[NodeType.Storyboard].emoji}
+              </Button>
+            )}
+          </div>
         </form>
       </div>
     </Modal>

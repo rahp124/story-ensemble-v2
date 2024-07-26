@@ -2,7 +2,6 @@
 
 ## Development updates
 
-- [ ] Extend generate dependent to add the option to generate the entire chain
 - [ ] Extend regenerate out of sync to regenerate the entire tree
 - [ ] Store visualize changes globally and display inside and outside of the modal
   - [ ] Out of sync image bug - part of refactor - bad loading states
@@ -74,3 +73,4 @@
 - [x] Switch illustrative image art style
 - [x] Storyboard node - resize after updating nodes
 - [x] Change labels to describe a brainstorm of solutions rather than a single solution
+- [x] Extend generate dependent to add the option to generate the entire chain
