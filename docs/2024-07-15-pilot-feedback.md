@@ -17,7 +17,7 @@
 - Regenerate and update and regenerate image are confusing
   - Combine regenerate and edit (confusing) - give it feedback and other features higher priority
   - Edit (with feedback, with instructions, manually)
-  - [ ] Two separate toolbars one above and below
+  - [x] Two separate toolbars one above and below
 - [ ] Telemetry
   - What do we want to track specifically
   - Export telemetry

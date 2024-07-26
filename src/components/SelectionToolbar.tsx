@@ -52,19 +52,22 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
     (node) => node.type === NodeType.Storyboard
   );
 
-  const buttons = [
+  const iterateButtons = [
     {
       show: selectedNodes.length > 0,
-      tooltip: 'View feedback',
-      label: <MessageSquareIcon className="size-4" />,
+      label: 'View feedback',
+      leftSection: <MessageSquareIcon className="size-4" />,
       onClick: props.onFeedback
     },
     {
       show: selectedNodes.length > 0,
-      tooltip: 'Regenerate',
-      label: <PencilIcon className="size-4" />,
+      label: 'Regenerate',
+      leftSection: <PencilIcon className="size-4" />,
       onClick: props.onRegenerate
-    },
+    }
+  ];
+
+  const buttons = [
     {
       show: showGenerateProblems,
       tooltip: 'Generate problems from the selected personas',
@@ -116,8 +119,8 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
     },
     {
       show: true,
-      tooltip: 'Duplicate',
-      label: <CopyIcon className="size-4" />,
+      leftSection: <CopyIcon className="size-4" />,
+      label: 'Duplicate',
       onClick: props.onDuplicate
     }
   ];
@@ -128,34 +131,56 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
       position={Position.Bottom}
       nodeId={props.selectedNodes.map((node) => node.id)}
     >
-      <Button.Group>
-        {buttons
-          .filter(({ show }) => show)
-          .map(({ tooltip, leftSection, label, onClick }, idx) => {
-            const buttonElement = (
-              <Button
-                key={idx}
-                variant="filled"
-                color="dark"
-                size="xs"
-                onClick={onClick}
-                leftSection={leftSection}
-              >
-                {label}
-              </Button>
-            );
-
-            if (tooltip) {
-              return (
-                <Tooltip key={idx} label={tooltip} position="top">
-                  {buttonElement}
-                </Tooltip>
+      <div className="flex flex-col gap-1 justify-center items-center">
+        <Button.Group>
+          {iterateButtons
+            .filter(({ show }) => show)
+            .map(({ label, leftSection, onClick }, idx) => {
+              const buttonElement = (
+                <Button
+                  key={idx}
+                  variant="filled"
+                  color="dark"
+                  size="xs"
+                  onClick={onClick}
+                  leftSection={leftSection}
+                >
+                  {label}
+                </Button>
               );
-            }
 
-            return buttonElement;
-          })}
-      </Button.Group>
+              return buttonElement;
+            })}
+        </Button.Group>
+        <Button.Group>
+          {buttons
+            .filter(({ show }) => show)
+            .map(({ tooltip, leftSection, label, onClick }, idx) => {
+              const buttonElement = (
+                <Button
+                  key={idx}
+                  variant="filled"
+                  color="dark"
+                  size="xs"
+                  onClick={onClick}
+                  leftSection={leftSection}
+                >
+                  {label}
+                </Button>
+              );
+
+              if (tooltip) {
+                return (
+                  <Tooltip key={idx} label={tooltip} position="top">
+                    {buttonElement}
+                  </Tooltip>
+                );
+              }
+
+              return buttonElement;
+            })}
+        </Button.Group>
+      </div>
     </NodeToolbar>
   );
 }
