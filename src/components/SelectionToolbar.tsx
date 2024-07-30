@@ -103,28 +103,28 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
       show: showGenerateSimilarPersonas,
       tooltip: 'Generate more personas based on the selected personas',
       leftSection: <SquareStackIcon className="size-4" />,
-      label: 'Personas 👤',
+      label: 'More personas 👤',
       onClick: props.onGenerateMorePersonas
     },
     {
       show: showGenerateSimilarProblems,
       tooltip: 'Generate more problems based on the selected problems',
       leftSection: <SquareStackIcon className="size-4" />,
-      label: 'Problems 🚨',
+      label: 'More problems 🚨',
       onClick: props.onGenerateMoreProblems
     },
     {
       show: showGenerateSimilarSolutions,
       tooltip: 'Generate more solutions based on the selected solutions',
       leftSection: <SquareStackIcon className="size-4" />,
-      label: 'Solutions 💡',
+      label: 'More solutions 💡',
       onClick: props.onGenerateMoreSolutions
     },
     {
       show: showGenerateSimilarStoryboard,
       tooltip: 'Generate another storyboard based on the selected storyboards',
       leftSection: <SquareStackIcon className="size-4" />,
-      label: 'Storyboard 🎞',
+      label: 'Another storyboard 🎞',
       onClick: props.onGenerateMoreStoryboard
     },
     {
