@@ -6,7 +6,8 @@ import {
   MessageSquareIcon,
   NetworkIcon,
   PencilIcon,
-  SquareStackIcon
+  SquareStackIcon,
+  WandSparklesIcon
 } from 'lucide-react';
 
 export interface SelectionToolbarProps {
@@ -23,6 +24,7 @@ export interface SelectionToolbarProps {
 
   onFeedback: () => void;
   onRegenerate: () => void;
+  onEdit: () => void;
 
   onDuplicate: () => void;
 }
@@ -61,9 +63,17 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
     },
     {
       show: selectedNodes.length > 0,
-      label: 'Regenerate',
-      leftSection: <PencilIcon className="size-4" />,
+      label: 'Revise',
+      leftSection: <WandSparklesIcon className="size-4" />,
       onClick: props.onRegenerate
+    },
+    {
+      show:
+        selectedNodes.length === 1 &&
+        selectedNodes[0].type !== NodeType.Storyboard,
+      label: 'Edit manually',
+      leftSection: <PencilIcon className="size-4" />,
+      onClick: props.onEdit
     }
   ];
 

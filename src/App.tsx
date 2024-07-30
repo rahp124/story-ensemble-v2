@@ -363,6 +363,10 @@ export default function App() {
               setIterateModalTab('regenerate');
               setIterateModalOpen(true);
             }}
+            onEdit={() => {
+              setIterateModalTab('edit');
+              setIterateModalOpen(true);
+            }}
             onDuplicate={() => {
               copy();
               paste();

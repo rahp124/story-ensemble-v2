@@ -353,7 +353,7 @@ export function IterateModal() {
           })}
         >
           <h2 className="text-md font-bold mb-2">
-            Manually edit selected node
+            Manually edit the selected idea
           </h2>
 
           {Object.keys(nodeToEdit.data.content).map((key) => (
@@ -403,7 +403,7 @@ export function IterateModal() {
 
   return (
     <Modal
-      title="Iterate"
+      title={<span className="text-lg font-bold">Iterate</span>}
       size="xl"
       opened={iterateModalOpen}
       onClose={() => {
@@ -414,7 +414,7 @@ export function IterateModal() {
       <div className="relative">
         <LoadingOverlay visible={regenerating} />
         <div className="mb-8">
-          <h2 className="text-md font-bold mb-2">Selected nodes:</h2>
+          <h2 className="text-md font-bold mb-2">Selected idea(s):</h2>
           <SelectedNodePreview
             selectedNodes={selectedNodes}
             previousChangedValuesById={previousChangedValuesById}
@@ -427,7 +427,7 @@ export function IterateModal() {
         >
           <Tabs.List>
             <Tabs.Tab value="feedback">Feedback</Tabs.Tab>
-            <Tabs.Tab value="regenerate">Regenerate</Tabs.Tab>
+            <Tabs.Tab value="regenerate">Revise</Tabs.Tab>
             {showEditForm && <Tabs.Tab value="edit">Edit</Tabs.Tab>}
           </Tabs.List>
 
@@ -474,7 +474,7 @@ export function IterateModal() {
                 }}
               >
                 <h2 className="text-md font-bold mb-2">
-                  Regenerate node(s) using feedback
+                  Update using feedback
                 </h2>
                 <div className="mb-4 flex justify-between items-center gap-4">
                   <div>
@@ -491,14 +491,13 @@ export function IterateModal() {
                 </div>
                 <Textarea
                   label="Feedback response"
-                  description="Enter your feedback response to regenerate the selected node(s)"
                   className="mb-4"
                   required
                   value={feedbackResponse}
                   onChange={(e) => setFeedbackResponse(e.target.value)}
                 />
 
-                <Button type="submit">Regenerate with feedback</Button>
+                <Button type="submit">Update using feedback</Button>
               </form>
             )}
           </Tabs.Panel>
@@ -511,12 +510,12 @@ export function IterateModal() {
               }}
             >
               <h2 className="text-md font-bold mb-2">
-                Regenerate node(s) using instructions
+                Revise using instructions
               </h2>
 
               <Textarea
                 label="Instructions"
-                description="Enter instructions to regenerate the selected node(s)"
+                description="Provide instructions for how to revise the selected idea(s)"
                 className="mb-4"
                 required
                 autosize
