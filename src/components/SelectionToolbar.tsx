@@ -37,9 +37,9 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
   const showGenerateSolutions = selectedNodes.every(
     (node) => node.type === NodeType.Problem
   );
-  const showGenerateStoryboard =
-    selectedNodes.every((node) => node.type !== NodeType.Storyboard) &&
-    selectedNodes.some((node) => node.type === NodeType.Solution);
+  const showGenerateStoryboard = selectedNodes.every(
+    (node) => node.type === NodeType.Solution
+  );
 
   const showGenerateSimilarPersonas = selectedNodes.every(
     (node) => node.type === NodeType.Persona
@@ -94,7 +94,7 @@ export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
     },
     {
       show: showGenerateStoryboard,
-      tooltip: 'Generate a storyboard from the selected nodes',
+      tooltip: 'Generate a storyboard from the selected solutions',
       leftSection: <NetworkIcon className="size-4" />,
       label: 'Storyboard 🎞',
       onClick: props.onGenerateStoryboard

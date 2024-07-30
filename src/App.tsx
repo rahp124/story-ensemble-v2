@@ -175,11 +175,12 @@ export default function App() {
             source.startsWith('persona-') && target.startsWith('problem-');
           const isProblemToSolution =
             source.startsWith('problem-') && target.startsWith('solution-');
-          const isToStoryboard =
-            target.startsWith('storyboard-') &&
-            !source.startsWith('storyboard-');
+          const isSolutionToStoryboard =
+            source.startsWith('solution-') && target.startsWith('storyboard-');
 
-          return isPersonaToProblem || isProblemToSolution || isToStoryboard;
+          return (
+            isPersonaToProblem || isProblemToSolution || isSolutionToStoryboard
+          );
         }}
         // Viewport
         panOnScroll
@@ -313,28 +314,12 @@ export default function App() {
               setDependentGenerationModalOpened(true);
             }}
             onGenerateStoryboard={() => {
-              const selectedIds = selectedNodes.map((node) => node.id);
-
-              const selectedSolutions = selectedNodes.filter(
-                (node) => node.type === NodeType.Solution
-              );
-              const solutionIds = selectedSolutions.map((node) => node.id);
+              const solutionIds = selectedNodes.map((node) => node.id);
 
               const problemIds = findDirectDependencies(solutionIds, edges);
               const personaIds = findDirectDependencies(problemIds, edges);
 
-              const missingPersonaIds = personaIds.filter(
-                (id) => !selectedIds.includes(id)
-              );
-              const missingProblemIds = problemIds.filter(
-                (id) => !selectedIds.includes(id)
-              );
-
-              selectNodes([
-                ...selectedIds,
-                ...missingPersonaIds,
-                ...missingProblemIds
-              ]);
+              selectNodes([...personaIds, ...problemIds, ...solutionIds]);
 
               setDependentNodeToGenerate('Storyboard');
               setDependentGenerationModalOpened(true);
@@ -380,7 +365,20 @@ export default function App() {
       />
       <DependentGenerationModal
         opened={dependentGenerationModalOpened}
-        onClose={() => setDependentGenerationModalOpened(false)}
+        onClose={() => {
+          const multipleNodeTypesSelected =
+            new Set(selectedNodes.map((node) => node.type)).size > 1;
+
+          if (multipleNodeTypesSelected) {
+            selectNodes(
+              selectedNodes
+                .filter((node) => node.type === NodeType.Solution)
+                .map((node) => node.id)
+            );
+          }
+
+          setDependentGenerationModalOpened(false);
+        }}
         nodeToGenerate={dependentNodeToGenerate}
       />
       <GenerateMoreModal

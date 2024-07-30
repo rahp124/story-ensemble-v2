@@ -51,7 +51,7 @@ import {
   calculateNodePositionAttributes
 } from './lib/positioningUtils';
 import { calculatePreviousChangedValues } from './lib/calculatePreviousChangedValues';
-import { findDirectDependents } from './lib/graphHelper';
+import { findAllDependencies, findDirectDependents } from './lib/graphHelper';
 
 const indexDbStorage: StateStorage = {
   getItem: async (name) => {
@@ -361,8 +361,10 @@ const createStore: StateCreator<
       get().selectNodes([...selectedNodeIds, ...unselectedChildrenIds]);
     },
     selectNodes: (ids: string[]) => {
-      updateNodes(ids, (draft) => {
-        draft.selected = true;
+      set((state) => {
+        state.nodes.forEach((node) => {
+          node.selected = ids.includes(node.id);
+        });
       });
     },
 
@@ -1015,14 +1017,8 @@ const createStore: StateCreator<
       );
       const solutions = solutionNodes.map((node) => node.data.content);
 
-      const dependencyNodes = [
-        ...personaNodes,
-        ...problemNodes,
-        ...solutionNodes
-      ];
-
       const nodePositionAttribute = calculateDependentNodePositionAttributes(
-        dependencyNodes,
+        solutionNodes,
         'bottom',
         1,
         {
@@ -1057,13 +1053,11 @@ const createStore: StateCreator<
           }
         }
       };
-      const edges = [...personaIds, ...problemIds, ...solutionIds].map(
-        (sourceId) => ({
-          id: `edge-${nanoid()}`,
-          source: sourceId,
-          target: node.id
-        })
-      );
+      const edges = solutionIds.map((sourceId) => ({
+        id: `edge-${nanoid()}`,
+        source: sourceId,
+        target: node.id
+      }));
 
       get().takeSnapshot();
       set({
@@ -1141,35 +1135,25 @@ const createStore: StateCreator<
       const storyboardNode = get().nodes.find((node) => node.id === id);
       if (!storyboardNode) return;
 
-      const personaIds = get()
-        .edges.filter(
-          (edge) => edge.target === id && edge.source.startsWith('persona')
-        )
-        .map((edge) => edge.source);
+      const dependencies = findAllDependencies([id], get().edges);
+      const personaIds = dependencies.filter((id) => id.startsWith('persona-'));
+      const problemIds = dependencies.filter((id) => id.startsWith('problem-'));
+      const solutionIds = dependencies.filter((id) =>
+        id.startsWith('solution-')
+      );
+
       const personas = get()
         .nodes.filter(
           (node) =>
             node.type === NodeType.Persona && personaIds.includes(node.id)
         )
         .map((node) => node.data.content);
-
-      const problemIds = get()
-        .edges.filter(
-          (edge) => edge.target === id && edge.source.startsWith('problem')
-        )
-        .map((edge) => edge.source);
       const problems = get()
         .nodes.filter(
           (node) =>
             node.type === NodeType.Problem && problemIds.includes(node.id)
         )
         .map((node) => node.data.content);
-
-      const solutionIds = get()
-        .edges.filter(
-          (edge) => edge.target === id && edge.source.startsWith('solution')
-        )
-        .map((edge) => edge.source);
       const solutions = get()
         .nodes.filter(
           (node) =>
