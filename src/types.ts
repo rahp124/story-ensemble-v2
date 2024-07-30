@@ -20,7 +20,7 @@ export const personaSchema = z.object({
 export type Persona = z.infer<typeof personaSchema>;
 
 export const problemSchema = z.object({
-  Name: z.string(),
+  ProblemName: z.string(),
   Context: z.string(),
   Stakeholders: z.string(),
   Objectives: z.string(),
@@ -31,7 +31,7 @@ export const problemSchema = z.object({
 export type Problem = z.infer<typeof problemSchema>;
 
 export const solutionSchema = z.object({
-  Name: z.string(),
+  SolutionName: z.string(),
   ProblemsAddressed: z.string(),
   KeyFeatures: z.string(),
   Benefits: z.string(),

@@ -24,6 +24,8 @@ Each frame outline also contains a caption that will be displayed directly below
 The caption should aim to clarify or add context to the visual image.
 The caption should be shorter than the frame description since it will be displayed directly below the visual image.
 
+Include the full names of people from personas, problems, and solutions in the frame descriptions to ensure consistent characters.
+
 When the context requests regenerating storyboard based on updated personas, problems, and solutions:
 - Revise the storyboard to address the personas, problems, and solutions.
 - Remove any information that isn't directly related to the new personas, problems, and solutions.
@@ -88,10 +90,10 @@ The image prompts within a single outline should be consistent in style and tone
 Consider using specific details such as colors, textures, and other style modifiers.
 Quality boosters such as beautiful, majestic, incredible can be used to boost the quality of the generated image.
 Shot types such as wide shot, medium shot, close-up, etc. can be used to specify the framing of the image. Choose the shot type that best suits the frame description.
-The imagePrompt shouldn't use ambiguous nouns such as names, but should instead visually describe the person.
 The negative prompt should omit things that are difficult for AI to generate or are not relevant to the frame
 such as text or specific details that are not essential to the visual representation. This can be left blank if not applicable.
 Disfigured, deformed hands, blurry, grainy, bad eyes, and similar negative prompts can be used to avoid unwanted results.
+Include the full name of people to ensure consistent characters across all frames.
 
 Frames: """
 ${JSON.stringify(frames, null, 2)}

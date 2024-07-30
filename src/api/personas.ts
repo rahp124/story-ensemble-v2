@@ -5,7 +5,9 @@ import { z } from 'zod';
 const USER_PERSONA_PROMPT = `User personas are detailed descriptions of fictional characters that represent different user types. They help designers gain empathy for their users and understand their needs, goals, and behaviors.
 
 Keep the values short and to the point and use emojis where possible.
-Avoid repeating the same information in different values.`;
+Avoid repeating the same information in different values.
+
+Use an alliterative adjective and first name to create a memorable name for the persona.`;
 
 export async function generatePersonas(
   context: unknown,
