@@ -26,8 +26,7 @@ export async function generateStructured<
   openai.apiKey = getOpenAiKey();
   const response = await openai.chat.completions
     .create({
-      // model: 'gpt-3.5-turbo-0125',
-      model: 'gpt-4o-2024-05-13',
+      model: 'gpt-4o-mini-2024-07-18',
       response_format: {
         type: 'json_object'
       },

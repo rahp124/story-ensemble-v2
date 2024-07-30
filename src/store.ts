@@ -110,9 +110,9 @@ type RFState = {
     context: string
   ) => Promise<{
     previousChangedValuesById: Record<string, Record<string, string>>;
+    regeneratedImageNodeIds: Promise<string>[];
   }>;
   updatePersonaNode: (id: string, persona: Partial<Persona>) => Promise<void>;
-
   generatePersonaImage: (id: string) => Promise<void>;
 
   /* Problems */
@@ -131,8 +131,9 @@ type RFState = {
     context: string
   ) => Promise<{
     previousChangedValuesById: Record<string, Record<string, string>>;
+    regeneratedImageNodeIds: Promise<string>[];
   }>;
-  updateProblemNode: (id: string, problem: Partial<Problem>) => void;
+  updateProblemNode: (id: string, problem: Partial<Problem>) => Promise<void>;
 
   generateProblemImage: (id: string) => Promise<void>;
 
@@ -152,8 +153,12 @@ type RFState = {
     context: string
   ) => Promise<{
     previousChangedValuesById: Record<string, Record<string, string>>;
+    regeneratedImageNodeIds: Promise<string>[];
   }>;
-  updateSolutionNode: (id: string, solution: Partial<Solution>) => void;
+  updateSolutionNode: (
+    id: string,
+    solution: Partial<Solution>
+  ) => Promise<void>;
 
   generateSolutionImage: (id: string) => Promise<void>;
 
@@ -484,28 +489,28 @@ const createStore: StateCreator<
 
       const newPersonas = await regeneratePersonas(personas, context);
 
+      const regeneratedImageNodeIds = personaIds.map(async (id, idx) => {
+        await get().updatePersonaNode(id, newPersonas[idx]);
+        return id;
+      });
+
       const previousChangedValuesById: Record<
         string,
         Record<string, string>
-      > = {};
+      > = Object.fromEntries(
+        personaIds.map((id, idx) => {
+          const previousChangedValues = calculatePreviousChangedValues(
+            personas[idx],
+            newPersonas[idx]
+          );
+          return [id, previousChangedValues];
+        })
+      );
 
-      get().takeSnapshot();
-      personaIds.forEach((id, idx) => {
-        const persona = personas[idx];
-        const newPersona = newPersonas[idx];
-        previousChangedValuesById[id] = calculatePreviousChangedValues(
-          persona,
-          newPersona
-        );
-
-        get().updatePersonaNode(id, newPersonas[idx]);
-        updateNode(id, (draft) => {
-          draft.data.outOfSync = false;
-        });
-        get().generatePersonaImage(id);
-      });
-
-      return { previousChangedValuesById };
+      return {
+        previousChangedValuesById,
+        regeneratedImageNodeIds
+      };
     },
     updatePersonaNode: async (id: string, persona: Partial<Persona>) => {
       get().takeSnapshot();
@@ -514,13 +519,14 @@ const createStore: StateCreator<
           draft.data.content,
           pick(persona, Object.keys(draft.data.content))
         );
-        draft.data.imageOutOfSync = true;
+        draft.data.outOfSync = false;
       });
-
       // Update dependencies
       updateNodes(findDirectDependents([id], get().edges), (draft) => {
         draft.data.outOfSync = true;
       });
+
+      return get().generatePersonaImage(id);
     },
     generatePersonaImage: async (id: string) => {
       const node = get().nodes.find(
@@ -535,7 +541,6 @@ const createStore: StateCreator<
       get().takeSnapshot();
       updateNode(node.id, (draft) => {
         draft.data.image = image;
-        draft.data.imageOutOfSync = false;
       });
     },
 
@@ -669,7 +674,6 @@ const createStore: StateCreator<
       get().takeSnapshot();
       updateNode(id, (draft) => {
         draft.data.image = image;
-        draft.data.imageOutOfSync = false;
       });
     },
     regenerateProblemNodes: async (problemIds: string[], context: string) => {
@@ -698,28 +702,25 @@ const createStore: StateCreator<
 
       const newProblems = await regenerateProblems(problems, context);
 
+      const regeneratedImageNodeIds = problemIds.map(async (id, idx) => {
+        await get().updateProblemNode(id, newProblems[idx]);
+        return id;
+      });
+
       const previousChangedValuesById: Record<
         string,
         Record<string, string>
-      > = {};
+      > = Object.fromEntries(
+        problemIds.map((id, idx) => {
+          const previousChangedValues = calculatePreviousChangedValues(
+            problems[idx].problem,
+            newProblems[idx]
+          );
+          return [id, previousChangedValues];
+        })
+      );
 
-      get().takeSnapshot();
-      problemIds.forEach((id, idx) => {
-        const problem = problems[idx].problem;
-        const newProblem = newProblems[idx];
-        previousChangedValuesById[id] = calculatePreviousChangedValues(
-          problem,
-          newProblem
-        );
-
-        get().updateProblemNode(id, newProblems[idx]);
-        updateNode(id, (draft) => {
-          draft.data.outOfSync = false;
-        });
-        get().generateProblemImage(id);
-      });
-
-      return { previousChangedValuesById };
+      return { previousChangedValuesById, regeneratedImageNodeIds };
     },
     updateProblemNode: (id, problem) => {
       get().takeSnapshot();
@@ -728,13 +729,14 @@ const createStore: StateCreator<
           draft.data.content,
           pick(problem, Object.keys(draft.data.content))
         );
-        draft.data.imageOutOfSync = true;
+        draft.data.outOfSync = false;
       });
-
       // Update dependencies
       updateNodes(findDirectDependents([id], get().edges), (draft) => {
         draft.data.outOfSync = true;
       });
+
+      return get().generateProblemImage(id);
     },
 
     addEmptySolutionNode: () => {
@@ -883,28 +885,25 @@ const createStore: StateCreator<
 
       const newSolutions = await regenerateSolutions(solutions, context);
 
+      const regeneratedImageNodeIds = solutionIds.map(async (id, idx) => {
+        await get().updateSolutionNode(id, newSolutions[idx]);
+        return id;
+      });
+
       const previousChangedValuesById: Record<
         string,
         Record<string, string>
-      > = {};
+      > = Object.fromEntries(
+        solutionIds.map((id, idx) => {
+          const previousChangedValues = calculatePreviousChangedValues(
+            solutions[idx].solution,
+            newSolutions[idx]
+          );
+          return [id, previousChangedValues];
+        })
+      );
 
-      get().takeSnapshot();
-      solutionIds.forEach((id, idx) => {
-        const solution = solutions[idx].solution;
-        const newSolution = newSolutions[idx];
-        previousChangedValuesById[id] = calculatePreviousChangedValues(
-          solution,
-          newSolution
-        );
-
-        get().updateSolutionNode(id, newSolutions[idx]);
-        updateNode(id, (draft) => {
-          draft.data.outOfSync = false;
-        });
-        get().generateSolutionImage(id);
-      });
-
-      return { previousChangedValuesById };
+      return { previousChangedValuesById, regeneratedImageNodeIds };
     },
     updateSolutionNode: (id, solution) => {
       get().takeSnapshot();
@@ -913,13 +912,14 @@ const createStore: StateCreator<
           draft.data.content,
           pick(solution, Object.keys(draft.data.content))
         );
-        draft.data.imageOutOfSync = true;
+        draft.data.outOfSync = false;
       });
-
       // Update dependencies
       updateNodes(findDirectDependents([id], get().edges), (draft) => {
         draft.data.outOfSync = true;
       });
+
+      return get().generateSolutionImage(id);
     },
     generateSolutionImage: async (id) => {
       const node = get().nodes.find(
@@ -934,7 +934,6 @@ const createStore: StateCreator<
       get().takeSnapshot();
       updateNode(node.id, (draft) => {
         draft.data.image = image;
-        draft.data.imageOutOfSync = false;
       });
     },
 

@@ -53,27 +53,37 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
 
         setRegeneratingNode(props.id, true);
 
-        const { previousChangedValuesById: _previousChangedValuesById } =
-          await regenerateSolutionNodes(
-            [props.id],
-            'Regenerate solution based on updated problems'
-          );
+        const {
+          previousChangedValuesById: _previousChangedValuesById,
+          regeneratedImageNodeIds
+        } = await regenerateSolutionNodes(
+          [props.id],
+          'Regenerate solution based on updated problems'
+        );
         setPreviousChangedValuesById(_previousChangedValuesById);
 
-        setRegeneratingNode(props.id, false);
+        regeneratedImageNodeIds.forEach(async (idPromise) => {
+          setRegeneratingNode(await idPromise, false);
+        });
       }}
       onSyncAll={async () => {
         if (regenerating) return;
 
         setRegeneratingNode(props.id, true);
 
-        const _previousChangedValuesById = await regenerateSolutionNodes(
+        const {
+          previousChangedValuesById: _previousChangedValuesById,
+          regeneratedImageNodeIds
+        } = await regenerateSolutionNodes(
           [props.id],
           'Regenerate solution based on updated problems'
-        ).then((result) => result.previousChangedValuesById);
+        );
+
         setPreviousChangedValuesById(_previousChangedValuesById);
 
-        setRegeneratingNode(props.id, false);
+        regeneratedImageNodeIds.forEach(async (idPromise) => {
+          setRegeneratingNode(await idPromise, false);
+        });
 
         const dependentIds = findAllDependents([props.id], edges);
 

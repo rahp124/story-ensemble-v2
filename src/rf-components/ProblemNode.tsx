@@ -56,27 +56,36 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
 
         setRegeneratingNode(props.id, true);
 
-        const { previousChangedValuesById: _previousChangedValuesById } =
-          await regenerateProblemNodes(
-            [props.id],
-            'Regenerate problem based on updated personas'
-          );
+        const {
+          previousChangedValuesById: _previousChangedValuesById,
+          regeneratedImageNodeIds
+        } = await regenerateProblemNodes(
+          [props.id],
+          'Regenerate problem based on updated personas'
+        );
         setPreviousChangedValuesById(_previousChangedValuesById);
 
-        setRegeneratingNode(props.id, false);
+        regeneratedImageNodeIds.forEach(async (idPromise) => {
+          setRegeneratingNode(await idPromise, false);
+        });
       }}
       onSyncAll={async () => {
         if (regenerating) return;
 
         setRegeneratingNode(props.id, true);
 
-        let _previousChangedValuesById = await regenerateProblemNodes(
+        const {
+          previousChangedValuesById: _previousChangedValuesById,
+          regeneratedImageNodeIds
+        } = await regenerateProblemNodes(
           [props.id],
           'Regenerate problem based on updated personas'
-        ).then((result) => result.previousChangedValuesById);
+        );
         setPreviousChangedValuesById(_previousChangedValuesById);
 
-        setRegeneratingNode(props.id, false);
+        regeneratedImageNodeIds.forEach(async (idPromise) => {
+          setRegeneratingNode(await idPromise, false);
+        });
 
         const dependentIds = findAllDependents([props.id], edges);
 
@@ -88,16 +97,22 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
             solutionIds.map(async (solutionId) => {
               setRegeneratingNode(solutionId, true);
 
-              _previousChangedValuesById = await regenerateSolutionNodes(
+              const {
+                previousChangedValuesById: _previousChangedValuesById,
+                regeneratedImageNodeIds
+              } = await regenerateSolutionNodes(
                 [solutionId],
                 'Regenerate solution based on updated problems'
-              ).then((result) => result.previousChangedValuesById);
+              );
 
               setPreviousChangedValuesById({
                 ...previousChangedValuesById,
                 ..._previousChangedValuesById
               });
-              setRegeneratingNode(solutionId, false);
+
+              regeneratedImageNodeIds.forEach(async (idPromise) => {
+                setRegeneratingNode(await idPromise, false);
+              });
             })
           );
         }

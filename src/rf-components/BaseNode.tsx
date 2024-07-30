@@ -1,6 +1,5 @@
 import { NodeContent } from '@/components/NodeContent';
 import NotificationDot from '@/components/NotificationDot';
-import { RefreshImageIcon } from '@/components/RefreshImageIcon';
 import SourceHandle from '@/components/SourceHandle';
 import TargetHandle from '@/components/TargetHandle';
 import { useDisplayStore } from '@/lib/displayStore';
@@ -11,9 +10,9 @@ import {
   ActionIcon,
   Tooltip,
   Image,
-  Skeleton,
   Switch,
-  ScrollArea
+  ScrollArea,
+  Loader
 } from '@mantine/core';
 import {
   ArrowDownFromLineIcon,
@@ -44,17 +43,14 @@ export default function BaseNode<T extends Record<string, string>>(
   props: BaseNodeProps<T>
 ) {
   const { nodeProps } = props;
-  const { outOfSync, image, imageOutOfSync } = nodeProps.data;
+  const { outOfSync, image } = nodeProps.data;
 
-  const { regenerating, setRegeneratingNode, previousChangedValues } =
-    useDisplayStore((state) => ({
-      regenerating: state.regeneratingNodes.has(nodeProps.id),
-      setRegeneratingNode: state.setRegeneratingNode,
+  const { regenerating, previousChangedValues } = useDisplayStore((state) => ({
+    regenerating: state.regeneratingNodes.has(nodeProps.id),
 
-      previousChangedValues:
-        state.previousChangedValuesById[nodeProps.id] || {},
-      setPreviousChangedValuesById: state.setPreviousChangedValuesById
-    }));
+    previousChangedValues: state.previousChangedValuesById[nodeProps.id] || {},
+    setPreviousChangedValuesById: state.setPreviousChangedValuesById
+  }));
 
   const [showImage, setShowImage] = useState(false);
 
@@ -72,7 +68,11 @@ export default function BaseNode<T extends Record<string, string>>(
   function cardContent() {
     if (globalShowImage || showImage || zoomShowImage) {
       if (regenerating || !image) {
-        return <Skeleton className="h-full w-full" />;
+        return (
+          <div className="size-full flex items-center justify-center">
+            <Loader />
+          </div>
+        );
       } else {
         return (
           <div className="relative size-full">
@@ -120,21 +120,6 @@ export default function BaseNode<T extends Record<string, string>>(
   }
 
   const icons = [
-    {
-      key: 'regenerate',
-      show: true,
-      tooltip: 'Regenerate illustrative image',
-      icon: <RefreshImageIcon />,
-      notification: imageOutOfSync,
-      loading: regenerating,
-      onClick: async () => {
-        if (regenerating) return;
-
-        setRegeneratingNode(nodeProps.id, true);
-        await props.onRegenerateImage();
-        setRegeneratingNode(nodeProps.id, false);
-      }
-    },
     {
       key: 'sync',
       show: outOfSync,

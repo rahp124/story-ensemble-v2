@@ -7,7 +7,6 @@ export type NodeData = {
   content: Record<string, string>;
 
   image?: string;
-  imageOutOfSync?: boolean;
 };
 
 export const personaSchema = z.object({

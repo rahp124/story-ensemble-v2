@@ -78,8 +78,12 @@ export function IterateModal() {
     string | null
   >(null);
 
-  const { previousChangedValuesById, setPreviousChangedValuesById } =
-    useDisplayStore();
+  const {
+    previousChangedValuesById,
+    setPreviousChangedValuesById,
+    setRegeneratingNodes,
+    setRegeneratingNode
+  } = useDisplayStore();
 
   const generateFeedback = useCallback(async () => {
     if (selectedNodes.length === 0) {
@@ -216,29 +220,62 @@ export function IterateModal() {
       .map((node) => node.id);
 
     if (personaIds.length > 0) {
-      const { previousChangedValuesById: _previousChangedValuesById } =
-        await regeneratePersonaNodes(personaIds, context);
+      setRegeneratingNodes(personaIds, true);
+
+      const {
+        previousChangedValuesById: _previousChangedValuesById,
+        regeneratedImageNodeIds
+      } = await regeneratePersonaNodes(personaIds, context);
+
       setPreviousChangedValuesById({
         ...previousChangedValuesById,
         ..._previousChangedValuesById
+      });
+
+      regeneratedImageNodeIds.forEach((idPromise) => {
+        idPromise.then((id) => {
+          setRegeneratingNode(id, false);
+        });
       });
     }
 
     if (problemIds.length > 0) {
-      const { previousChangedValuesById: _previousChangedValuesById } =
-        await regenerateProblemNodes(problemIds, context);
+      setRegeneratingNodes(problemIds, true);
+
+      const {
+        previousChangedValuesById: _previousChangedValuesById,
+        regeneratedImageNodeIds
+      } = await regenerateProblemNodes(problemIds, context);
+
       setPreviousChangedValuesById({
         ...previousChangedValuesById,
         ..._previousChangedValuesById
       });
+
+      regeneratedImageNodeIds.forEach((idPromise) => {
+        idPromise.then((id) => {
+          setRegeneratingNode(id, false);
+        });
+      });
     }
 
     if (solutionIds.length > 0) {
-      const { previousChangedValuesById: _previousChangedValuesById } =
-        await regenerateSolutionNodes(solutionIds, context);
+      setRegeneratingNodes(solutionIds, true);
+
+      const {
+        previousChangedValuesById: _previousChangedValuesById,
+        regeneratedImageNodeIds
+      } = await regenerateSolutionNodes(solutionIds, context);
+
       setPreviousChangedValuesById({
         ...previousChangedValuesById,
         ..._previousChangedValuesById
+      });
+
+      regeneratedImageNodeIds.forEach((idPromise) => {
+        idPromise.then((id) => {
+          setRegeneratingNode(id, false);
+        });
       });
     }
 
@@ -278,15 +315,24 @@ export function IterateModal() {
       <Tabs.Panel value="edit">
         <form
           className="pt-4"
-          onSubmit={editForm.onSubmit((values) => {
+          onSubmit={editForm.onSubmit(async (values) => {
             if (!nodeToEdit) return;
 
             if (nodeToEdit.type === NodeType.Persona) {
-              updatePersonaNode(nodeToEdit.id, values);
+              setRegeneratingNode(nodeToEdit.id, true);
+              updatePersonaNode(nodeToEdit.id, values).then(() => {
+                setRegeneratingNode(nodeToEdit.id, false);
+              });
             } else if (nodeToEdit.type === NodeType.Problem) {
-              updateProblemNode(nodeToEdit.id, values);
+              setRegeneratingNode(nodeToEdit.id, true);
+              updateProblemNode(nodeToEdit.id, values).then(() => {
+                setRegeneratingNode(nodeToEdit.id, false);
+              });
             } else if (nodeToEdit.type === NodeType.Solution) {
-              updateSolutionNode(nodeToEdit.id, values);
+              setRegeneratingNode(nodeToEdit.id, true);
+              updateSolutionNode(nodeToEdit.id, values).then(() => {
+                setRegeneratingNode(nodeToEdit.id, false);
+              });
             }
 
             setPreviousChangedValuesById({
