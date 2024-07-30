@@ -1202,6 +1202,16 @@ const createStore: StateCreator<
       const outline = storyboard.data.storyboard.outline;
       if (outline.length === 0) return [];
 
+      // Hack to display loader
+      updateNode<StoryboardNodeData>(id, (draft) => {
+        draft.data.storyboard.outline = draft.data.storyboard.outline.map(
+          (frame) => ({
+            ...frame,
+            image: ''
+          })
+        );
+      });
+
       const imagePrompts = await generateStoryboardImagePrompts(outline);
 
       return imagePrompts.map(async (prompt, idx) => {
