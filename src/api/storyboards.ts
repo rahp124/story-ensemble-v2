@@ -24,6 +24,10 @@ Each frame outline also contains a caption that will be displayed directly below
 The caption should aim to clarify or add context to the visual image.
 The caption should be shorter than the frame description since it will be displayed directly below the visual image.
 
+When the context requests regenerating storyboard based on updated personas, problems, and solutions:
+- Revise the storyboard to address the personas, problems, and solutions.
+- Remove any information that isn't directly related to the new personas, problems, and solutions.
+
 Outline Example:
 Context: "Bill is a gardener who has trouble reading small print. Create an app that helps him learn about plants using videos."
 Output: [

@@ -43,6 +43,10 @@ export async function regenerateProblems(
 Update the given problem statements based on the new context/instructions.
 Keep the essence of the problem statement intact, but make necessary changes to ensure cohesiveness.
 
+When the context requests regenerating problems based on updated personas:
+- Rewrite the problem statements to directly address the personas.
+- Remove any information that isn't directly related to the new personas.
+
 Problems: """
 ${JSON.stringify(problems)}
 """

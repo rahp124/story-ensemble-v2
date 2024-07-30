@@ -38,6 +38,10 @@ export async function regenerateSolutions(
 Update the given solutions based on the new context/instructions.
 Keep the essence of the problem statement intact, but make necessary changes to ensure cohesiveness.
 
+When the context requests regenerating solutions based on updated problems:
+- Rewrite the solutions to directly address the problems.
+- Remove any information that isn't directly related to the new problems.
+
 Solutions: """
 ${JSON.stringify(solutions)}
 """
