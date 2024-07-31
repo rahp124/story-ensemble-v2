@@ -28,6 +28,7 @@ import {
 import { Button, Menu, Switch } from '@mantine/core';
 import { useShallow } from 'zustand/react/shallow';
 import { ApiKeyModal } from './components/ApiKeyModal';
+import { TutorialModal } from './components/TutorialModal';
 import PersonaNode from './rf-components/PersonaNode';
 import ProblemNode from './rf-components/ProblemNode';
 import SolutionNode from './rf-components/SolutionNode';
@@ -358,6 +359,9 @@ export default function App() {
             }}
           />
         )}
+      <Panel position="top-right">
+        <TutorialModal/>
+      </Panel>
       </ReactFlow>
       <FirstGenerationModal
         opened={firstGenerationModalOpened}
