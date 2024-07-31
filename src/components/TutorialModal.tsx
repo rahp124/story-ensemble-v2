@@ -16,7 +16,7 @@ import { useState } from 'react';
 import { Kbd } from '@mantine/core';
 
 export function TutorialModal() {
-    const [opened, { open, close }] = useDisclosure(true);
+    const [opened, { open, close }] = useDisclosure(false);
     const [url, setUrl] = useState<string | null>('https://www.youtube.com/embed/XoSfkqrGwhg?si=vPG5bZ3S1dU4_CP7');
 
     const handleOpen = (newUrl: string) => {
