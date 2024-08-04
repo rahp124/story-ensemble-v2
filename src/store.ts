@@ -42,16 +42,24 @@ import { generatePersonas, regeneratePersonas } from './api/personas';
 import { nanoid } from 'nanoid';
 import { NodeType } from './rf-components';
 import { generateProblems, regenerateProblems } from './api/problems';
-import { generateIllustrativeImage } from './api/images';
+import {
+  generateIllustrativeImage,
+  generateProblemIllustrativeImage
+} from './api/images';
 import debounce from 'lodash/debounce';
-import { cloneDeep, merge, pick } from 'lodash';
+import { cloneDeep, merge, pick, uniqBy } from 'lodash';
 import { WritableDraft } from 'immer';
 import {
   calculateDependentNodePositionAttributes,
   calculateNodePositionAttributes
 } from './lib/positioningUtils';
 import { calculatePreviousChangedValues } from './lib/calculatePreviousChangedValues';
-import { findAllDependencies, findDirectDependents } from './lib/graphHelper';
+import {
+  findAllDependencies,
+  findDirectDependencies,
+  findDirectDependents
+} from './lib/graphHelper';
+import { generateVisualCharacterDescriptions } from './api/visualCharacterDescription';
 
 const indexDbStorage: StateStorage = {
   getItem: async (name) => {
@@ -224,6 +232,9 @@ const createStore: StateCreator<
   RFState,
   [['zustand/immer', never], ['zustand/persist', unknown]]
 > = (set, get) => {
+  const getNode = <T = NodeData>(id: string) =>
+    get().nodes.find((node) => node.id === id) as Node<T> | undefined;
+
   const updateNode = <T = NodeData>(
     id: string,
     setter: (nodeDraft: WritableDraft<Node<T>>) => void
@@ -405,7 +416,8 @@ const createStore: StateCreator<
         type: NodeType.Persona,
         ...nodePositionAttributes,
         data: {
-          content: persona
+          content: persona,
+          visualCharacterDescriptions: []
         }
       };
 
@@ -416,6 +428,9 @@ const createStore: StateCreator<
       const center = get().centerPosition;
 
       const personas = await generatePersonas(context, numberOfNodes);
+      const visualCharacterDescriptions = await Promise.all(
+        personas.map((persona) => generateVisualCharacterDescriptions(persona))
+      );
       numberOfNodes = personas.length;
 
       const nodePositionAttributes = calculateNodePositionAttributes(
@@ -429,7 +444,8 @@ const createStore: StateCreator<
           type: NodeType.Persona,
           ...nodePositionAttributes[idx],
           data: {
-            content: persona
+            content: persona,
+            visualCharacterDescriptions: visualCharacterDescriptions[idx]
           }
         };
         return node;
@@ -459,6 +475,11 @@ const createStore: StateCreator<
       };
 
       const newPersonas = await generatePersonas(context);
+      const visualCharacterDescriptions = await Promise.all(
+        newPersonas.map((persona) =>
+          generateVisualCharacterDescriptions(persona)
+        )
+      );
 
       const numberOfNodes = newPersonas.length;
       const nodePositionAttributes = calculateDependentNodePositionAttributes(
@@ -472,7 +493,8 @@ const createStore: StateCreator<
         type: NodeType.Persona,
         ...nodePositionAttributes[idx],
         data: {
-          content: persona
+          content: persona,
+          visualCharacterDescriptions: visualCharacterDescriptions[idx]
         }
       }));
 
@@ -523,6 +545,14 @@ const createStore: StateCreator<
         );
         draft.data.outOfSync = false;
       });
+
+      const node = getNode(id);
+      const visualCharacterDescriptions =
+        await generateVisualCharacterDescriptions(node!.data.content);
+      updateNode(id, (draft) => {
+        draft.data.visualCharacterDescriptions = visualCharacterDescriptions;
+      });
+
       // Update dependencies
       updateNodes(findDirectDependents([id], get().edges), (draft) => {
         draft.data.outOfSync = true;
@@ -537,7 +567,10 @@ const createStore: StateCreator<
       if (!node) return;
 
       const image = await generateIllustrativeImage(
-        `Illustrate persona: ${JSON.stringify(node.data.content)}`
+        `Illustrate persona: ${JSON.stringify(node.data.content)}
+        Visual character descriptions: ${JSON.stringify(
+          node.data.visualCharacterDescriptions
+        )}`
       );
 
       get().takeSnapshot();
@@ -561,7 +594,8 @@ const createStore: StateCreator<
         type: NodeType.Problem,
         ...nodePositionAttributes,
         data: {
-          content: problem
+          content: problem,
+          visualCharacterDescriptions: []
         }
       };
 
@@ -593,14 +627,27 @@ const createStore: StateCreator<
         numberOfNodes
       );
 
-      const nodes: Node<NodeData>[] = problems.map((problem, idx) => ({
-        id: `problem-${nanoid()}`,
-        type: NodeType.Problem,
-        ...nodePositionAttributes[idx],
-        data: {
-          content: problem
-        }
-      }));
+      const nodes: Node<NodeData>[] = await Promise.all(
+        problems.map(async (problem, idx) => {
+          const visualCharacterDescriptions = oneNodeForEachPersona
+            ? personaNodes[idx].data.visualCharacterDescriptions
+            : personaNodes.length > 0
+            ? personaNodes.flatMap(
+                (node) => node.data.visualCharacterDescriptions
+              )
+            : await generateVisualCharacterDescriptions(problem);
+
+          return {
+            id: `problem-${nanoid()}`,
+            type: NodeType.Problem,
+            ...nodePositionAttributes[idx],
+            data: {
+              content: problem,
+              visualCharacterDescriptions
+            }
+          };
+        })
+      );
       const edges = oneNodeForEachPersona
         ? personaIds.map((personaId, idx) => ({
             id: `edge-${nanoid()}`,
@@ -639,6 +686,11 @@ const createStore: StateCreator<
       };
 
       const newProblems = await generateProblems(context);
+      const visualCharacterDescriptions = await Promise.all(
+        newProblems.map((problem) =>
+          generateVisualCharacterDescriptions(problem)
+        )
+      );
 
       const numberOfNodes = newProblems.length;
       const nodePositionAttributes = calculateDependentNodePositionAttributes(
@@ -652,7 +704,8 @@ const createStore: StateCreator<
         type: NodeType.Problem,
         ...nodePositionAttributes[idx],
         data: {
-          content: problem
+          content: problem,
+          visualCharacterDescriptions: visualCharacterDescriptions[idx]
         }
       }));
 
@@ -669,8 +722,11 @@ const createStore: StateCreator<
       );
       if (!node) return;
 
-      const image = await generateIllustrativeImage(
-        `Illustrate problem: ${JSON.stringify(node.data.content)}`
+      const image = await generateProblemIllustrativeImage(
+        `Illustrate problem: ${JSON.stringify(node.data.content)}
+        Visual character descriptions: ${JSON.stringify(
+          node.data.visualCharacterDescriptions
+        )}`
       );
 
       get().takeSnapshot();
@@ -724,7 +780,7 @@ const createStore: StateCreator<
 
       return { previousChangedValuesById, regeneratedImageNodeIds };
     },
-    updateProblemNode: (id, problem) => {
+    updateProblemNode: async (id, problem) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
         merge(
@@ -733,6 +789,19 @@ const createStore: StateCreator<
         );
         draft.data.outOfSync = false;
       });
+
+      const node = getNode(id);
+      const dependencies = findDirectDependencies([id], get().edges);
+      const visualCharacterDescriptions =
+        dependencies.length > 0
+          ? get()
+              .nodes.filter((node) => dependencies.includes(node.id))
+              .flatMap((node) => node.data.visualCharacterDescriptions)
+          : await generateVisualCharacterDescriptions(node!.data.content);
+      updateNode(id, (draft) => {
+        draft.data.visualCharacterDescriptions = visualCharacterDescriptions;
+      });
+
       // Update dependencies
       updateNodes(findDirectDependents([id], get().edges), (draft) => {
         draft.data.outOfSync = true;
@@ -756,7 +825,8 @@ const createStore: StateCreator<
         type: NodeType.Solution,
         ...nodePositionAttributes,
         data: {
-          content: solution
+          content: solution,
+          visualCharacterDescriptions: []
         }
       };
 
@@ -788,14 +858,27 @@ const createStore: StateCreator<
         numberOfNodes
       );
 
-      const nodes: Node<NodeData>[] = solutions.map((solution, idx) => ({
-        id: `solution-${nanoid()}`,
-        type: NodeType.Solution,
-        ...nodePositionAttributes[idx],
-        data: {
-          content: solution
-        }
-      }));
+      const nodes: Node<NodeData>[] = await Promise.all(
+        solutions.map(async (solution, idx) => {
+          const visualCharacterDescriptions = oneNodeForEachProblem
+            ? problemNodes[idx].data.visualCharacterDescriptions
+            : problemNodes.length > 0
+            ? problemNodes.flatMap(
+                (node) => node.data.visualCharacterDescriptions
+              )
+            : await generateVisualCharacterDescriptions(solution);
+
+          return {
+            id: `solution-${nanoid()}`,
+            type: NodeType.Solution,
+            ...nodePositionAttributes[idx],
+            data: {
+              content: solution,
+              visualCharacterDescriptions
+            }
+          };
+        })
+      );
       const edges = oneNodeForEachProblem
         ? problemIds.map((problemId, idx) => ({
             id: `edge-${nanoid()}`,
@@ -835,6 +918,12 @@ const createStore: StateCreator<
       };
 
       const newSolutions = await generateSolutions(context);
+      const visualCharacterDescriptions = await Promise.all(
+        newSolutions.map((solution) =>
+          generateVisualCharacterDescriptions(solution)
+        )
+      );
+
       const numberOfNodes = newSolutions.length;
       const positionAttributes = calculateDependentNodePositionAttributes(
         solutionNodes,
@@ -847,7 +936,8 @@ const createStore: StateCreator<
         type: NodeType.Solution,
         ...positionAttributes[idx],
         data: {
-          content: solution
+          content: solution,
+          visualCharacterDescriptions: visualCharacterDescriptions[idx]
         }
       }));
 
@@ -907,7 +997,7 @@ const createStore: StateCreator<
 
       return { previousChangedValuesById, regeneratedImageNodeIds };
     },
-    updateSolutionNode: (id, solution) => {
+    updateSolutionNode: async (id, solution) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
         merge(
@@ -916,6 +1006,19 @@ const createStore: StateCreator<
         );
         draft.data.outOfSync = false;
       });
+
+      const node = getNode(id);
+      const dependencies = findDirectDependencies([id], get().edges);
+      const visualCharacterDescriptions =
+        dependencies.length > 0
+          ? get()
+              .nodes.filter((node) => dependencies.includes(node.id))
+              .flatMap((node) => node.data.visualCharacterDescriptions)
+          : await generateVisualCharacterDescriptions(node!.data.content);
+      updateNode(id, (draft) => {
+        draft.data.visualCharacterDescriptions = visualCharacterDescriptions;
+      });
+
       // Update dependencies
       updateNodes(findDirectDependents([id], get().edges), (draft) => {
         draft.data.outOfSync = true;
@@ -930,7 +1033,10 @@ const createStore: StateCreator<
       if (!node) return;
 
       const image = await generateIllustrativeImage(
-        `Illustrate solution: ${JSON.stringify(node.data.content)}`
+        `Illustrate solution: ${JSON.stringify(node.data.content)}
+        Visual character descriptions: ${JSON.stringify(
+          node.data.visualCharacterDescriptions
+        )}`
       );
 
       get().takeSnapshot();
@@ -953,6 +1059,7 @@ const createStore: StateCreator<
 
       const data: StoryboardNodeData = {
         content: {},
+        visualCharacterDescriptions: [],
         storyboard: {
           title: '',
           outline: [
@@ -1036,12 +1143,25 @@ const createStore: StateCreator<
         solutions
       });
 
+      let visualCharacterDescriptions = uniqBy(
+        [...personaNodes, ...problemNodes, ...solutionNodes].flatMap(
+          (node) => node.data.visualCharacterDescriptions
+        ),
+        'Name'
+      );
+      if (visualCharacterDescriptions.length === 0) {
+        visualCharacterDescriptions = await generateVisualCharacterDescriptions(
+          storyboardData
+        );
+      }
+
       const node: Node<StoryboardNodeData> = {
         id: `storyboard-${nanoid()}`,
         type: NodeType.Storyboard,
         ...nodePositionAttribute,
         data: {
           content: {},
+          visualCharacterDescriptions,
           storyboard: {
             title: storyboardData.title,
             outline: storyboardData.outline.map((frame) => ({
@@ -1091,6 +1211,8 @@ const createStore: StateCreator<
       };
 
       const storyboardData = await generateStoryboardOutline(context);
+      const visualCharacterDescriptions =
+        await generateVisualCharacterDescriptions(storyboardData);
 
       const nodePositionAttribute = calculateDependentNodePositionAttributes(
         storyboardNodes,
@@ -1110,6 +1232,7 @@ const createStore: StateCreator<
         ...nodePositionAttribute,
         data: {
           content: {},
+          visualCharacterDescriptions,
           storyboard: {
             title: storyboardData.title,
             outline: storyboardData.outline.map((frame) => ({
@@ -1142,24 +1265,19 @@ const createStore: StateCreator<
         id.startsWith('solution-')
       );
 
-      const personas = get()
-        .nodes.filter(
-          (node) =>
-            node.type === NodeType.Persona && personaIds.includes(node.id)
-        )
-        .map((node) => node.data.content);
-      const problems = get()
-        .nodes.filter(
-          (node) =>
-            node.type === NodeType.Problem && problemIds.includes(node.id)
-        )
-        .map((node) => node.data.content);
-      const solutions = get()
-        .nodes.filter(
-          (node) =>
-            node.type === NodeType.Solution && solutionIds.includes(node.id)
-        )
-        .map((node) => node.data.content);
+      const personaNodes = get().nodes.filter(
+        (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
+      );
+      const personas = personaNodes.map((node) => node.data.content);
+      const problemNodes = get().nodes.filter(
+        (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
+      );
+      const problems = problemNodes.map((node) => node.data.content);
+      const solutionNodes = get().nodes.filter(
+        (node) =>
+          node.type === NodeType.Solution && solutionIds.includes(node.id)
+      );
+      const solutions = solutionNodes.map((node) => node.data.content);
 
       const storyboardData = await generateStoryboardOutline({
         personas,
@@ -1168,9 +1286,22 @@ const createStore: StateCreator<
         instructions
       });
 
+      let visualCharacterDescriptions = uniqBy(
+        [...personaNodes, ...problemNodes, ...solutionNodes].flatMap(
+          (node) => node.data.visualCharacterDescriptions
+        ),
+        'Name'
+      );
+      if (visualCharacterDescriptions.length === 0) {
+        visualCharacterDescriptions = await generateVisualCharacterDescriptions(
+          storyboardData
+        );
+      }
+
       get().takeSnapshot();
       updateNode<StoryboardNodeData>(id, (draft) => {
         merge(draft.data.storyboard, storyboardData);
+        draft.data.visualCharacterDescriptions = visualCharacterDescriptions;
         draft.data.outOfSync = false;
       });
 
@@ -1196,7 +1327,10 @@ const createStore: StateCreator<
         );
       });
 
-      const imagePrompts = await generateStoryboardImagePrompts(outline);
+      const imagePrompts = await generateStoryboardImagePrompts(
+        outline,
+        storyboard.data.visualCharacterDescriptions
+      );
 
       return imagePrompts.map(async (prompt, idx) => {
         const image = await generateImage({
@@ -1222,7 +1356,10 @@ const createStore: StateCreator<
       const outline = storyboard.data.storyboard.outline;
       if (outline.length === 0) return;
 
-      const imagePrompts = await generateStoryboardImagePrompts(outline);
+      const imagePrompts = await generateStoryboardImagePrompts(
+        outline,
+        storyboard.data.visualCharacterDescriptions
+      );
 
       await Promise.all(
         imagePrompts.map(async (prompt, idx) => {

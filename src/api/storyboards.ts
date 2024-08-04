@@ -69,7 +69,10 @@ ${JSON.stringify(context)}
   return storyboardOutline;
 }
 
-export async function generateStoryboardImagePrompts(frames: FrameOutline[]) {
+export async function generateStoryboardImagePrompts(
+  frames: FrameOutline[],
+  visualCharacterDescriptions: unknown
+) {
   // Strip out any additional properties
   frames = frames.map((frame) => ({
     frameType: frame.frameType,
@@ -97,6 +100,10 @@ Include the full name of people to ensure consistent characters across all frame
 
 Frames: """
 ${JSON.stringify(frames, null, 2)}
+"""
+
+Visual Character Descriptions: """
+${JSON.stringify(visualCharacterDescriptions)}
 """`;
 
   const schema = z.object({

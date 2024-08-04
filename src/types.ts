@@ -7,7 +7,19 @@ export type NodeData = {
   content: Record<string, string>;
 
   image?: string;
+  visualCharacterDescriptions: VisualCharacterDescription[];
 };
+
+export const visualCharacterDescriptionSchema = z.object({
+  Name: z.string(),
+  Gender: z.string(),
+  Ethnicity: z.string(),
+  Age: z.string(),
+  BriefVisualDescription: z.string()
+});
+export type VisualCharacterDescription = z.infer<
+  typeof visualCharacterDescriptionSchema
+>;
 
 export const personaSchema = z.object({
   Name: z.string(),
