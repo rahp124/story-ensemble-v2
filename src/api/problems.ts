@@ -6,7 +6,7 @@ const PROBLEM_STATEMENT_PROMPT = `A problem statement is a description of an iss
 A good problem statement should be centered on specific people and their needs.
 It should be narrow enough to be manageable but broad enough to explore a variety of solutions.
 A problem statement should be a statement and not a question.
-A problem statement should not suggest solutions.
+A problem statement should not be a hypothetical solution or strongly suggest a single solution.
 
 Keep values short and to the point and use emojis where possible.
 Avoid repeating the same information in different values.
