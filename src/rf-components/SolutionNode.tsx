@@ -39,11 +39,8 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
 
   return (
     <BaseNode
-      nodeName={
-        <>
-          <span className="mr-1">{displayAttributes.emoji}</span> Solution
-        </>
-      }
+      emoji={displayAttributes.emoji}
+      nodeName="Solution"
       nodeProps={props}
       nodeBackgroundClass={displayAttributes.backgroundClass}
       content={props.data.content}

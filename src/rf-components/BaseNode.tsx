@@ -13,13 +13,14 @@ import {
   AspectRatio
 } from '@mantine/core';
 import { ArrowDownFromLineIcon, RefreshCwIcon } from 'lucide-react';
-import { ReactNode, useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { NodeProps } from 'reactflow';
 
 export interface BaseNodeProps<T extends Record<string, string>> {
   nodeProps: NodeProps<NodeData>;
 
-  nodeName: ReactNode;
+  emoji: string;
+  nodeName: string;
   nodeBackgroundClass: string;
 
   content: T;
@@ -122,7 +123,10 @@ export default function BaseNode<T extends Record<string, string>>(
           </AspectRatio>
         </Card.Section>
         <div className="flex justify-between items-center mt-4 mb-2">
-          <h3 className="font-bold text-sm">{props.nodeName}</h3>
+          <h3 className="font-bold text-sm">
+            <span className="mr-1">{props.emoji}</span>{' '}
+            {props.content.Name || props.nodeName}
+          </h3>
           <div className="flex gap-2 items-center nodrag">{icons}</div>
         </div>
         <Tooltip.Floating

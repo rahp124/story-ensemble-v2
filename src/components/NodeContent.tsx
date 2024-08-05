@@ -11,11 +11,12 @@ export function NodeContent(props: {
 
     return (
       <div key={key}>
-        <b>{capitalCase(key)}</b>:{' '}
+        <span className="font-semibold">{capitalCase(key)}</span>:{' '}
         <Tooltip
           label={
             <>
-              <b>Previous {noCase(key)}:</b> {previousChangedValue}
+              <span className="font-semibold">Previous {noCase(key)}:</span>{' '}
+              {previousChangedValue}
             </>
           }
           disabled={!previousChangedValue}

@@ -11,11 +11,8 @@ export default function PersonaNode(props: NodeProps<NodeData>) {
 
   return (
     <BaseNode
-      nodeName={
-        <>
-          <span className="mr-1">{displayAttributes.emoji}</span> Persona
-        </>
-      }
+      emoji={displayAttributes.emoji}
+      nodeName="Persona"
       nodeProps={props}
       nodeBackgroundClass={displayAttributes.backgroundClass}
       content={props.data.content}

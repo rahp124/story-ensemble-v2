@@ -42,11 +42,8 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
 
   return (
     <BaseNode
-      nodeName={
-        <>
-          <span className="mr-1">{displayAttributes.emoji}</span> Problem
-        </>
-      }
+      emoji={displayAttributes.emoji}
+      nodeName="Problem"
       nodeProps={props}
       nodeBackgroundClass={displayAttributes.backgroundClass}
       content={props.data.content}
