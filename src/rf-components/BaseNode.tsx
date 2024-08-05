@@ -3,26 +3,18 @@ import NotificationDot from '@/components/NotificationDot';
 import SourceHandle from '@/components/SourceHandle';
 import TargetHandle from '@/components/TargetHandle';
 import { useDisplayStore } from '@/lib/displayStore';
-import { useZoom } from '@/lib/useZoom';
-import { useStore } from '@/store';
 import { NodeData } from '@/types';
 import {
   ActionIcon,
   Tooltip,
-  Image,
-  Switch,
   ScrollArea,
-  Loader
+  Loader,
+  Card,
+  AspectRatio
 } from '@mantine/core';
-import {
-  ArrowDownFromLineIcon,
-  ImageIcon,
-  ImageOff,
-  Info,
-  RefreshCwIcon
-} from 'lucide-react';
-import { ReactNode, useCallback, useRef, useState } from 'react';
-import { NodeProps, NodeResizer } from 'reactflow';
+import { ArrowDownFromLineIcon, RefreshCwIcon } from 'lucide-react';
+import { ReactNode, useCallback, useRef } from 'react';
+import { NodeProps } from 'reactflow';
 
 export interface BaseNodeProps<T extends Record<string, string>> {
   nodeProps: NodeProps<NodeData>;
@@ -52,9 +44,6 @@ export default function BaseNode<T extends Record<string, string>>(
     setPreviousChangedValuesById: state.setPreviousChangedValuesById
   }));
 
-  const [showImage, setShowImage] = useState(false);
-
-  const { zoomShowImage } = useZoom();
   const scrollViewport = useRef<HTMLDivElement>(null);
   const hasOverflowY = useCallback(() => {
     return (
@@ -62,62 +51,6 @@ export default function BaseNode<T extends Record<string, string>>(
       scrollViewport.current.scrollHeight > scrollViewport.current.clientHeight
     );
   }, [scrollViewport]);
-
-  const globalShowImage = useStore((state) => state.globalShowImage);
-
-  function cardContent() {
-    if (globalShowImage || showImage || zoomShowImage) {
-      if (regenerating || !image) {
-        return (
-          <div className="size-full flex items-center justify-center">
-            <Loader />
-          </div>
-        );
-      } else {
-        return (
-          <div className="relative size-full">
-            <Tooltip
-              variant=""
-              label="Illustrative image to visualize the node"
-            >
-              <ActionIcon
-                className="absolute top-1 right-1"
-                radius="xl"
-                size="sm"
-                color="gray"
-              >
-                <Info className="w-full h-full" />
-              </ActionIcon>
-            </Tooltip>
-            <Image src={image} className="h-full object-cover" />
-          </div>
-        );
-      }
-    } else {
-      return (
-        <Tooltip.Floating
-          label="Select node to scroll"
-          disabled={nodeProps.selected || !hasOverflowY()}
-        >
-          <ScrollArea
-            type={hasOverflowY() ? 'always' : 'hover'}
-            scrollbars="y"
-            viewportRef={scrollViewport}
-            styles={{
-              root: {
-                cursor: 'pointer'
-              }
-            }}
-          >
-            <NodeContent
-              content={props.content}
-              previousChangedValues={previousChangedValues}
-            />
-          </ScrollArea>
-        </Tooltip.Floating>
-      );
-    }
-  }
 
   const icons = [
     {
@@ -165,40 +98,55 @@ export default function BaseNode<T extends Record<string, string>>(
 
   return (
     <>
-      <NodeResizer
-        nodeId={nodeProps.id}
-        isVisible={nodeProps.selected}
-        handleClassName="[&:is(.top,.bottom.left)]:hidden"
-        lineClassName="hidden"
-        minWidth={300}
-        minHeight={200}
-        handleStyle={{
-          width: 10,
-          height: 10
-        }}
-      />
-      <div
-        className={`h-full flex flex-col min-w-[300px] min-h-[300px] p-3 border-2 ${
+      <Card
+        className={`size-full ${
           nodeProps.selected ? 'nowheel border-blue-600' : 'border-transparent'
         } ${props.nodeBackgroundClass}`}
+        withBorder
+        shadow="sm"
+        radius="lg"
       >
-        <div className="flex justify-between items-center mb-2">
+        <Card.Section className="h-[225px]">
+          <AspectRatio ratio={16 / 9} className="size-full">
+            {regenerating || image === '' ? (
+              <div className="size-full flex items-center justify-center">
+                <Loader />
+              </div>
+            ) : image === undefined ? (
+              <p className="size-full">
+                Update node to generate illustrative image
+              </p>
+            ) : (
+              <img src={image} className="size-full object-cover" />
+            )}
+          </AspectRatio>
+        </Card.Section>
+        <div className="flex justify-between items-center mt-4 mb-2">
           <h3 className="font-bold text-sm">{props.nodeName}</h3>
-          <div className="flex gap-2 items-center nodrag">
-            <Switch
-              size="sm"
-              checked={showImage}
-              onChange={(event) => setShowImage(event.currentTarget.checked)}
-              onLabel={<ImageIcon className="w-3 h-3" />}
-              offLabel={<ImageOff className="w-3 h-3" />}
+          <div className="flex gap-2 items-center nodrag">{icons}</div>
+        </div>
+        <Tooltip.Floating
+          label="Select node to scroll"
+          disabled={nodeProps.selected || !hasOverflowY()}
+        >
+          <ScrollArea
+            type={hasOverflowY() ? 'always' : 'hover'}
+            scrollbars="y"
+            viewportRef={scrollViewport}
+            styles={{
+              root: {
+                cursor: 'pointer'
+              }
+            }}
+            className="py-2"
+          >
+            <NodeContent
+              content={props.content}
+              previousChangedValues={previousChangedValues}
             />
-            {icons}
-          </div>
-        </div>
-        <div className="w-full flex-grow flex flex-col overflow-hidden">
-          {cardContent()}
-        </div>
-      </div>
+          </ScrollArea>
+        </Tooltip.Floating>
+      </Card>
       {props.targetHandle && <TargetHandle />}
       {props.sourceHandle && <SourceHandle />}
     </>

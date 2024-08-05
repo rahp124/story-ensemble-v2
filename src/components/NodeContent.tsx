@@ -18,7 +18,7 @@ export function NodeContent(props: {
               <b>Previous {noCase(key)}:</b> {previousChangedValue}
             </>
           }
-          disabled={previousChangedValue === undefined}
+          disabled={!previousChangedValue}
         >
           <span
             className={

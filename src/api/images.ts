@@ -13,7 +13,7 @@ ${JSON.stringify(problem)}
 
   const imagePrompt = await generateStructured(imagePromptSchema, prompt);
 
-  return await generateImage(imagePrompt);
+  return await generateImage({ ...imagePrompt, aspectRatio: '16:9' });
 }
 
 const imagePromptPrompt = `Using following idea generate an image prompt and image negative prompt to generate an illustrative image which represents the key elements of the idea.
@@ -36,5 +36,5 @@ ${JSON.stringify(idea)}
 
   const imagePrompt = await generateStructured(imagePromptSchema, prompt);
 
-  return await generateImage(imagePrompt);
+  return await generateImage({ ...imagePrompt, aspectRatio: '16:9' });
 }

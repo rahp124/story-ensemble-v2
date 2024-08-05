@@ -43,9 +43,9 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
   return (
     <BaseNode
       nodeName={
-        <span>
+        <>
           <span className="mr-1">{displayAttributes.emoji}</span> Problem
-        </span>
+        </>
       }
       nodeProps={props}
       nodeBackgroundClass={displayAttributes.backgroundClass}

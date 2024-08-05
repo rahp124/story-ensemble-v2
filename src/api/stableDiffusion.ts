@@ -22,17 +22,20 @@ export type StylePreset =
 export async function generateImage({
   prompt,
   negativePrompt,
-  stylePreset = 'digital-art'
+  stylePreset = 'digital-art',
+  aspectRatio = '1:1'
 }: {
   prompt: string;
   negativePrompt: string;
   stylePreset?: StylePreset;
+  aspectRatio?: '1:1' | '3:2' | '16:9';
 }) {
   const formData = new FormData();
   formData.set('prompt', prompt);
   formData.set('negative_prompt', negativePrompt);
   formData.set('aspect_ratio', '1:1');
   formData.set('style_preset', stylePreset);
+  formData.set('aspect_ratio', aspectRatio);
   formData.set('output_format', 'webp');
 
   const response = await fetch(

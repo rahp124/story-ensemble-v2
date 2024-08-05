@@ -359,9 +359,9 @@ export default function App() {
             }}
           />
         )}
-      <Panel position="top-right">
-        <TutorialModal/>
-      </Panel>
+        <Panel position="top-right">
+          <TutorialModal />
+        </Panel>
       </ReactFlow>
       <FirstGenerationModal
         opened={firstGenerationModalOpened}

@@ -12,9 +12,9 @@ export default function PersonaNode(props: NodeProps<NodeData>) {
   return (
     <BaseNode
       nodeName={
-        <span>
+        <>
           <span className="mr-1">{displayAttributes.emoji}</span> Persona
-        </span>
+        </>
       }
       nodeProps={props}
       nodeBackgroundClass={displayAttributes.backgroundClass}

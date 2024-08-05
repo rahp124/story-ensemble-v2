@@ -69,8 +69,8 @@ export function calculateNodePositionAttributes(
     height: number;
     gap: number;
   } = {
-    width: 300,
-    height: 300,
+    width: 400,
+    height: 500,
     gap: 50
   }
 ) {
@@ -104,8 +104,8 @@ export function calculateDependentNodePositionAttributes(
     gap: number;
     margin: number;
   } = {
-    width: 300,
-    height: 300,
+    width: 400,
+    height: 500,
     gap: 50,
     margin: 100
   }
