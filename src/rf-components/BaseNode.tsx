@@ -1,4 +1,4 @@
-import { NodeContent } from '@/components/NodeContent';
+import { NodeContent, NodeContentValue } from '@/components/NodeContent';
 import NotificationDot from '@/components/NotificationDot';
 import SourceHandle from '@/components/SourceHandle';
 import TargetHandle from '@/components/TargetHandle';
@@ -12,6 +12,7 @@ import {
   Card,
   AspectRatio
 } from '@mantine/core';
+import { omit } from 'lodash';
 import { ArrowDownFromLineIcon, RefreshCwIcon } from 'lucide-react';
 import { useCallback, useRef } from 'react';
 import { NodeProps } from 'reactflow';
@@ -125,7 +126,14 @@ export default function BaseNode<T extends Record<string, string>>(
         <div className="flex justify-between items-center mt-4 mb-2">
           <h3 className="font-bold text-sm">
             <span className="mr-1">{props.emoji}</span>{' '}
-            {props.content.Name || props.nodeName}
+            {props.content.Name ? (
+              <NodeContentValue
+                value={props.content.Name}
+                previousChangedValue={previousChangedValues['Name']}
+              />
+            ) : (
+              props.nodeName
+            )}
           </h3>
           <div className="flex gap-2 items-center nodrag">{icons}</div>
         </div>
@@ -145,7 +153,7 @@ export default function BaseNode<T extends Record<string, string>>(
             className="py-2"
           >
             <NodeContent
-              content={props.content}
+              content={omit(props.content, 'Name')}
               previousChangedValues={previousChangedValues}
             />
           </ScrollArea>

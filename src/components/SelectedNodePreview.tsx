@@ -2,7 +2,8 @@ import { Node } from 'reactflow';
 import { Accordion } from '@mantine/core';
 import { NodeType, nodeTypeDisplayAttributes } from '@/rf-components';
 import { NodeData, StoryboardNodeData } from '@/types';
-import { NodeContent } from './NodeContent';
+import { NodeContent, NodeContentValue } from './NodeContent';
+import { omit } from 'lodash';
 
 interface SelectedNodePreviewProps {
   selectedNodes: Node<NodeData>[];
@@ -59,12 +60,17 @@ export function SelectedNodePreview(props: SelectedNodePreviewProps) {
             ) : (
               <>
                 <Accordion.Control icon={emoji}>
-                  {content.Name}
+                  <NodeContentValue
+                    value={content.Name}
+                    previousChangedValue={
+                      previousChangedValuesById[node.id]?.Name
+                    }
+                  />
                   {previousChangedValuesById[node.id] && '*'}
                 </Accordion.Control>
                 <Accordion.Panel>
                   <NodeContent
-                    content={content}
+                    content={omit(content, 'Name')}
                     previousChangedValues={previousChangedValuesById[node.id]}
                   />
                 </Accordion.Panel>
