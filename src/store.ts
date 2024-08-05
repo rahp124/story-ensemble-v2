@@ -566,6 +566,10 @@ const createStore: StateCreator<
       );
       if (!node) return;
 
+      updateNode(id, (draft) => {
+        draft.data.image = '';
+      });
+
       const image = await generateIllustrativeImage(
         `Illustrate persona: ${JSON.stringify(node.data.content)}
         Visual character descriptions: ${JSON.stringify(
@@ -721,6 +725,10 @@ const createStore: StateCreator<
         (node) => node.id === id && node.type === NodeType.Problem
       );
       if (!node) return;
+
+      updateNode(id, (draft) => {
+        draft.data.image = '';
+      });
 
       const image = await generateProblemIllustrativeImage(
         `Illustrate problem: ${JSON.stringify(node.data.content)}
@@ -1031,6 +1039,10 @@ const createStore: StateCreator<
         (node) => node.id === id && node.type === NodeType.Solution
       );
       if (!node) return;
+
+      updateNode(id, (draft) => {
+        draft.data.image = '';
+      });
 
       const image = await generateIllustrativeImage(
         `Illustrate solution: ${JSON.stringify(node.data.content)}

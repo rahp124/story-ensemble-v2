@@ -13,7 +13,7 @@ import {
   AspectRatio
 } from '@mantine/core';
 import { omit } from 'lodash';
-import { ArrowDownFromLineIcon, RefreshCwIcon } from 'lucide-react';
+import { ArrowDownFromLineIcon, ImageIcon, RefreshCwIcon } from 'lucide-react';
 import { useCallback, useRef } from 'react';
 import { NodeProps } from 'reactflow';
 
@@ -108,16 +108,18 @@ export default function BaseNode<T extends Record<string, string>>(
         shadow="sm"
         radius="lg"
       >
-        <Card.Section className="h-[225px]">
+        <Card.Section withBorder className="h-[225px]">
           <AspectRatio ratio={16 / 9} className="size-full">
             {regenerating || image === '' ? (
-              <div className="size-full flex items-center justify-center">
+              <div className="size-full flex flex-col items-center justify-center gap-2">
                 <Loader />
+                <p>Generating illustrative image...</p>
               </div>
             ) : image === undefined ? (
-              <p className="size-full">
-                Update node to generate illustrative image
-              </p>
+              <div className="size-full flex flex-col items-center justify-center gap-2">
+                <ImageIcon className="size-[36px]" />
+                <p>Update node to generate illustrative image</p>
+              </div>
             ) : (
               <img src={image} className="size-full object-cover" />
             )}
