@@ -219,19 +219,19 @@ export function TutorialModal() {
                             leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
                             onClick={() => handleOpen('Example Workflow - Return to Persona & Iterate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
-                            Iterate w/ Persona
+                            Iterate w/ 👤 Persona
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
                             onClick={() => handleOpen('Example Workflow - Return to Problem & Iterate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
-                            Iterate w/ Problem
+                            Iterate w/ 🚨 Problem
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
                             onClick={() => handleOpen('Example Workflow - Return to Solution & Iterate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
-                            Iterate w/ Solution
+                            Iterate w/ 💡 Solution
                         </Menu.Item>
                 </Menu.Dropdown>
             </Menu>
