@@ -241,6 +241,12 @@ export function TutorialModal() {
                         >
                             Iterate with Solution
                         </Menu.Item>
+                        <Menu.Item
+                            leftSection={<>🎞</>}
+                            onClick={() => handleOpen('Example Workflow - Return to Solution & Iterate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                        >
+                            Iterate with Storyboard
+                        </Menu.Item>
                 </Menu.Dropdown>
             </Menu>
         </>
