@@ -350,32 +350,74 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 </Popover>
               </div>
 
-              <div
-                className={`border-2 rounded-sm ${frameTypeBorder(
-                  frame.frameType
-                )}`}
-              >
-                <AspectRatio ratio={1}>
-                  {regenerating ||
-                  loadingMap[frameIdx] ||
-                  frame.image === '' ? (
-                    <div className="size-full flex items-center justify-center">
-                      <Loader />
-                    </div>
-                  ) : frame.image === undefined ? (
-                    <div className="size-full flex items-center justify-center">
-                      <p className="text-center">
-                        This frame has no image.
-                        <br />
-                        Click the <Pencil className="inline size-4" /> icon to
-                        generate one.
-                      </p>
-                    </div>
-                  ) : (
-                    <img src={frame.image} />
-                  )}
-                </AspectRatio>
-              </div>
+              {/* don't show tooltip if a frame doesn't have a generated image */}
+              {
+                frame.image === undefined ? (
+                  <div
+                    className={`border-2 rounded-sm ${frameTypeBorder(
+                      frame.frameType
+                    )}`}
+                  >
+                    <AspectRatio ratio={1}>
+                      {regenerating ||
+                      loadingMap[frameIdx] ||
+                      frame.image === '' ? (
+                        <div className="size-full flex items-center justify-center">
+                          <Loader />
+                        </div>
+                      ) : frame.image === undefined ? (
+                        <div className="size-full flex items-center justify-center">
+                          <p className="text-center">
+                            This frame has no image.
+                            <br />
+                            Click the <Pencil className="inline size-4" /> icon to
+                            generate one.
+                          </p>
+                        </div>
+                      ) : (
+                        <img src={frame.image} />
+                      )}
+                    </AspectRatio>
+                  </div>
+                ) : (
+                  // show tooltip containing detailed description of a frame when a frame has a generated image
+                  <Tooltip
+                  multiline
+                  w={300}
+                  withArrow
+                  transitionProps={{ duration: 150 }}
+                  label={frame.description}
+                  events={{ hover: true, focus: true, touch: true }}
+                >
+                  <div
+                    className={`border-2 rounded-sm ${frameTypeBorder(
+                      frame.frameType
+                    )}`}
+                  >
+                    <AspectRatio ratio={1}>
+                      {regenerating ||
+                      loadingMap[frameIdx] ||
+                      frame.image === '' ? (
+                        <div className="size-full flex items-center justify-center">
+                          <Loader />
+                        </div>
+                      ) : frame.image === undefined ? (
+                        <div className="size-full flex items-center justify-center">
+                          <p className="text-center">
+                            This frame has no image.
+                            <br />
+                            Click the <Pencil className="inline size-4" /> icon to
+                            generate one.
+                          </p>
+                        </div>
+                      ) : (
+                        <img src={frame.image} />
+                      )}
+                    </AspectRatio>
+                  </div>
+                </Tooltip>
+                )
+              }
 
               <Textarea
                 className="nodrag"
