@@ -193,9 +193,9 @@ export function TutorialModal() {
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<WandSparklesIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('Iterate - Revise (AI suggestions)', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Iterate - Revise with AI', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
-                            Revise (AI suggestions)
+                            Revise with AI
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<PencilIcon style={{ width: rem(14), height: rem(14) }} />}
@@ -227,19 +227,19 @@ export function TutorialModal() {
                             leftSection={<>👤</>}
                             onClick={() => handleOpen('Example Workflow - Return to Persona & Iterate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
-                            Iterate w/ Persona
+                            Iterate with Persona
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<>🚨</>}
                             onClick={() => handleOpen('Example Workflow - Return to Problem & Iterate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
-                            Iterate w/ Problem
+                            Iterate with Problem
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<>💡</>}
                             onClick={() => handleOpen('Example Workflow - Return to Solution & Iterate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
-                            Iterate w/ Solution
+                            Iterate with Solution
                         </Menu.Item>
                 </Menu.Dropdown>
             </Menu>
