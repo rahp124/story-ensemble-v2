@@ -39,7 +39,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
 
   const [finalStep, setFinalStep] = useState<
     'Persona' | 'Problem' | 'Solution' | 'Storyboard'
-  >('Persona');
+  >('Storyboard');
   const [designContext, setDesignContext] = useState('');
   const [personaDescription, setPersonaDescription] = useState('');
   const [problemDescription, setProblemDescription] = useState('');
