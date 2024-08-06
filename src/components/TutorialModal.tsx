@@ -11,7 +11,15 @@ import {
     Trash2,
     PencilIcon,
     SquareStackIcon,
-    WandSparklesIcon
+    WandSparklesIcon,
+    Move3DIcon,
+    ScanSearchIcon,
+    BotIcon,
+    UserRoundIcon,
+    HeartHandshakeIcon,
+    SparklesIcon,
+    BookImageIcon,
+    ScanEyeIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Kbd } from '@mantine/core';
@@ -67,7 +75,7 @@ export function TutorialModal() {
                 <Menu.Dropdown>
                     <Menu.Label>Basic Navigation</Menu.Label>
                         <Menu.Item 
-                            leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
+                            leftSection={<Move3DIcon style={{ width: rem(14), height: rem(14) }} />}
                             rightSection={
                                 <Text size="xs" c="dimmed"> <Kbd>Space</Kbd> + Drag</Text>
                             }
@@ -76,7 +84,7 @@ export function TutorialModal() {
                             Pan
                         </Menu.Item>
                         <Menu.Item 
-                            leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
+                            leftSection={<ScanSearchIcon style={{ width: rem(14), height: rem(14) }} />}
                             rightSection={
                                 <Text size="xs" c="dimmed"> <Kbd>⌘</Kbd> + Scroll</Text>
                             }
@@ -89,7 +97,7 @@ export function TutorialModal() {
 
                     <Menu.Label>Design Thinking</Menu.Label>
                         <Menu.Item
-                            leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
+                            leftSection={<BotIcon style={{ width: rem(14), height: rem(14) }} />}
                             rightSection={
                                 <Text size="xs" c="dimmed"><Kbd>Start brainstorming</Kbd></Text>
                             }
@@ -98,7 +106,7 @@ export function TutorialModal() {
                             With AI
                         </Menu.Item>
                         <Menu.Item
-                            leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
+                            leftSection={<UserRoundIcon style={{ width: rem(14), height: rem(14) }} />}
                             rightSection={
                                 <Text size="xs" c="dimmed"><Kbd>Add empty node</Kbd></Text>
                             }
@@ -107,7 +115,7 @@ export function TutorialModal() {
                             Manually
                         </Menu.Item>
                         <Menu.Item
-                            leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
+                            leftSection={<HeartHandshakeIcon style={{ width: rem(14), height: rem(14) }} />}
                             onClick={() => handleOpen('Design Thinking - Hybriad Approach','https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Hybrid
@@ -118,13 +126,13 @@ export function TutorialModal() {
 
                     <Menu.Label>Generate</Menu.Label>
                         <Menu.Item
-                            leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
+                            leftSection={<SparklesIcon style={{ width: rem(14), height: rem(14) }} />}
                             onClick={() => handleOpen('Generate ____', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Generate _____ (next node)
                         </Menu.Item>
                         <Menu.Item
-                            leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
+                            leftSection={<BookImageIcon style={{ width: rem(14), height: rem(14) }} />}
                             onClick={() => handleOpen('Generate up to storyboard', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Generate up to storyboard
@@ -168,7 +176,7 @@ export function TutorialModal() {
                             More ____
                         </Menu.Item>
                         <Menu.Item
-                            leftSection={<SquareStackIcon style={{ width: rem(14), height: rem(14) }} />}
+                            leftSection={<ScanEyeIcon style={{ width: rem(14), height: rem(14) }} />}
                             onClick={() => handleOpen('Explore - Semantic Zoom', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Semantic Zoom
@@ -216,22 +224,22 @@ export function TutorialModal() {
 
                     <Menu.Label>Example: Iterative Workflow</Menu.Label>
                         <Menu.Item
-                            leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
+                            leftSection={<>👤</>}
                             onClick={() => handleOpen('Example Workflow - Return to Persona & Iterate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
-                            Iterate w/ 👤 Persona
+                            Iterate w/ Persona
                         </Menu.Item>
                         <Menu.Item
-                            leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
+                            leftSection={<>🚨</>}
                             onClick={() => handleOpen('Example Workflow - Return to Problem & Iterate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
-                            Iterate w/ 🚨 Problem
+                            Iterate w/ Problem
                         </Menu.Item>
                         <Menu.Item
-                            leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
+                            leftSection={<>💡</>}
                             onClick={() => handleOpen('Example Workflow - Return to Solution & Iterate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
-                            Iterate w/ 💡 Solution
+                            Iterate w/ Solution
                         </Menu.Item>
                 </Menu.Dropdown>
             </Menu>
