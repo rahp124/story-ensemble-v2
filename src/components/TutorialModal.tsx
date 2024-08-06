@@ -1,7 +1,6 @@
 import { Menu, Text, Button, Modal, rem } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
-    ImageIcon,
     CopyIcon,
     MessageSquareIcon,
     ArrowDownFromLineIcon,
