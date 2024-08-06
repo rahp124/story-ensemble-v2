@@ -10,12 +10,16 @@ import {
   ScrollArea,
   Loader,
   Card,
-  AspectRatio
+  AspectRatio,
 } from '@mantine/core';
 import { omit } from 'lodash';
 import { ArrowDownFromLineIcon, ImageIcon, RefreshCwIcon } from 'lucide-react';
 import { useCallback, useRef } from 'react';
-import { NodeProps } from 'reactflow';
+import { NodeProps, useStore } from 'reactflow';
+import '../assets/BaseNode.css';
+
+const zoomSelector = (s: any) => s.transform[2];
+const semanticZoomThreshold = 0.55;
 
 export interface BaseNodeProps<T extends Record<string, string>> {
   nodeProps: NodeProps<NodeData>;
@@ -38,6 +42,8 @@ export default function BaseNode<T extends Record<string, string>>(
 ) {
   const { nodeProps } = props;
   const { outOfSync, image } = nodeProps.data;
+  
+  const zoom: number = useStore(zoomSelector);
 
   const { regenerating, previousChangedValues } = useDisplayStore((state) => ({
     regenerating: state.regeneratingNodes.has(nodeProps.id),
@@ -98,6 +104,26 @@ export default function BaseNode<T extends Record<string, string>>(
       );
     });
 
+  // change font size of node title according to zoom level
+  const isZoomState = useCallback(() => {
+    if (zoom < semanticZoomThreshold) {
+      return 'text-4xl centered zoom-out';
+    } else {
+      return 'text-md';
+    }
+  }
+  , [zoom]);
+
+  // hide node description content when zoomed out
+  const hideContent = useCallback(() => {
+    if (zoom < semanticZoomThreshold) {
+      return 'hide-content'; // hide content when zoomed out
+    } else {
+      return '';
+    } 
+  }
+  , [zoom]);
+
   return (
     <>
       <Card
@@ -125,8 +151,8 @@ export default function BaseNode<T extends Record<string, string>>(
             )}
           </AspectRatio>
         </Card.Section>
-        <div className="flex justify-between items-center mt-4 mb-2">
-          <h3 className="font-bold text-sm">
+        <div className={`flex justify-between items-center mt-4 mb-2 ${isZoomState()}`}>
+          <h3 className={`font-bold`}>
             <span className="mr-1">{props.emoji}</span>{' '}
             {props.content.Name ? (
               <NodeContentValue
@@ -152,12 +178,20 @@ export default function BaseNode<T extends Record<string, string>>(
                 cursor: 'pointer'
               }
             }}
-            className="py-2"
+            className={`py-2`}
           >
-            <NodeContent
-              content={omit(props.content, 'Name')}
-              previousChangedValues={previousChangedValues}
-            />
+            { hideContent() == 'hide-content'?               
+                (<>
+                </>)
+              :
+                (<>
+                  <NodeContent
+                    content={omit(props.content, 'Name')}
+                    previousChangedValues={previousChangedValues}
+                  />
+                </>)
+            }
+              
           </ScrollArea>
         </Tooltip.Floating>
       </Card>
