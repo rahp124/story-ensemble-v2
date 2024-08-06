@@ -6,6 +6,7 @@ import {
     MessageSquareIcon,
     ArrowDownFromLineIcon,
     RefreshCwIcon,
+    MonitorPlayIcon,
     PlusIcon,
     Trash2,
     PencilIcon,
@@ -18,29 +19,47 @@ import { Kbd } from '@mantine/core';
 export function TutorialModal() {
     const [opened, { open, close }] = useDisclosure(false);
     const [url, setUrl] = useState<string | null>('https://www.youtube.com/embed/XoSfkqrGwhg?si=vPG5bZ3S1dU4_CP7');
+    const [tutorialTopic, setTutorialTopic] = useState<string | null>(null);
 
-    const handleOpen = (newUrl: string) => {
+    const handleOpen = (topic: string, newUrl: string) => {
         setUrl(newUrl);
+        setTutorialTopic(topic);
         open();
       };
     
     return (
         <>
-            <Modal opened={opened} onClose={close} title="Tutorial" size="xl" withCloseButton={true} centered overlayProps={{ backgroundOpacity: 0.55, blur: 3, }}>
-                {url && (
-                    <>
-                        <p className="text-sm mb-4">
-                            This displays which action the tutorial video is for.
-                        </p>
-                        <div className='text-center' style={{
-                                textAlign: 'center'
+            <Modal.Root opened={opened} onClose={close} size="xl" centered>
+                <Modal.Overlay backgroundOpacity={0.55} blur={3} />
+                <Modal.Content>
+                    <Modal.Header style={{
+                                    display: 'flex',
+                                    fontWeight: 'bold',
+                                    padding: '10px 25px',
                                 }}>
-                            <iframe width="560" height="315" src={url} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen>
-                            </iframe>
-                        </div>
-                    </>
-                )}
-            </Modal>
+                        <>  
+                            <MonitorPlayIcon/>&nbsp;<Modal.Title>{tutorialTopic}</Modal.Title>
+                            <Modal.CloseButton />
+                        </>
+                    </Modal.Header>
+                    <Modal.Body style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    marginBottom: '20px'
+                                }}>
+                        {url && (
+                            <>
+                                <div className='text-center' style={{
+                                    textAlign: 'center'
+                                }}>
+                                    <iframe width="560" height="315" src={url} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen>
+                                    </iframe>
+                                </div>
+                            </>
+                        )}
+                    </Modal.Body>
+                </Modal.Content>
+            </Modal.Root>
             <Menu trigger="hover" openDelay={100} closeDelay={400} shadow="md" width={300}>
                 <Menu.Target>
                     <Button>Tutorial</Button>
@@ -52,7 +71,7 @@ export function TutorialModal() {
                             rightSection={
                                 <Text size="xs" c="dimmed"> <Kbd>Space</Kbd> + Drag</Text>
                             }
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Pan', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Pan
                         </Menu.Item>
@@ -61,7 +80,7 @@ export function TutorialModal() {
                             rightSection={
                                 <Text size="xs" c="dimmed"> <Kbd>⌘</Kbd> + Scroll</Text>
                             }
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Zoom', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Zoom
                         </Menu.Item>
@@ -74,7 +93,7 @@ export function TutorialModal() {
                             rightSection={
                                 <Text size="xs" c="dimmed"><Kbd>Start brainstorming</Kbd></Text>
                             }
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Design Thinking - with AI', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             With AI
                         </Menu.Item>
@@ -83,13 +102,13 @@ export function TutorialModal() {
                             rightSection={
                                 <Text size="xs" c="dimmed"><Kbd>Add empty node</Kbd></Text>
                             }
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Design Thinking - Manually', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Manually
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Design Thinking - Hybriad Approach','https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Hybrid
                         </Menu.Item>
@@ -100,13 +119,13 @@ export function TutorialModal() {
                     <Menu.Label>Generate</Menu.Label>
                         <Menu.Item
                             leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Generate ____', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Generate _____ (next node)
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Generate up to storyboard', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Generate up to storyboard
                         </Menu.Item>
@@ -116,19 +135,19 @@ export function TutorialModal() {
 
                         <Menu.Item
                             leftSection={<PlusIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Storyboarding - Add Frame','https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Add Frame
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<Trash2 style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Storyboarding - Delete Frame', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Delete Frame
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<RefreshCwIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Storyboarding - Updating Single Frame', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Update Single Frame
                         </Menu.Item>
@@ -138,19 +157,19 @@ export function TutorialModal() {
                     <Menu.Label>Explore</Menu.Label>
                         <Menu.Item
                             leftSection={<CopyIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Explore - Duplicate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Duplicate
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<SquareStackIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Explore - More ___', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             More ____
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<SquareStackIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Explore - Semantic Zoom', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Semantic Zoom
                         </Menu.Item>
@@ -160,19 +179,19 @@ export function TutorialModal() {
                     <Menu.Label>Iterate</Menu.Label>
                         <Menu.Item
                             leftSection={<MessageSquareIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Iterate - View Feedback', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             View feedback
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<WandSparklesIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Iterate - Revise (AI suggestions)', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Revise (AI suggestions)
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<PencilIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Iterate - Edit manually', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Edit manually
                         </Menu.Item>
@@ -182,25 +201,37 @@ export function TutorialModal() {
                     <Menu.Label>Update</Menu.Label>
                         <Menu.Item
                             leftSection={<RefreshCwIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Update - Single Node', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             Single Node
                         </Menu.Item>
                         <Menu.Item
                             leftSection={<ArrowDownFromLineIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Update - All Nodes', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
                             All Nodes
                         </Menu.Item>
 
                     <Menu.Divider />
 
-                    <Menu.Label>Example Workflow</Menu.Label>
+                    <Menu.Label>Example: Iterative Workflow</Menu.Label>
                         <Menu.Item
                             leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
-                            onClick={() => handleOpen('https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                            onClick={() => handleOpen('Example Workflow - Return to Persona & Iterate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
                         >
-                            Connecting Nodes
+                            Iterate w/ Persona
+                        </Menu.Item>
+                        <Menu.Item
+                            leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
+                            onClick={() => handleOpen('Example Workflow - Return to Problem & Iterate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                        >
+                            Iterate w/ Problem
+                        </Menu.Item>
+                        <Menu.Item
+                            leftSection={<ImageIcon style={{ width: rem(14), height: rem(14) }} />}
+                            onClick={() => handleOpen('Example Workflow - Return to Solution & Iterate', 'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS')}
+                        >
+                            Iterate w/ Solution
                         </Menu.Item>
                 </Menu.Dropdown>
             </Menu>
