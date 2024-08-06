@@ -38,8 +38,8 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
   const { fitView } = useReactFlow();
 
   const [finalStep, setFinalStep] = useState<
-    'Persona' | 'Problem' | 'Solution' | 'Storyboard'
-  >('Storyboard');
+    '👤 Persona' | '🚨 Problem' | '💡 Solution' | '🎞 Storyboard'
+  >('🎞 Storyboard');
   const [designContext, setDesignContext] = useState('');
   const [personaDescription, setPersonaDescription] = useState('');
   const [problemDescription, setProblemDescription] = useState('');
@@ -69,7 +69,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
     );
     nodesToFocus.push(...personaIds);
 
-    if (finalStep !== 'Persona') {
+    if (finalStep !== '👤 Persona') {
       notifications.update({
         id: notificationId,
         message: 'Generating problems...'
@@ -82,7 +82,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
       );
       nodesToFocus.push(...problemIds);
 
-      if (finalStep !== 'Problem') {
+      if (finalStep !== '🚨 Problem') {
         notifications.update({
           id: notificationId,
           message: 'Generating solutions...'
@@ -95,7 +95,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
         );
         nodesToFocus.push(...solutionIds);
 
-        if (finalStep !== 'Solution') {
+        if (finalStep !== '💡 Solution') {
           notifications.update({
             id: notificationId,
             message: 'Generating storyboard...'
@@ -147,7 +147,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
     setProblemDescription('');
     setSolutionDescription('');
     setStoryboardDescription('');
-    setFinalStep('Persona');
+    setFinalStep('👤 Persona');
   }
 
   return (
@@ -170,7 +170,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
             description="Select the design thinking step you want to generate up to. Starting from personas, ideas will be generated for each step up to and including the selected step."
             className="mb-4"
             required
-            data={['Persona', 'Problem', 'Solution', 'Storyboard']}
+            data={['👤 Persona', '🚨 Problem', '💡 Solution', '🎞 Storyboard']}
             value={finalStep}
             onChange={setFinalStep as (value: string | null) => void}
             allowDeselect={false}
@@ -192,31 +192,31 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
           {[
             {
               show: true,
-              label: 'Persona ideas',
+              label: '👤 Persona ideas',
               description:
                 'Provide initial ideas and context for the personas you want to generate.',
               value: personaDescription,
               onChange: setPersonaDescription
             },
             {
-              show: finalStep !== 'Persona',
-              label: 'Problem ideas',
+              show: finalStep !== '👤 Persona',
+              label: '🚨 Problem ideas',
               description:
                 'Provide initial ideas and context for the problems you want to generate.',
               value: problemDescription,
               onChange: setProblemDescription
             },
             {
-              show: finalStep !== 'Persona' && finalStep !== 'Problem',
-              label: 'Solution ideas',
+              show: finalStep !== '👤 Persona' && finalStep !== '🚨 Problem',
+              label: '💡 Solution ideas',
               description:
                 'Provide initial ideas and context for the solutions you want to generate.',
               value: solutionDescription,
               onChange: setSolutionDescription
             },
             {
-              show: finalStep === 'Storyboard',
-              label: 'Storyboard description',
+              show: finalStep === '🎞 Storyboard',
+              label: '🎞 Storyboard description',
               description:
                 'Roughly describe the storyboard you want to generate.',
               value: storyboardDescription,
