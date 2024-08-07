@@ -14,7 +14,7 @@ import {
 } from '@mantine/core';
 import { omit } from 'lodash';
 import { ArrowDownFromLineIcon, ImageIcon, RefreshCwIcon } from 'lucide-react';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, forwardRef } from 'react';
 import { NodeProps, useStore } from 'reactflow';
 import '../assets/BaseNode.css';
 
@@ -124,77 +124,97 @@ export default function BaseNode<T extends Record<string, string>>(
   }
   , [zoom]);
 
+  const unpackContent = ((content: Record<string, string>) => {
+      let temp = '';
+      Object.entries(content).map(([key, value]) => {  
+        temp += key;
+        temp += ': ';
+        temp += value;
+        temp += ' ';
+      })
+      return temp;
+  });
+
   return (
     <>
-      <Card
-        className={`size-full ${
-          nodeProps.selected ? 'nowheel border-blue-600' : 'border-transparent'
-        } ${props.nodeBackgroundClass}`}
-        withBorder
-        shadow="sm"
-        radius="lg"
-      >
-        <Card.Section withBorder className="h-[225px]">
-          <AspectRatio ratio={16 / 9} className="size-full">
-            {regenerating || image === '' ? (
-              <div className="size-full flex flex-col items-center justify-center gap-2">
-                <Loader />
-                <p>Generating illustrative image...</p>
-              </div>
-            ) : image === undefined ? (
-              <div className="size-full flex flex-col items-center justify-center gap-2">
-                <ImageIcon className="size-[36px]" />
-                <p>Update node to generate illustrative image</p>
-              </div>
-            ) : (
-              <img src={image} className="size-full object-cover" />
-            )}
-          </AspectRatio>
-        </Card.Section>
-        <div className={`flex justify-between items-center mt-4 mb-2 ${isZoomState()}`}>
-          <h3 className={`font-bold`}>
-            <span className="mr-1">{props.emoji}</span>{' '}
-            {props.content.Name ? (
-              <NodeContentValue
-                value={props.content.Name}
-                previousChangedValue={previousChangedValues['Name']}
-              />
-            ) : (
-              props.nodeName
-            )}
-          </h3>
-          <div className="flex gap-2 items-center nodrag">{icons}</div>
-        </div>
-        <Tooltip.Floating
-          label="Select node to scroll"
-          disabled={nodeProps.selected || !hasOverflowY()}
+      <Tooltip 
+          multiline
+          w={300}
+          withArrow
+          transitionProps={{ transition: 'pop', duration: 150 }}
+          label={unpackContent(omit(props.content, 'Name'))}
+          events={{ hover: true, focus: true, touch: true }}
         >
-          <ScrollArea
-            type={hasOverflowY() ? 'always' : 'hover'}
-            scrollbars="y"
-            viewportRef={scrollViewport}
-            styles={{
-              root: {
-                cursor: 'pointer'
-              }
-            }}
-            className={`py-2`}
+        <Card
+          className={`size-full ${
+            nodeProps.selected ? 'nowheel border-blue-600' : 'border-transparent'
+          } ${props.nodeBackgroundClass}`}
+          withBorder
+          shadow="sm"
+          radius="lg"
+        >
+          <Card.Section withBorder className="h-[225px]">
+            <AspectRatio ratio={16 / 9} className="size-full">
+              {regenerating || image === '' ? (
+                <div className="size-full flex flex-col items-center justify-center gap-2">
+                  <Loader />
+                  <p>Generating illustrative image...</p>
+                </div>
+              ) : image === undefined ? (
+                <div className="size-full flex flex-col items-center justify-center gap-2">
+                  <ImageIcon className="size-[36px]" />
+                  <p>Update node to generate illustrative image</p>
+                </div>
+              ) : (
+                <img src={image} className="size-full object-cover" />
+              )}
+            </AspectRatio>
+          </Card.Section>
+          <div className={`flex justify-between items-center mt-4 mb-2 ${isZoomState()}`}>
+            <h3 className={`font-bold`}>
+              <span className="mr-1">{props.emoji}</span>{' '}
+              {props.content.Name ? (
+                <NodeContentValue
+                  value={props.content.Name}
+                  previousChangedValue={previousChangedValues['Name']}
+                />
+              ) : (
+                props.nodeName
+              )}
+            </h3>
+            <div className="flex gap-2 items-center nodrag">{icons}</div>
+          </div>
+          <Tooltip.Floating
+            label="Select node to scroll"
+            disabled={nodeProps.selected || !hasOverflowY()}
           >
-            { hideContent() == 'hide-content'?               
-                (<>
-                </>)
-              :
-                (<>
-                  <NodeContent
-                    content={omit(props.content, 'Name')}
-                    previousChangedValues={previousChangedValues}
-                  />
-                </>)
-            }
-              
-          </ScrollArea>
-        </Tooltip.Floating>
-      </Card>
+            <ScrollArea
+              type={hasOverflowY() ? 'always' : 'hover'}
+              scrollbars="y"
+              viewportRef={scrollViewport}
+              styles={{
+                root: {
+                  cursor: 'pointer'
+                }
+              }}
+              className={`py-2`}
+            >
+              { hideContent() == 'hide-content'?               
+                  (<>
+                  </>)
+                :
+                  (<>
+                    <NodeContent
+                      content={omit(props.content, 'Name')}
+                      previousChangedValues={previousChangedValues}
+                    />
+                  </>)
+              }
+                
+            </ScrollArea>
+          </Tooltip.Floating>
+        </Card>
+      </Tooltip>
       {props.targetHandle && <TargetHandle />}
       {props.sourceHandle && <SourceHandle />}
     </>
