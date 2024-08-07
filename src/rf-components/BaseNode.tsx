@@ -14,7 +14,7 @@ import {
 } from '@mantine/core';
 import { omit } from 'lodash';
 import { ArrowDownFromLineIcon, ImageIcon, RefreshCwIcon } from 'lucide-react';
-import { useCallback, useRef, forwardRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { NodeProps, useStore } from 'reactflow';
 import '../assets/BaseNode.css';
 
