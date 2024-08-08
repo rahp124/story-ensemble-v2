@@ -10,15 +10,14 @@ import {
   ScrollArea,
   Loader,
   Card,
-  AspectRatio,
+  AspectRatio
 } from '@mantine/core';
 import { omit } from 'lodash';
 import { ArrowDownFromLineIcon, ImageIcon, RefreshCwIcon } from 'lucide-react';
 import { useCallback, useRef } from 'react';
-import { NodeProps, useStore } from 'reactflow';
-import '../assets/BaseNode.css';
+import { NodeProps, ReactFlowState, useStore } from 'reactflow';
 
-const zoomSelector = (s: any) => s.transform[2];
+const zoomSelector = (s: ReactFlowState) => s.transform[2];
 const semanticZoomThreshold = 0.55;
 
 export interface BaseNodeProps<T extends Record<string, string>> {
@@ -42,8 +41,10 @@ export default function BaseNode<T extends Record<string, string>>(
 ) {
   const { nodeProps } = props;
   const { outOfSync, image } = nodeProps.data;
-  
-  const zoom: number = useStore(zoomSelector);
+
+  const zoom = useStore(zoomSelector);
+  const isZoomedOut = zoom < semanticZoomThreshold;
+  const isEmptyNode = Object.values(props.content).every((v) => !v);
 
   const { regenerating, previousChangedValues } = useDisplayStore((state) => ({
     regenerating: state.regeneratingNodes.has(nodeProps.id),
@@ -65,7 +66,7 @@ export default function BaseNode<T extends Record<string, string>>(
       key: 'sync',
       show: outOfSync,
       tooltip: 'Dependencies updated. Regenerate node.',
-      icon: <RefreshCwIcon />,
+      icon: <RefreshCwIcon className="size-4/5" />,
       notification: true,
       loading: regenerating,
       onClick: props.onSync
@@ -74,7 +75,7 @@ export default function BaseNode<T extends Record<string, string>>(
       key: 'syncAll',
       show: outOfSync && props.onSyncAll,
       tooltip: 'Dependencies updated. Regenerate node and all dependents',
-      icon: <ArrowDownFromLineIcon />,
+      icon: <ArrowDownFromLineIcon className="size-4/5" />,
       notification: true,
       loading: regenerating,
       onClick: props.onSyncAll
@@ -86,7 +87,7 @@ export default function BaseNode<T extends Record<string, string>>(
         <ActionIcon
           key={key}
           variant="subtle"
-          size="sm"
+          size={isZoomedOut ? 'xl' : 'sm'}
           loading={loading}
           onClick={onClick}
         >
@@ -104,50 +105,22 @@ export default function BaseNode<T extends Record<string, string>>(
       );
     });
 
-  // change font size of node title according to zoom level
-  const isZoomState = useCallback(() => {
-    if (zoom < semanticZoomThreshold) {
-      return 'text-4xl centered zoom-out';
-    } else {
-      return 'text-md';
-    }
-  }
-  , [zoom]);
-
-  // hide node description content when zoomed out
-  const hideContent = useCallback(() => {
-    if (zoom < semanticZoomThreshold) {
-      return 'hide-content'; // hide content when zoomed out
-    } else {
-      return '';
-    } 
-  }
-  , [zoom]);
-
-  const unpackContent = ((content: Record<string, string>) => {
-      let temp = '';
-      Object.entries(content).map(([key, value]) => {  
-        temp += key;
-        temp += ': ';
-        temp += value;
-        temp += ' ';
-      })
-      return temp;
-  });
-
   return (
     <>
-      <Tooltip 
-          multiline
-          w={300}
-          withArrow
-          transitionProps={{ transition: 'pop', duration: 150 }}
-          label={unpackContent(omit(props.content, 'Name'))}
-          events={{ hover: true, focus: true, touch: true }}
-        >
+      <Tooltip
+        disabled={!isZoomedOut || isEmptyNode}
+        multiline
+        w={300}
+        withArrow
+        transitionProps={{ transition: 'pop', duration: 150 }}
+        label={<NodeContent content={omit(props.content, 'Name')} />}
+        events={{ hover: true, focus: true, touch: true }}
+      >
         <Card
           className={`size-full ${
-            nodeProps.selected ? 'nowheel border-blue-600' : 'border-transparent'
+            nodeProps.selected
+              ? 'nowheel border-blue-600'
+              : 'border-transparent'
           } ${props.nodeBackgroundClass}`}
           withBorder
           shadow="sm"
@@ -170,8 +143,16 @@ export default function BaseNode<T extends Record<string, string>>(
               )}
             </AspectRatio>
           </Card.Section>
-          <div className={`flex justify-between items-center mt-4 mb-2 ${isZoomState()}`}>
-            <h3 className={`font-bold`}>
+          <div
+            className={`flex mt-4 mb-2 gap-4
+            ${
+              isZoomedOut
+                ? 'flex flex-col items-center justify-center text-3xl size-full text-center'
+                : 'flex justify-between items-center text-md'
+            }
+            `}
+          >
+            <h3 className="font-bold">
               <span className="mr-1">{props.emoji}</span>{' '}
               {props.content.Name ? (
                 <NodeContentValue
@@ -184,35 +165,29 @@ export default function BaseNode<T extends Record<string, string>>(
             </h3>
             <div className="flex gap-2 items-center nodrag">{icons}</div>
           </div>
-          <Tooltip.Floating
-            label="Select node to scroll"
-            disabled={nodeProps.selected || !hasOverflowY()}
-          >
-            <ScrollArea
-              type={hasOverflowY() ? 'always' : 'hover'}
-              scrollbars="y"
-              viewportRef={scrollViewport}
-              styles={{
-                root: {
-                  cursor: 'pointer'
-                }
-              }}
-              className={`py-2`}
+          {!isZoomedOut && (
+            <Tooltip.Floating
+              label="Select node to scroll"
+              disabled={nodeProps.selected || !hasOverflowY()}
             >
-              { hideContent() == 'hide-content'?               
-                  (<>
-                  </>)
-                :
-                  (<>
-                    <NodeContent
-                      content={omit(props.content, 'Name')}
-                      previousChangedValues={previousChangedValues}
-                    />
-                  </>)
-              }
-                
-            </ScrollArea>
-          </Tooltip.Floating>
+              <ScrollArea
+                type={hasOverflowY() ? 'always' : 'hover'}
+                scrollbars="y"
+                viewportRef={scrollViewport}
+                styles={{
+                  root: {
+                    cursor: 'pointer'
+                  }
+                }}
+                className={`py-2`}
+              >
+                <NodeContent
+                  content={omit(props.content, 'Name')}
+                  previousChangedValues={previousChangedValues}
+                />
+              </ScrollArea>
+            </Tooltip.Floating>
+          )}
         </Card>
       </Tooltip>
       {props.targetHandle && <TargetHandle />}
