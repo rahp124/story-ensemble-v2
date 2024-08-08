@@ -1,3 +1,4 @@
+import { useStore } from '@/store';
 import {
   Menu,
   Text,
@@ -43,6 +44,12 @@ export function TutorialModal() {
     setTutorialTopic(topic);
     open();
   };
+
+  const {
+    addCommentNode,
+  } = useStore((state) => ({
+    addCommentNode: state.addCommentNode,
+  }));
 
   return (
     <>
@@ -471,6 +478,19 @@ export function TutorialModal() {
             >
               Iterate with Storyboard
             </Menu.Item>
+
+            <Menu.Divider />
+
+            <Menu.Label>Task</Menu.Label>
+            <Menu.Item
+              leftSection={<>👤</>}
+              onClick={() =>
+                addCommentNode('"You will spend 30 minutes for this task. You are supposed to explore as many different personas, problems, solutions, and create storyboards for at least one of the solutions you come up with."')
+              }
+            >
+              Prompt
+            </Menu.Item>
+
           </ScrollAreaAutosize>
         </Menu.Dropdown>
       </Menu>
