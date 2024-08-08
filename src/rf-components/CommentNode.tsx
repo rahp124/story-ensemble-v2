@@ -1,5 +1,5 @@
 import { useStore } from '@/store';
-import { Card } from '@mantine/core';
+import { Card, Tooltip } from '@mantine/core';
 import { useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 
@@ -17,30 +17,40 @@ export default function CommentNode(props: NodeProps<{ comment: string }>) {
           width: 10
         }}
       />
-      <Card
-        className={`size-full bg-gray-100`}
-        withBorder
-        shadow="sm"
-        radius="lg"
+      <Tooltip
+        disabled={!_comment}
+        multiline
+        w={300}
+        withArrow
+        transitionProps={{ transition: 'pop', duration: 150 }}
+        label={_comment}
+        events={{ hover: true, focus: true, touch: true }}
       >
-        <div className="relative size-full grid">
-          <textarea
-            value={_comment}
-            onChange={(e) => setComment(e.target.value)}
-            onBlur={() => updateCommentNode(props.id, _comment)}
-            className={`text-lg p-2 resize-none ${
-              props.selected ? 'nowheel nodrag' : ''
-            }`}
-            placeholder="Comment 💬"
-            style={{
-              gridRowStart: '1',
-              gridColumnStart: '1',
-              gridRowEnd: '1',
-              gridColumnEnd: '1'
-            }}
-          />
-        </div>
-      </Card>
+        <Card
+          className={`size-full bg-gray-100`}
+          withBorder
+          shadow="sm"
+          radius="lg"
+        >
+          <div className="relative size-full grid">
+            <textarea
+              value={_comment}
+              onChange={(e) => setComment(e.target.value)}
+              onBlur={() => updateCommentNode(props.id, _comment)}
+              className={`text-lg p-2 resize-none ${
+                props.selected ? 'nowheel nodrag' : ''
+              }`}
+              placeholder="Comment 💬"
+              style={{
+                gridRowStart: '1',
+                gridColumnStart: '1',
+                gridRowEnd: '1',
+                gridColumnEnd: '1'
+              }}
+            />
+          </div>
+        </Card>
+      </Tooltip>
     </>
   );
 }
