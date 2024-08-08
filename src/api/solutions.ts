@@ -6,9 +6,7 @@ const SOLUTION_PROMPT = `A design solution is a proposal for addressing specific
 Solutions don't have to be perfect, but instead should be a starting point for further refinement and iteration.
 
 Keep values short and to the point and use emojis where possible.
-Avoid repeating the same information in different values.
-
-Include the full name of people from the problems in the solution.`;
+Avoid repeating the same information in different values.`;
 
 export async function generateSolutions(
   context: unknown,

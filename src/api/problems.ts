@@ -9,9 +9,7 @@ A problem statement should be a statement and not a question.
 A problem statement should not be a hypothetical solution or strongly suggest a single solution.
 
 Keep values short and to the point and use emojis where possible.
-Avoid repeating the same information in different values.
-
-Include the full name of personas in the problem statement.`;
+Avoid repeating the same information in different values.`;
 
 export async function generateProblems(
   context: unknown,
