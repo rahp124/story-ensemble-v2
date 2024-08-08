@@ -31,45 +31,49 @@ export interface SelectionToolbarProps {
 export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
   const { selectedNodes } = props;
 
-  const showGenerateProblems = selectedNodes.every(
-    (node) => node.type === NodeType.Persona
-  );
-  const showGenerateSolutions = selectedNodes.every(
-    (node) => node.type === NodeType.Problem
-  );
-  const showGenerateStoryboard = selectedNodes.every(
-    (node) => node.type === NodeType.Solution
+  const nonCommentNodes = selectedNodes.filter(
+    (node) => node.type !== NodeType.Comment
   );
 
-  const showGenerateSimilarPersonas = selectedNodes.every(
-    (node) => node.type === NodeType.Persona
-  );
-  const showGenerateSimilarProblems = selectedNodes.every(
-    (node) => node.type === NodeType.Problem
-  );
-  const showGenerateSimilarSolutions = selectedNodes.every(
-    (node) => node.type === NodeType.Solution
-  );
-  const showGenerateSimilarStoryboard = selectedNodes.every(
-    (node) => node.type === NodeType.Storyboard
-  );
+  const showGenerateProblems =
+    nonCommentNodes.length &&
+    nonCommentNodes.every((node) => node.type === NodeType.Persona);
+  const showGenerateSolutions =
+    nonCommentNodes.length &&
+    nonCommentNodes.every((node) => node.type === NodeType.Problem);
+  const showGenerateStoryboard =
+    nonCommentNodes.length &&
+    nonCommentNodes.every((node) => node.type === NodeType.Solution);
+
+  const showGenerateSimilarPersonas =
+    nonCommentNodes.length &&
+    nonCommentNodes.every((node) => node.type === NodeType.Persona);
+  const showGenerateSimilarProblems =
+    nonCommentNodes.length &&
+    nonCommentNodes.every((node) => node.type === NodeType.Problem);
+  const showGenerateSimilarSolutions =
+    nonCommentNodes.length &&
+    nonCommentNodes.every((node) => node.type === NodeType.Solution);
+  const showGenerateSimilarStoryboard =
+    nonCommentNodes.length &&
+    nonCommentNodes.every((node) => node.type === NodeType.Storyboard);
 
   const iterateButtons = [
     {
-      show: selectedNodes.length > 0,
+      show: nonCommentNodes.length > 0,
       label: 'View feedback',
       leftSection: <MessageSquareIcon className="size-4" />,
       onClick: props.onFeedback
     },
     {
-      show: selectedNodes.length > 0,
+      show: nonCommentNodes.length > 0,
       label: 'Revise',
       leftSection: <WandSparklesIcon className="size-4" />,
       onClick: props.onRegenerate
     },
     {
       show:
-        selectedNodes.length === 1 &&
+        nonCommentNodes.length === 1 &&
         selectedNodes[0].type !== NodeType.Storyboard,
       label: 'Edit manually',
       leftSection: <PencilIcon className="size-4" />,

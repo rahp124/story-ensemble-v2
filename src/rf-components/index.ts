@@ -2,7 +2,8 @@ export const NodeType = {
   Persona: 'Persona',
   Problem: 'Problem',
   Solution: 'Solution',
-  Storyboard: 'Storyboard'
+  Storyboard: 'Storyboard',
+  Comment: 'Comment'
 } as const;
 export type NodeType = (typeof NodeType)[keyof typeof NodeType];
 
@@ -22,6 +23,10 @@ export const displayConfigByNodeType = {
   [NodeType.Storyboard]: {
     emoji: '🎞',
     backgroundClass: 'bg-white'
+  },
+  [NodeType.Comment]: {
+    emoji: '💬',
+    backgroundClass: 'bg-gray-100'
   }
 };
 

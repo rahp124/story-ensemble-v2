@@ -54,7 +54,9 @@ export function IterateModal() {
     updateProblemNode,
     updateSolutionNode
   } = useStore((state) => ({
-    selectedNodes: state.nodes.filter((node) => node.selected),
+    selectedNodes: state.nodes.filter(
+      (node) => node.selected && node.type !== NodeType.Comment
+    ),
 
     iterateModalOpen: state.iterateModalOpen,
     setIterateModalOpen: state.setIterateModalOpen,

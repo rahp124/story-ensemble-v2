@@ -213,6 +213,9 @@ type RFState = {
   copiedNodeIds: string[];
   copy: () => void;
   paste: () => void;
+
+  addEmptyCommentNode: () => void;
+  updateNodeComment: (id: string, comment: string) => void;
 };
 
 function partialize(state: RFState): Partial<RFState> {
@@ -390,6 +393,28 @@ const createStore: StateCreator<
     setNodeOutOfSync: (id: string, outOfSync: boolean) => {
       updateNode(id, (draft) => {
         draft.data.outOfSync = outOfSync;
+      });
+    },
+
+    addEmptyCommentNode: () => {
+      const center = get().centerPosition;
+
+      const node: Node = {
+        id: `comment-${nanoid()}`,
+        type: NodeType.Comment,
+        position: center,
+        data: {
+          comment: ''
+        }
+      };
+
+      get().takeSnapshot();
+      set({ nodes: [...get().nodes, node] });
+    },
+    updateNodeComment: (id: string, comment: string) => {
+      get().takeSnapshot();
+      updateNode<{ comment: string }>(id, (draft) => {
+        draft.data.comment = comment;
       });
     },
 

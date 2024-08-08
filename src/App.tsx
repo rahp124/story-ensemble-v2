@@ -37,12 +37,14 @@ import { FirstGenerationModal } from './components/FirstGenerationModal';
 import { DependentGenerationModal } from './components/DependentGenerationModal';
 import { GenerateMoreModal } from './components/GenerateMoreModal';
 import { findDirectDependencies } from './lib/graphHelper';
+import CommentNode from './rf-components/CommentNode';
 
 const nodeTypes = {
   [NodeType.Persona]: PersonaNode,
   [NodeType.Problem]: ProblemNode,
   [NodeType.Solution]: SolutionNode,
-  [NodeType.Storyboard]: StoryboardNode
+  [NodeType.Storyboard]: StoryboardNode,
+  [NodeType.Comment]: CommentNode
 };
 
 const edgeTypes = {
@@ -75,7 +77,8 @@ export default function App() {
     addEmptyPersonaNode,
     addEmptyProblemNode,
     addEmptySolutionNode,
-    addEmptyStoryboardNode
+    addEmptyStoryboardNode,
+    addEmptyCommentNode
   } = useStore(
     useShallow((state) => ({
       nodes: state.nodes,
@@ -102,7 +105,8 @@ export default function App() {
       addEmptyPersonaNode: state.addEmptyPersonaNode,
       addEmptyProblemNode: state.addEmptyProblemNode,
       addEmptySolutionNode: state.addEmptySolutionNode,
-      addEmptyStoryboardNode: state.addEmptyStoryboardNode
+      addEmptyStoryboardNode: state.addEmptyStoryboardNode,
+      addEmptyCommentNode: state.addEmptyCommentNode
     }))
   );
 
@@ -243,6 +247,12 @@ export default function App() {
                 >
                   Storyboard{' '}
                   {displayConfigByNodeType[NodeType.Storyboard].emoji}
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<PlusIcon className="size-5" />}
+                  onClick={addEmptyCommentNode}
+                >
+                  Comment {displayConfigByNodeType[NodeType.Comment].emoji}
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
