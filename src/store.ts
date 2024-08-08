@@ -93,9 +93,6 @@ type RFState = {
   onConnectStart: OnConnectStart;
   onConnectEnd: OnConnectEnd;
 
-  globalShowImage: boolean;
-  setGlobalShowImage: (show: boolean) => void;
-
   iterateModalOpen: boolean;
   setIterateModalOpen: (open: boolean) => void;
   iterateModalTab: 'feedback' | 'regenerate' | 'edit' | null;
@@ -384,11 +381,6 @@ const createStore: StateCreator<
     connectionInProgress: false,
     onConnectStart: () => set({ connectionInProgress: true }),
     onConnectEnd: () => set({ connectionInProgress: false }),
-
-    globalShowImage: false,
-    setGlobalShowImage: (showImage: boolean) => {
-      set({ globalShowImage: showImage });
-    },
 
     iterateModalOpen: false,
     setIterateModalOpen: (open) => set({ iterateModalOpen: open }),

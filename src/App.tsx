@@ -17,15 +17,13 @@ import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
 import {
-  ImageIcon,
-  ImageOff,
   PlusIcon,
   // Redo,
   Trash
   //  Undo
 } from 'lucide-react';
 
-import { Button, Menu, Switch } from '@mantine/core';
+import { Button, Menu } from '@mantine/core';
 import { useShallow } from 'zustand/react/shallow';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { TutorialModal } from './components/TutorialModal';
@@ -62,9 +60,6 @@ export default function App() {
     onConnectEnd,
     onSelectionChange,
 
-    globalShowImage,
-    setGlobalShowImage,
-
     // undo,
     // redo,
 
@@ -91,9 +86,6 @@ export default function App() {
       onConnectStart: state.onConnectStart,
       onConnectEnd: state.onConnectEnd,
       onSelectionChange: state.onSelectionChange,
-
-      globalShowImage: state.globalShowImage,
-      setGlobalShowImage: state.setGlobalShowImage,
 
       undo: state.undo,
       redo: state.redo,
@@ -254,15 +246,6 @@ export default function App() {
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
-            <Switch
-              size="sm"
-              checked={globalShowImage}
-              onChange={(event) => {
-                setGlobalShowImage(event.currentTarget.checked);
-              }}
-              onLabel={<ImageIcon className="w-3 h-3" />}
-              offLabel={<ImageOff className="w-3 h-3" />}
-            />
           </div>
         </Panel>
         <Controls position="bottom-right" showInteractive={false}>
