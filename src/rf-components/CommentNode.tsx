@@ -6,7 +6,7 @@ import { NodeProps, NodeResizer } from 'reactflow';
 export default function CommentNode(props: NodeProps<{ comment: string }>) {
   const { comment } = props.data;
   const [_comment, setComment] = useState(comment);
-  const updateNodeComment = useStore((state) => state.updateNodeComment);
+  const updateCommentNode = useStore((state) => state.updateCommentNode);
 
   return (
     <>
@@ -27,7 +27,7 @@ export default function CommentNode(props: NodeProps<{ comment: string }>) {
           <textarea
             value={_comment}
             onChange={(e) => setComment(e.target.value)}
-            onBlur={() => updateNodeComment(props.id, _comment)}
+            onBlur={() => updateCommentNode(props.id, _comment)}
             className={`text-lg p-2 resize-none ${
               props.selected ? 'nowheel nodrag' : ''
             }`}

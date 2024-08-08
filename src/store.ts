@@ -104,7 +104,8 @@ type RFState = {
   addEmptyPersonaNode: () => void;
   generatePersonaNodes: (
     context: string,
-    numberOfNodes?: number
+    numberOfNodes?: number,
+    dependencies?: string[]
   ) => Promise<string[]>;
   generateMorePersonaNodes: (
     instructions: string,
@@ -214,8 +215,8 @@ type RFState = {
   copy: () => void;
   paste: () => void;
 
-  addEmptyCommentNode: () => void;
-  updateNodeComment: (id: string, comment: string) => void;
+  addCommentNode: (comment?: string) => string;
+  updateCommentNode: (id: string, comment: string) => void;
 };
 
 function partialize(state: RFState): Partial<RFState> {
@@ -396,22 +397,25 @@ const createStore: StateCreator<
       });
     },
 
-    addEmptyCommentNode: () => {
+    addCommentNode: (comment = '') => {
       const center = get().centerPosition;
 
+      const id = `comment-${nanoid()}`;
       const node: Node = {
-        id: `comment-${nanoid()}`,
+        id,
         type: NodeType.Comment,
         position: center,
         data: {
-          comment: ''
+          comment
         }
       };
 
       get().takeSnapshot();
       set({ nodes: [...get().nodes, node] });
+
+      return id;
     },
-    updateNodeComment: (id: string, comment: string) => {
+    updateCommentNode: (id: string, comment: string) => {
       get().takeSnapshot();
       updateNode<{ comment: string }>(id, (draft) => {
         draft.data.comment = comment;
@@ -441,7 +445,11 @@ const createStore: StateCreator<
       get().takeSnapshot();
       set({ nodes: [...get().nodes, node] });
     },
-    generatePersonaNodes: async (context: string, numberOfNodes?: number) => {
+    generatePersonaNodes: async (
+      context: string,
+      numberOfNodes?: number,
+      dependencies?: string[]
+    ) => {
       const center = get().centerPosition;
 
       const personas = await generatePersonas(context, numberOfNodes);
@@ -450,10 +458,13 @@ const createStore: StateCreator<
       );
       numberOfNodes = personas.length;
 
-      const nodePositionAttributes = calculateNodePositionAttributes(
-        center,
-        numberOfNodes
-      );
+      const nodePositionAttributes = !dependencies
+        ? calculateNodePositionAttributes(center, numberOfNodes)
+        : calculateDependentNodePositionAttributes(
+            get().nodes.filter((node) => dependencies.includes(node.id)),
+            'bottom',
+            numberOfNodes
+          );
 
       const nodes = personas.map((persona, idx) => {
         const node: Node<NodeData> = {
