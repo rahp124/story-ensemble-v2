@@ -25,7 +25,8 @@ import {
   HeartHandshakeIcon,
   SparklesIcon,
   BookImageIcon,
-  ScanEyeIcon
+  ScanEyeIcon,
+  BlendIcon
 } from 'lucide-react';
 import { useState } from 'react';
 import { Kbd } from '@mantine/core';
@@ -115,6 +116,26 @@ export function TutorialModal() {
             type="auto"
             mah="80vh" // Hack to make the dropdown scrollable without overflow
           >
+            <Menu.Label>Design Thinking</Menu.Label>
+            <Menu.Item
+              leftSection={
+                <BlendIcon style={{ width: rem(14), height: rem(14) }} />
+              }
+              rightSection={
+                <Text size="xs" c="dimmed">
+                  {' '}
+                  <Kbd>Space</Kbd> + Drag
+                </Text>
+              }
+              onClick={() =>
+                handleOpen(
+                  'Design Thinking - What is it?',
+                  'https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS'
+                )
+              }
+            >
+              What is it?
+            </Menu.Item>
             <Menu.Label>Basic Navigation</Menu.Label>
             <Menu.Item
               leftSection={
@@ -157,7 +178,7 @@ export function TutorialModal() {
 
             <Menu.Divider />
 
-            <Menu.Label>Design Thinking</Menu.Label>
+            <Menu.Label>Design</Menu.Label>
             <Menu.Item
               leftSection={
                 <BotIcon style={{ width: rem(14), height: rem(14) }} />
