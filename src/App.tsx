@@ -78,7 +78,7 @@ export default function App() {
     addEmptyProblemNode,
     addEmptySolutionNode,
     addEmptyStoryboardNode,
-    addEmptyCommentNode
+    addCommentNode
   } = useStore(
     useShallow((state) => ({
       nodes: state.nodes,
@@ -106,7 +106,7 @@ export default function App() {
       addEmptyProblemNode: state.addEmptyProblemNode,
       addEmptySolutionNode: state.addEmptySolutionNode,
       addEmptyStoryboardNode: state.addEmptyStoryboardNode,
-      addEmptyCommentNode: state.addEmptyCommentNode
+      addCommentNode: state.addCommentNode
     }))
   );
 
@@ -250,7 +250,7 @@ export default function App() {
                 </Menu.Item>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
-                  onClick={addEmptyCommentNode}
+                  onClick={() => addCommentNode()}
                 >
                   Comment {displayConfigByNodeType[NodeType.Comment].emoji}
                 </Menu.Item>
