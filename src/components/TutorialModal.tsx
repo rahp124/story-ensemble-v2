@@ -1,4 +1,3 @@
-import { useStore } from '@/store';
 import {
   Menu,
   Text,
@@ -31,11 +30,13 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Kbd } from '@mantine/core';
+import { ProjectThemesList } from './ProjectList';
+import { projectThemes } from '@/data/projects';
 
 export function TutorialModal() {
   const [opened, { open, close }] = useDisclosure(false);
   const [url, setUrl] = useState<string | null>(
-    'https://www.youtube.com/embed/XoSfkqrGwhg?si=vPG5bZ3S1dU4_CP7'
+    null
   );
   const [tutorialTopic, setTutorialTopic] = useState<string | null>(null);
 
@@ -45,11 +46,11 @@ export function TutorialModal() {
     open();
   };
 
-  const {
-    addCommentNode,
-  } = useStore((state) => ({
-    addCommentNode: state.addCommentNode,
-  }));
+  const showProjectList = () => {
+    setUrl(null);
+    setTutorialTopic('Project Ideas');
+    open();
+  };
 
   return (
     <>
@@ -76,7 +77,7 @@ export function TutorialModal() {
               marginBottom: '20px'
             }}
           >
-            {url && (
+            {url ? (
               <>
                 <div
                   className="text-center"
@@ -96,7 +97,11 @@ export function TutorialModal() {
                   ></iframe>
                 </div>
               </>
-            )}
+            ):
+            (
+                <ProjectThemesList projectThemes={projectThemes} close={close}/>
+            )
+          }
           </Modal.Body>
         </Modal.Content>
       </Modal.Root>
@@ -485,10 +490,10 @@ export function TutorialModal() {
             <Menu.Item
               leftSection={<>👤</>}
               onClick={() =>
-                addCommentNode('"You will spend 30 minutes for this task. You are supposed to explore as many different personas, problems, solutions, and create storyboards for at least one of the solutions you come up with."')
+                showProjectList()
               }
             >
-              Prompt
+              Projects
             </Menu.Item>
 
           </ScrollAreaAutosize>
