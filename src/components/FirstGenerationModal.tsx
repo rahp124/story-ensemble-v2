@@ -68,7 +68,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
 
     const nodesToFocus: string[] = [];
 
-    const commentId = addCommentNode(designContext);
+    const commentId = addCommentNode('[Design context] \n' + designContext);
 
     const personaIds = await generatePersonaNodes(
       `${designContext}\n${personaDescription}`,
