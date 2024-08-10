@@ -3,6 +3,7 @@ import { useStore as useStoreReact } from 'reactflow';
 import { Card, Tooltip } from '@mantine/core';
 import { useState } from 'react';
 import { NodeProps, NodeResizer, ReactFlowState } from 'reactflow';
+import { clamp } from 'lodash';
 
 const zoomSelector = (s: ReactFlowState) => s.transform[2];
 const semanticZoomThreshold = 0.55;
@@ -12,8 +13,9 @@ export default function CommentNode(props: NodeProps<{ comment: string }>) {
   const [_comment, setComment] = useState(comment);
   const updateCommentNode = useStore((state) => state.updateCommentNode);
 
-  const zoom:number = useStoreReact(zoomSelector);
+  const zoom: number = useStoreReact(zoomSelector);
   const isZoomedOut = zoom < semanticZoomThreshold;
+  const fontSize = clamp(16 / zoom, 14, 64);
 
   return (
     <>
@@ -44,19 +46,17 @@ export default function CommentNode(props: NodeProps<{ comment: string }>) {
               value={_comment}
               onChange={(e) => setComment(e.target.value)}
               onBlur={() => updateCommentNode(props.id, _comment)}
-              className={`
-              ${
-                isZoomedOut ? 'text-3xl' : 'text-lg'
-              } p-2 resize-none ${
+              className={`p-2 resize-none ${
                 props.selected ? 'nowheel nodrag' : ''
-              }`
-            }
+              }`}
               placeholder="Comment 💬"
               style={{
                 gridRowStart: '1',
                 gridColumnStart: '1',
                 gridRowEnd: '1',
-                gridColumnEnd: '1'
+                gridColumnEnd: '1',
+                fontSize: `${fontSize}px`,
+                maxHeight: '100%'
               }}
             />
           </div>

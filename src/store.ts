@@ -405,6 +405,12 @@ const createStore: StateCreator<
         id,
         type: NodeType.Comment,
         position: center,
+        width: 400,
+        height: 200,
+        style: {
+          width: 400,
+          height: 200
+        },
         data: {
           comment
         }
