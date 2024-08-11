@@ -15,7 +15,7 @@ export default function CommentNode(props: NodeProps<{ comment: string }>) {
 
   const zoom: number = useStoreReact(zoomSelector);
   const isZoomedOut = zoom < semanticZoomThreshold;
-  const fontSize = clamp(16 / zoom, 14, 64);
+  const fontSize = clamp(16 / zoom, 14, 28);
 
   return (
     <>
