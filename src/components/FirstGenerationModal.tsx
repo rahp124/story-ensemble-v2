@@ -21,7 +21,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
   const { opened, onClose } = props;
 
   const {
-    addCommentNode,
+    addProjectNode,
 
     generatePersonaNodes,
     generateProblemNodes,
@@ -32,7 +32,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
 
     addStudyEvent
   } = useStore((state) => ({
-    addCommentNode: state.addCommentNode,
+    addProjectNode: state.addProjectNode,
 
     generatePersonaNodes: state.generatePersonaNodes,
     generateProblemNodes: state.generateProblemNodes,
@@ -72,12 +72,21 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
 
     const nodesToFocus: string[] = [];
 
-    const commentId = addCommentNode('[Design context] \n' + designContext);
+    const designContextNodeId = addProjectNode({
+      designContext,
+      personaDescription,
+      ...(finalStep !== '👤 Persona' && { problemDescription }),
+      ...(finalStep !== '👤 Persona' &&
+        finalStep !== '🚨 Problem' && {
+          solutionDescription
+        }),
+      ...(finalStep === '🎞 Storyboard' && { storyboardDescription })
+    });
 
     const personaIds = await generatePersonaNodes(
       `${designContext}\n${personaDescription}`,
       undefined,
-      [commentId]
+      [designContextNodeId]
     );
     nodesToFocus.push(...personaIds);
 
@@ -203,7 +212,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
     setProblemDescription('');
     setSolutionDescription('');
     setStoryboardDescription('');
-    setFinalStep('👤 Persona');
+    setFinalStep('🎞 Storyboard');
   }
 
   return (

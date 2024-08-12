@@ -226,7 +226,7 @@ type RFState = {
   addCommentNode: (comment?: string) => string;
   updateCommentNode: (id: string, comment: string) => void;
 
-  addProjectNode: (project: Record<string, string>) => void;
+  addProjectNode: (project: Record<string, string>) => string;
 
   studyEvents: Array<StudyEvent>;
   addStudyEvent: (event: StudyEvent) => void;

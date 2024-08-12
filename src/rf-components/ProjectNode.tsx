@@ -49,7 +49,9 @@ export default function ProjectNode(props: NodeProps<NodeData>) {
             }
             `}
           >
-            <h3 className="font-bold">{content.theme}</h3>
+            <h3 className="font-bold">
+              {content.theme || content.designContext}
+            </h3>
           </div>
           {!isZoomedOut && (
             <Tooltip.Floating
@@ -67,7 +69,9 @@ export default function ProjectNode(props: NodeProps<NodeData>) {
                 }}
                 className={`py-2`}
               >
-                <NodeContent content={omit(content, 'theme')} />
+                <NodeContent
+                  content={omit(content, ['theme', 'designContext'])}
+                />
               </ScrollArea>
             </Tooltip.Floating>
           )}
