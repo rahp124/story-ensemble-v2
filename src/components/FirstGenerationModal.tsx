@@ -28,7 +28,9 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
     generateSolutionNodes,
     generateStoryboardNode,
 
-    selectNodes
+    selectNodes,
+
+    addStudyEvent
   } = useStore((state) => ({
     addCommentNode: state.addCommentNode,
 
@@ -37,7 +39,9 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
     generateSolutionNodes: state.generateSolutionNodes,
     generateStoryboardNode: state.generateStoryboardNode,
 
-    selectNodes: state.selectNodes
+    selectNodes: state.selectNodes,
+
+    addStudyEvent: state.addStudyEvent
   }));
   const { fitView } = useReactFlow();
 
@@ -77,6 +81,17 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
     );
     nodesToFocus.push(...personaIds);
 
+    addStudyEvent({
+      initiator: 'user',
+      type: 'BRAINSTORM_GENERATE_PERSONAS',
+      count: personaIds.length,
+      data: {
+        designContext,
+        personaDescription,
+        finalStep
+      }
+    });
+
     if (finalStep !== '👤 Persona') {
       notifications.update({
         id: notificationId,
@@ -90,6 +105,17 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
       );
       nodesToFocus.push(...problemIds);
 
+      addStudyEvent({
+        initiator: 'user',
+        type: 'BRAINSTORM_GENERATE_PROBLEMS',
+        count: problemIds.length,
+        data: {
+          designContext,
+          problemDescription,
+          finalStep
+        }
+      });
+
       if (finalStep !== '🚨 Problem') {
         notifications.update({
           id: notificationId,
@@ -102,6 +128,17 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
           true
         );
         nodesToFocus.push(...solutionIds);
+
+        addStudyEvent({
+          initiator: 'user',
+          type: 'BRAINSTORM_GENERATE_SOLUTIONS',
+          count: solutionIds.length,
+          data: {
+            designContext,
+            solutionDescription,
+            finalStep
+          }
+        });
 
         if (finalStep !== '💡 Solution') {
           notifications.update({
@@ -118,6 +155,17 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
             [solutionIds[middleIndex]]
           );
           nodesToFocus.push(...storyboardIds);
+
+          addStudyEvent({
+            initiator: 'user',
+            type: 'BRAINSTORM_GENERATE_STORYBOARD',
+            count: storyboardIds.length,
+            data: {
+              designContext,
+              storyboardDescription,
+              finalStep
+            }
+          });
         }
       }
     }

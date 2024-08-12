@@ -73,6 +73,14 @@ const indexDbStorage: StateStorage = {
   }
 };
 
+type StudyEvent = {
+  initiator: 'system' | 'user';
+  type: string;
+  count: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any;
+};
+
 type RFState = {
   nodes: Node[];
   setNodes: (nodes: Node[]) => void;
@@ -219,12 +227,16 @@ type RFState = {
   updateCommentNode: (id: string, comment: string) => void;
 
   addProjectNode: (project: Record<string, string>) => void;
+
+  studyEvents: Array<StudyEvent>;
+  addStudyEvent: (event: StudyEvent) => void;
 };
 
 function partialize(state: RFState): Partial<RFState> {
   return {
     nodes: state.nodes,
-    edges: state.edges
+    edges: state.edges,
+    studyEvents: state.studyEvents
   };
 }
 
@@ -319,6 +331,13 @@ const createStore: StateCreator<
           .edges.filter((edge) => edgesIdsToRemove.includes(edge.id))
           .map((edge) => edge.target);
 
+        get().addStudyEvent({
+          initiator: 'user',
+          type: 'DISCONNECT_EDGE',
+          count: disconnectedNodeIds.length,
+          data: {}
+        });
+
         updateNodes(disconnectedNodeIds, (draft) => {
           draft.data.outOfSync = true;
         });
@@ -341,7 +360,25 @@ const createStore: StateCreator<
         source.startsWith('persona') && target.startsWith('problem');
       const isProblemToSolutionConnection =
         source.startsWith('problem') && target.startsWith('solution');
-      if (!isPersonaToProblemConnection && !isProblemToSolutionConnection)
+      const isSolutionToStoryboardConnection =
+        source.startsWith('solution') && target.startsWith('storyboard');
+
+      get().addStudyEvent({
+        initiator: 'user',
+        type: 'CONNECT_EDGE',
+        count: 1,
+        data: {
+          isPersonaToProblemConnection,
+          isProblemToSolutionConnection,
+          isSolutionToStoryboardConnection
+        }
+      });
+
+      if (
+        !isPersonaToProblemConnection &&
+        !isProblemToSolutionConnection &&
+        !isSolutionToStoryboardConnection
+      )
         return;
 
       const targetNode = get().nodes.find((node) => node.id === target);
@@ -1634,6 +1671,13 @@ const createStore: StateCreator<
           ...newNodes.map((node) => ({ ...node, selected: true }))
         ],
         edges: [...get().edges, ...newEdges]
+      });
+    },
+
+    studyEvents: [],
+    addStudyEvent: (event) => {
+      set({
+        studyEvents: [...get().studyEvents, event]
       });
     }
   };

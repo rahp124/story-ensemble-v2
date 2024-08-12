@@ -56,7 +56,9 @@ export function GenerateMoreModal(props: GenerateMoreModalProps) {
     generateMoreStoryboardNode,
 
     selectedNodes,
-    selectNodes
+    selectNodes,
+
+    addStudyEvent
   } = useStore((state) => ({
     generateMorePersonaNodes: state.generateMorePersonaNodes,
     generateMoreProblemNodes: state.generateMoreProblemNodes,
@@ -64,7 +66,9 @@ export function GenerateMoreModal(props: GenerateMoreModalProps) {
     generateMoreStoryboardNode: state.generateMoreStoryboardNode,
 
     selectedNodes: state.nodes.filter((node) => node.selected),
-    selectNodes: state.selectNodes
+    selectNodes: state.selectNodes,
+
+    addStudyEvent: state.addStudyEvent
   }));
 
   const selectedPersonaNodes = selectedNodes.filter(
@@ -99,8 +103,19 @@ export function GenerateMoreModal(props: GenerateMoreModalProps) {
     ).then((recommendations) => {
       setRecommendations(recommendations);
       setGeneratingRecommendations(false);
+
+      addStudyEvent({
+        initiator: 'system',
+        type: 'GENERATE_MORE_RECOMMENDATIONS',
+        count: recommendations.length,
+        data: {
+          selectedNodeIds: selectedNodes.map(({ id }) => id),
+          nodeToGenerate
+        }
+      });
     });
   }, [
+    addStudyEvent,
     generatingRecommendations,
     nodeToGenerate,
     opened,
@@ -147,6 +162,23 @@ export function GenerateMoreModal(props: GenerateMoreModalProps) {
             instructions,
             selectedStoryboardNodes.map(({ id }) => id)
           );
+
+    addStudyEvent({
+      initiator: 'user',
+      type:
+        nodeToGenerate === 'Persona'
+          ? 'MORE_GENERATE_PERSONAS'
+          : nodeToGenerate === 'Problem'
+          ? 'MORE_GENERATE_PROBLEMS'
+          : nodeToGenerate === 'Solution'
+          ? 'MORE_GENERATE_SOLUTIONS'
+          : 'MORE_GENERATE_STORYBOARD',
+      count: nodesToFocus.length,
+      data: {
+        instructions,
+        nodeToGenerate
+      }
+    });
 
     notifications.update({
       id: notificationId,

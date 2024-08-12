@@ -27,14 +27,18 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
     generateSolutionImage,
     regenerateSolutionNodes,
 
-    regenerateStoryboardNode
+    regenerateStoryboardNode,
+
+    addStudyEvent
   } = useStore((state) => ({
     edges: state.edges,
 
     generateSolutionImage: state.generateSolutionImage,
     regenerateSolutionNodes: state.regenerateSolutionNodes,
 
-    regenerateStoryboardNode: state.regenerateStoryboardNode
+    regenerateStoryboardNode: state.regenerateStoryboardNode,
+
+    addStudyEvent: state.addStudyEvent
   }));
 
   return (
@@ -59,6 +63,15 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
         );
         setPreviousChangedValuesById(_previousChangedValuesById);
 
+        addStudyEvent({
+          initiator: 'user',
+          type: 'SYNC_REGENERATE_SOLUTIONS',
+          count: 1,
+          data: {
+            sourceNodeType: 'SOLUTION'
+          }
+        });
+
         regeneratedImageNodeIds.forEach(async (idPromise) => {
           setRegeneratingNode(await idPromise, false);
         });
@@ -75,6 +88,15 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
           [props.id],
           'Regenerate solution based on updated problems'
         );
+
+        addStudyEvent({
+          initiator: 'user',
+          type: 'SYNC_ALL_REGENERATE_SOLUTIONS',
+          count: 1,
+          data: {
+            sourceNodeType: 'SOLUTION'
+          }
+        });
 
         setPreviousChangedValuesById(_previousChangedValuesById);
 
@@ -100,6 +122,15 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
               setRegeneratingNode(storyboardId, false);
             })
           );
+
+          addStudyEvent({
+            initiator: 'user',
+            type: 'SYNC_ALL_REGENERATE_STORYBOARDS',
+            count: storyboardIds.length,
+            data: {
+              sourceNodeType: 'SOLUTION'
+            }
+          });
         }
       }}
       targetHandle={true}

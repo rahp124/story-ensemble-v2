@@ -59,7 +59,9 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
     generateStoryboardNode,
 
     selectedNodes,
-    selectNodes
+    selectNodes,
+
+    addStudyEvent
   } = useStore((state) => ({
     edges: state.edges,
 
@@ -68,7 +70,9 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
     generateStoryboardNode: state.generateStoryboardNode,
 
     selectedNodes: state.nodes.filter((node) => node.selected),
-    selectNodes: state.selectNodes
+    selectNodes: state.selectNodes,
+
+    addStudyEvent: state.addStudyEvent
   }));
 
   const selectedPersonaNodes = selectedNodes.filter(
@@ -100,8 +104,19 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
     ).then((recommendations) => {
       setRecommendations(recommendations);
       setGeneratingRecommendations(false);
+
+      addStudyEvent({
+        initiator: 'system',
+        type: 'GENERATE_DEPENDENT_RECOMMENDATIONS',
+        count: recommendations.length,
+        data: {
+          selectedNodeIds: selectedNodes.map(({ id }) => id),
+          nodeToGenerate
+        }
+      });
     });
   }, [
+    addStudyEvent,
     generatingRecommendations,
     nodeToGenerate,
     opened,
@@ -145,6 +160,21 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
             selectedProblemNodes.map(({ id }) => id),
             selectedSolutionNodes.map(({ id }) => id)
           );
+
+    addStudyEvent({
+      initiator: 'user',
+      type:
+        nodeToGenerate === 'Problem'
+          ? 'DEPENDENT_GENERATE_PROBLEMS'
+          : nodeToGenerate === 'Solution'
+          ? 'DEPENDENT_GENERATE_SOLUTIONS'
+          : 'DEPENDENT_GENERATE_STORYBOARD',
+      count: nodesToFocus.length,
+      data: {
+        instructions,
+        nodeToGenerate
+      }
+    });
 
     notifications.update({
       id: notificationId,
@@ -210,6 +240,16 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
         nodeToGenerate !== 'Problem'
       );
       nodesToFocus.push(...problemIds);
+
+      addStudyEvent({
+        initiator: 'user',
+        type: 'DEPENDENT_TO_STORYBOARD_GENERATE_PROBLEMS',
+        count: problemIds.length,
+        data: {
+          instructions,
+          nodeToGenerate
+        }
+      });
     }
 
     if (nodeToGenerate === 'Problem' || nodeToGenerate === 'Solution') {
@@ -224,6 +264,16 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
         nodeToGenerate !== 'Solution'
       );
       nodesToFocus.push(...solutionIds);
+
+      addStudyEvent({
+        initiator: 'user',
+        type: 'DEPENDENT_TO_STORYBOARD_GENERATE_SOLUTIONS',
+        count: solutionIds.length,
+        data: {
+          instructions,
+          nodeToGenerate
+        }
+      });
     }
 
     notifications.update({
@@ -247,6 +297,16 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
       [solution]
     );
     nodesToFocus.push(...storyboardIds);
+
+    addStudyEvent({
+      initiator: 'user',
+      type: 'DEPENDENT_TO_STORYBOARD_GENERATE_STORYBOARD',
+      count: storyboardIds.length,
+      data: {
+        instructions,
+        nodeToGenerate
+      }
+    });
 
     notifications.update({
       id: notificationId,

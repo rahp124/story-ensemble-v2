@@ -17,13 +17,14 @@ import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
 import {
+  ClipboardList,
   PlusIcon,
   // Redo,
   Trash
   //  Undo
 } from 'lucide-react';
 
-import { Button, Menu } from '@mantine/core';
+import { Button, Menu, Tooltip } from '@mantine/core';
 import { useShallow } from 'zustand/react/shallow';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { TutorialModal } from './components/TutorialModal';
@@ -80,7 +81,10 @@ export default function App() {
     addEmptyProblemNode,
     addEmptySolutionNode,
     addEmptyStoryboardNode,
-    addCommentNode
+    addCommentNode,
+
+    studyEvents,
+    addStudyEvent
   } = useStore(
     useShallow((state) => ({
       nodes: state.nodes,
@@ -108,7 +112,10 @@ export default function App() {
       addEmptyProblemNode: state.addEmptyProblemNode,
       addEmptySolutionNode: state.addEmptySolutionNode,
       addEmptyStoryboardNode: state.addEmptyStoryboardNode,
-      addCommentNode: state.addCommentNode
+      addCommentNode: state.addCommentNode,
+
+      studyEvents: state.studyEvents,
+      addStudyEvent: state.addStudyEvent
     }))
   );
 
@@ -227,32 +234,72 @@ export default function App() {
               <Menu.Dropdown>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
-                  onClick={addEmptyPersonaNode}
+                  onClick={() => {
+                    addStudyEvent({
+                      initiator: 'user',
+                      type: 'ADD_EMPTY_PERSONA',
+                      count: 1,
+                      data: {}
+                    });
+                    addEmptyPersonaNode();
+                  }}
                 >
                   Persona {displayConfigByNodeType[NodeType.Persona].emoji}
                 </Menu.Item>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
-                  onClick={addEmptyProblemNode}
+                  onClick={() => {
+                    addStudyEvent({
+                      initiator: 'user',
+                      type: 'ADD_EMPTY_PROBLEM',
+                      count: 1,
+                      data: {}
+                    });
+                    addEmptyProblemNode();
+                  }}
                 >
                   Problem {displayConfigByNodeType[NodeType.Problem].emoji}
                 </Menu.Item>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
-                  onClick={addEmptySolutionNode}
+                  onClick={() => {
+                    addStudyEvent({
+                      initiator: 'user',
+                      type: 'ADD_EMPTY_SOLUTION',
+                      count: 1,
+                      data: {}
+                    });
+                    addEmptySolutionNode();
+                  }}
                 >
                   Solution {displayConfigByNodeType[NodeType.Solution].emoji}
                 </Menu.Item>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
-                  onClick={addEmptyStoryboardNode}
+                  onClick={() => {
+                    addStudyEvent({
+                      initiator: 'user',
+                      type: 'ADD_EMPTY_STORYBOARD',
+                      count: 1,
+                      data: {}
+                    });
+                    addEmptyStoryboardNode();
+                  }}
                 >
                   Storyboard{' '}
                   {displayConfigByNodeType[NodeType.Storyboard].emoji}
                 </Menu.Item>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
-                  onClick={() => addCommentNode()}
+                  onClick={() => {
+                    addStudyEvent({
+                      initiator: 'user',
+                      type: 'ADD_EMPTY_COMMENT',
+                      count: 1,
+                      data: {}
+                    });
+                    addCommentNode();
+                  }}
                 >
                   Comment {displayConfigByNodeType[NodeType.Comment].emoji}
                 </Menu.Item>
@@ -267,19 +314,35 @@ export default function App() {
           <ControlButton onClick={() => redo()}>
             <Redo />
           </ControlButton> */}
-          <ControlButton
-            onClick={() => {
-              const confirmation = confirm(
-                'Are you want to reset the canvas? All work will be lost.'
-              );
-              if (confirmation) {
-                useStore.persist.clearStorage();
-                window.location.reload();
-              }
-            }}
-          >
-            <Trash />
-          </ControlButton>
+          <Tooltip label="Download Study Usage Data" withArrow>
+            <div>
+              <ControlButton
+                onClick={() => {
+                  console.log(JSON.stringify(studyEvents, null, 2));
+                }}
+              >
+                <ClipboardList />
+              </ControlButton>
+            </div>
+          </Tooltip>
+
+          <Tooltip label="Reset Canvas">
+            <div>
+              <ControlButton
+                onClick={() => {
+                  const confirmation = confirm(
+                    'Are you want to reset the canvas? All data will be lost.'
+                  );
+                  if (confirmation) {
+                    useStore.persist.clearStorage();
+                    window.location.reload();
+                  }
+                }}
+              >
+                <Trash />
+              </ControlButton>
+            </div>
+          </Tooltip>
         </Controls>
         <MiniMap
           pannable
@@ -349,6 +412,13 @@ export default function App() {
               setIterateModalOpen(true);
             }}
             onDuplicate={() => {
+              addStudyEvent({
+                initiator: 'user',
+                type: 'DUPLICATE_NODES',
+                count: selectedNodes.length,
+                data: {}
+              });
+
               copy();
               paste();
             }}

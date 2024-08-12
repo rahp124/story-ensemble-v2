@@ -52,7 +52,9 @@ export function IterateModal() {
 
     updatePersonaNode,
     updateProblemNode,
-    updateSolutionNode
+    updateSolutionNode,
+
+    addStudyEvent
   } = useStore((state) => ({
     selectedNodes: state.nodes.filter(
       (node) =>
@@ -76,7 +78,9 @@ export function IterateModal() {
 
     updatePersonaNode: state.updatePersonaNode,
     updateProblemNode: state.updateProblemNode,
-    updateSolutionNode: state.updateSolutionNode
+    updateSolutionNode: state.updateSolutionNode,
+
+    addStudyEvent: state.addStudyEvent
   }));
 
   const [generatingFeedback, setGeneratingFeedback] = useState(false);
@@ -158,13 +162,24 @@ export function IterateModal() {
     generateFeedback().then((feedback) => {
       setFeedback(feedback);
       setGeneratingFeedback(false);
+
+      addStudyEvent({
+        initiator: 'system',
+        type: 'GENERATE_FEEDBACK',
+        count: feedback.length,
+        data: {
+          selectedNodeIds: selectedNodes.map(({ id }) => id)
+        }
+      });
     });
   }, [
+    addStudyEvent,
     feedback,
     generateFeedback,
     generatingFeedback,
     iterateModalOpen,
-    iterateModalTab
+    iterateModalTab,
+    selectedNodes
   ]);
 
   const [feedbackResponse, setFeedbackResponse] = useState('');
@@ -190,13 +205,23 @@ export function IterateModal() {
     ).then((recommendations) => {
       setRecommendations(recommendations);
       setGeneratingRecommendations(false);
+
+      addStudyEvent({
+        initiator: 'system',
+        type: 'GENERATE_REVISE_RECOMMENDATIONS',
+        count: recommendations.length,
+        data: {
+          selectedNodeIds: selectedNodes.map(({ id }) => id)
+        }
+      });
     });
   }, [
     iterateModalOpen,
     recommendations,
     iterateModalTab,
     generatingRecommendations,
-    selectedNodes
+    selectedNodes,
+    addStudyEvent
   ]);
 
   const resetInputs = () => {
@@ -208,7 +233,7 @@ export function IterateModal() {
   };
 
   const [regenerating, setRegenerating] = useState(false);
-  const regenerateNodes = async (context: string) => {
+  const regenerateNodes = async (context: string, usingFeedback: boolean) => {
     if (regenerating) return;
     setRegenerating(true);
     setPreviousChangedValuesById({});
@@ -226,6 +251,20 @@ export function IterateModal() {
       .filter((node) => node.type === NodeType.Storyboard)
       .map((node) => node.id);
 
+    const regeneratingMultipleNodeTypes =
+      [
+        personaIds.length,
+        problemIds.length,
+        solutionIds.length,
+        storyboardIds.length
+      ].filter((length) => length > 0).length > 1;
+    const selectedNodeIds = [
+      ...personaIds,
+      ...problemIds,
+      ...solutionIds,
+      ...storyboardIds
+    ];
+
     if (personaIds.length > 0) {
       setRegeneratingNodes(personaIds, true);
 
@@ -233,6 +272,19 @@ export function IterateModal() {
         previousChangedValuesById: _previousChangedValuesById,
         regeneratedImageNodeIds
       } = await regeneratePersonaNodes(personaIds, context);
+
+      addStudyEvent({
+        initiator: 'user',
+        type: usingFeedback
+          ? 'FEEDBACK_REGENERATE_PERSONAS'
+          : 'REVISE_REGENERATE_PERSONAS',
+        count: personaIds.length,
+        data: {
+          regeneratingMultipleNodeTypes,
+          selectedNodeIds,
+          context
+        }
+      });
 
       setPreviousChangedValuesById({
         ...previousChangedValuesById,
@@ -254,6 +306,19 @@ export function IterateModal() {
         regeneratedImageNodeIds
       } = await regenerateProblemNodes(problemIds, context);
 
+      addStudyEvent({
+        initiator: 'user',
+        type: usingFeedback
+          ? 'FEEDBACK_REGENERATE_PROBLEMS'
+          : 'REVISE_REGENERATE_PROBLEMS',
+        count: problemIds.length,
+        data: {
+          regeneratingMultipleNodeTypes,
+          selectedNodeIds,
+          context
+        }
+      });
+
       setPreviousChangedValuesById({
         ...previousChangedValuesById,
         ..._previousChangedValuesById
@@ -274,6 +339,19 @@ export function IterateModal() {
         regeneratedImageNodeIds
       } = await regenerateSolutionNodes(solutionIds, context);
 
+      addStudyEvent({
+        initiator: 'user',
+        type: usingFeedback
+          ? 'FEEDBACK_REGENERATE_SOLUTIONS'
+          : 'REVISE_REGENERATE_SOLUTIONS',
+        count: solutionIds.length,
+        data: {
+          regeneratingMultipleNodeTypes,
+          selectedNodeIds,
+          context
+        }
+      });
+
       setPreviousChangedValuesById({
         ...previousChangedValuesById,
         ..._previousChangedValuesById
@@ -287,7 +365,24 @@ export function IterateModal() {
     }
 
     if (storyboardIds.length > 0) {
-      await regenerateStoryboardNode(storyboardIds[0], context);
+      await Promise.all(
+        storyboardIds.map((storyboardId) =>
+          regenerateStoryboardNode(storyboardId, context)
+        )
+      );
+
+      addStudyEvent({
+        initiator: 'user',
+        type: usingFeedback
+          ? 'FEEDBACK_REGENERATE_STORYBOARDS'
+          : 'REVISE_REGENERATE_STORYBOARDS',
+        count: storyboardIds.length,
+        data: {
+          regeneratingMultipleNodeTypes,
+          selectedNodeIds,
+          context
+        }
+      });
     }
 
     scrollToTop();
@@ -330,15 +425,36 @@ export function IterateModal() {
               updatePersonaNode(nodeToEdit.id, values).then(() => {
                 setRegeneratingNode(nodeToEdit.id, false);
               });
+
+              addStudyEvent({
+                initiator: 'user',
+                type: 'MANUAL_REGENERATE_PERSONAS',
+                count: 1,
+                data: {}
+              });
             } else if (nodeToEdit.type === NodeType.Problem) {
               setRegeneratingNode(nodeToEdit.id, true);
               updateProblemNode(nodeToEdit.id, values).then(() => {
                 setRegeneratingNode(nodeToEdit.id, false);
               });
+
+              addStudyEvent({
+                initiator: 'user',
+                type: 'MANUAL_REGENERATE_PROBLEMS',
+                count: 1,
+                data: {}
+              });
             } else if (nodeToEdit.type === NodeType.Solution) {
               setRegeneratingNode(nodeToEdit.id, true);
               updateSolutionNode(nodeToEdit.id, values).then(() => {
                 setRegeneratingNode(nodeToEdit.id, false);
+              });
+
+              addStudyEvent({
+                initiator: 'user',
+                type: 'MANUAL_REGENERATE_SOLUTIONS',
+                count: 1,
+                data: {}
               });
             }
 
@@ -476,7 +592,8 @@ export function IterateModal() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   regenerateNodes(
-                    `Incorporate the following feedback:\nQ: ${feedbackToIncorporate}\nA: ${feedbackResponse}`
+                    `Incorporate the following feedback:\nQ: ${feedbackToIncorporate}\nA: ${feedbackResponse}`,
+                    true
                   );
                 }}
               >
@@ -513,7 +630,7 @@ export function IterateModal() {
               className="pt-4"
               onSubmit={(e) => {
                 e.preventDefault();
-                regenerateNodes(editInstructions);
+                regenerateNodes(editInstructions, false);
               }}
             >
               <h2 className="text-md font-bold mb-2">

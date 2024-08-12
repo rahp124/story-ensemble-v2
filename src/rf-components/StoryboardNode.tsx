@@ -66,7 +66,9 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     updateStoryboardFrameType,
 
     addStoryboardFrame,
-    deleteStoryboardFrame
+    deleteStoryboardFrame,
+
+    addStudyEvent
   } = useStore((state) => ({
     regenerateStoryboardNode: state.regenerateStoryboardNode,
 
@@ -84,7 +86,9 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     selectNodes: state.selectNodes,
 
     setIterateModalOpen: state.setIterateModalOpen,
-    setIterateModalTab: state.setIterateModalTab
+    setIterateModalTab: state.setIterateModalTab,
+
+    addStudyEvent: state.addStudyEvent
   }));
 
   const regenerateAllImages = async () => {
@@ -102,6 +106,13 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
           );
         });
       });
+    });
+
+    addStudyEvent({
+      initiator: 'user',
+      type: 'ALL_IMAGES_REGENERATE_STORYBOARD_FRAMES',
+      count: storyboard.outline.length,
+      data: {}
     });
   };
 
@@ -131,6 +142,15 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
           'Regenerate storyboard based on updated personas, problems, and solutions'
         );
         setRegeneratingNode(props.id, false);
+
+        addStudyEvent({
+          initiator: 'user',
+          type: 'SYNC_REGENERATE_STORYBOARDS',
+          count: 1,
+          data: {
+            sourceNodeType: 'STORYBOARD'
+          }
+        });
       }
     }
   ]
@@ -188,6 +208,13 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
             onChange={(e) => setTitle(e.currentTarget.value)}
             onBlur={() => {
               if (title !== storyboard.title) {
+                addStudyEvent({
+                  initiator: 'user',
+                  type: 'EDIT_STORYBOARD_TITLE',
+                  count: 1,
+                  data: {}
+                });
+
                 updateStoryboardTitle(props.id, title);
               }
             }}
@@ -337,6 +364,13 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                                 i === frameIdx ? false : regenerating
                               )
                             );
+
+                            addStudyEvent({
+                              initiator: 'user',
+                              type: 'SINGLE_IMAGE_REGENERATE_STORYBOARD_FRAMES',
+                              count: 1,
+                              data: {}
+                            });
                           }}
                         >
                           Regenerate image
@@ -364,6 +398,13 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                             )
                           ) {
                             deleteStoryboardFrame(props.id, frameIdx);
+
+                            addStudyEvent({
+                              initiator: 'user',
+                              type: 'DELETE_STORYBOARD_FRAMES',
+                              count: 1,
+                              data: {}
+                            });
                           }
                         }}
                       >
@@ -447,6 +488,13 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                   className="absolute top-0 -left-3 h-full flex items-center px-1 hover:bg-slate-100 -translate-x-1/2 rounded-sm"
                   disabled={regenerating || someLoading}
                   onClick={() => {
+                    addStudyEvent({
+                      initiator: 'user',
+                      type: 'ADD_STORYBOARD_FRAMES',
+                      count: 1,
+                      data: {}
+                    });
+
                     addStoryboardFrame(props.id, frameIdx);
                   }}
                 >
@@ -457,6 +505,13 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 className="absolute top-0 -right-3 h-full flex items-center px-1 hover:bg-slate-100 translate-x-1/2 rounded-sm"
                 disabled={regenerating || someLoading}
                 onClick={() => {
+                  addStudyEvent({
+                    initiator: 'user',
+                    type: 'ADD_STORYBOARD_FRAMES',
+                    count: 1,
+                    data: {}
+                  });
+
                   addStoryboardFrame(props.id, frameIdx + 1);
                 }}
               >

@@ -28,7 +28,8 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
     generateProblemImage,
     regenerateProblemNodes,
     regenerateSolutionNodes,
-    regenerateStoryboardNode
+    regenerateStoryboardNode,
+    addStudyEvent
   } = useStore((state) => ({
     edges: state.edges,
 
@@ -37,7 +38,9 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
 
     regenerateSolutionNodes: state.regenerateSolutionNodes,
 
-    regenerateStoryboardNode: state.regenerateStoryboardNode
+    regenerateStoryboardNode: state.regenerateStoryboardNode,
+
+    addStudyEvent: state.addStudyEvent
   }));
 
   return (
@@ -62,6 +65,15 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
         );
         setPreviousChangedValuesById(_previousChangedValuesById);
 
+        addStudyEvent({
+          initiator: 'user',
+          type: 'SYNC_REGENERATE_PROBLEMS',
+          count: 1,
+          data: {
+            sourceNodeType: 'PROBLEM'
+          }
+        });
+
         regeneratedImageNodeIds.forEach(async (idPromise) => {
           setRegeneratingNode(await idPromise, false);
         });
@@ -79,6 +91,15 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
           'Regenerate problem based on updated personas'
         );
         setPreviousChangedValuesById(_previousChangedValuesById);
+
+        addStudyEvent({
+          initiator: 'user',
+          type: 'SYNC_ALL_REGENERATE_PROBLEMS',
+          count: 1,
+          data: {
+            sourceNodeType: 'PROBLEM'
+          }
+        });
 
         regeneratedImageNodeIds.forEach(async (idPromise) => {
           setRegeneratingNode(await idPromise, false);
@@ -112,6 +133,15 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
               });
             })
           );
+
+          addStudyEvent({
+            initiator: 'user',
+            type: 'SYNC_ALL_REGENERATE_SOLUTIONS',
+            count: solutionIds.length,
+            data: {
+              sourceNodeType: 'PROBLEM'
+            }
+          });
         }
 
         const storyboardIds = dependentIds.filter((id) =>
@@ -130,6 +160,15 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
               setRegeneratingNode(storyboardId, false);
             })
           );
+
+          addStudyEvent({
+            initiator: 'user',
+            type: 'SYNC_ALL_REGENERATE_STORYBOARDS',
+            count: storyboardIds.length,
+            data: {
+              sourceNodeType: 'PROBLEM'
+            }
+          });
         }
       }}
       targetHandle={true}
