@@ -13,10 +13,12 @@ import 'reactflow/dist/style.css';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { displayConfigByNodeType, EdgeType, NodeType } from './rf-components';
 import { useCallback, useEffect, useState } from 'react';
+import { toSvg } from 'html-to-image';
 import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
 import {
+  Camera,
   ClipboardList,
   PlusIcon,
   // Redo,
@@ -162,6 +164,26 @@ export default function App() {
   const panActivationKeyCode = 'Space';
   const isPanning = useKeyPress(panActivationKeyCode);
 
+  async function downloadImage() {
+    fitView();
+
+    const image = await toSvg(
+      document.querySelector('.react-flow__viewport')! as HTMLElement,
+      {
+        backgroundColor: 'white',
+        pixelRatio: 2
+      }
+    );
+
+    const a = document.createElement('a');
+
+    a.setAttribute('href', image);
+    a.setAttribute('download', 'screenshot.svg');
+    document.body.appendChild(a); // required for firefox
+    a.click();
+    a.remove();
+  }
+
   return (
     <div className="h-[100vh] w-[100vw]">
       <ReactFlow
@@ -207,7 +229,7 @@ export default function App() {
           y: 0,
           zoom: 1
         }}
-        minZoom={0.1}
+        minZoom={0}
         proOptions={{ hideAttribution: true }}
         // Selection menu logic
         onSelectionStart={() => {
@@ -315,6 +337,13 @@ export default function App() {
           <ControlButton onClick={() => redo()}>
             <Redo />
           </ControlButton> */}
+          <Tooltip label="Download canvas screenshot" withArrow>
+            <div>
+              <ControlButton onClick={downloadImage}>
+                <Camera />
+              </ControlButton>
+            </div>
+          </Tooltip>
           <Tooltip label="Download Study Usage Data" withArrow>
             <div>
               <ControlButton
