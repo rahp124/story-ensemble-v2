@@ -25,7 +25,7 @@ import {
   generateStoryboardImagePrompts,
   generateStoryboardOutline
 } from './api/storyboards';
-import { generateImage } from './api/stableDiffusion';
+import { generateImage, StylePreset } from './api/stableDiffusion';
 import { generateSolutions, regenerateSolutions } from './api/solutions';
 import {
   FrameOutline,
@@ -205,6 +205,7 @@ type RFState = {
     frameIdx: number,
     frameType: FrameOutline['frameType']
   ) => void;
+  updateStoryboardImageStyle: (id: string, imageStyle: StylePreset) => void;
 
   addStoryboardFrame: (id: string, frameIdx: number) => void;
   deleteStoryboardFrame: (id: string, frameIdx: number) => void;
@@ -1512,6 +1513,14 @@ const createStore: StateCreator<
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline[frameIndex].frameType = frameType;
         draft.data.storyboard.outline[frameIndex].imageOutOfSync = true;
+      });
+    },
+    updateStoryboardImageStyle: (id, imageStyle) => {
+      updateNode<StoryboardNodeData>(id, (draft) => {
+        draft.data.storyboard.artStyle = imageStyle;
+        draft.data.storyboard.outline.forEach((frame) => {
+          frame.imageOutOfSync = true;
+        });
       });
     },
 

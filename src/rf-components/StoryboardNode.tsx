@@ -8,6 +8,7 @@ import {
   AspectRatio,
   Button,
   Card,
+  CloseButton,
   Divider,
   Input,
   Loader,
@@ -16,11 +17,12 @@ import {
   Textarea,
   Tooltip
 } from '@mantine/core';
-import { Pencil, RefreshCwIcon, Trash2 } from 'lucide-react';
+import { Pencil, RefreshCwIcon, Settings, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
 import { useDisplayStore } from '@/lib/displayStore';
+import { StylePreset } from '@/api/stableDiffusion';
 
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Storyboard);
 
@@ -35,6 +37,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     storyboard.outline.map((frame) => frame.caption)
   );
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
+  const [storyboardSettingsOpen, setStoryboardSettingsOpen] = useState(false);
 
   useEffect(() => {
     setTitle(storyboard.title);
@@ -64,6 +67,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     updateStoryboardDescription,
     updateStoryboardCaption,
     updateStoryboardFrameType,
+    updateStoryboardImageStyle,
 
     addStoryboardFrame,
     deleteStoryboardFrame,
@@ -79,6 +83,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     updateStoryboardDescription: state.updateStoryboardDescription,
     updateStoryboardCaption: state.updateStoryboardCaption,
     updateStoryboardFrameType: state.updateStoryboardFrameType,
+    updateStoryboardImageStyle: state.updateStoryboardImageStyle,
 
     addStoryboardFrame: state.addStoryboardFrame,
     deleteStoryboardFrame: state.deleteStoryboardFrame,
@@ -197,7 +202,66 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
           <p className="font-bold text-sm">
             <span className="mr-1">{displayAttributes.emoji}</span> Storyboard
           </p>
-          <div className="flex gap-2 items-center nodrag">{icons}</div>
+          <div className="flex gap-2 items-center nodrag">
+            <Popover
+              width={350}
+              withArrow
+              shadow="md"
+              disabled={regenerating || someLoading}
+              opened={storyboardSettingsOpen}
+              onChange={(change) => setStoryboardSettingsOpen(change)}
+            >
+              <Popover.Target>
+                <ActionIcon
+                  variant="subtle"
+                  disabled={regenerating || someLoading}
+                  onClick={() => {
+                    setStoryboardSettingsOpen((prev) => !prev);
+                  }}
+                >
+                  <Settings />
+                </ActionIcon>
+              </Popover.Target>
+              <Popover.Dropdown>
+                <div className="flex justify-between">
+                  <h4 className="font-bold mb-4">Storyboard settings</h4>
+                  <CloseButton
+                    onClick={() => setStoryboardSettingsOpen(false)}
+                  />
+                </div>
+                <Select
+                  label="Image style"
+                  comboboxProps={{ withinPortal: false }}
+                  allowDeselect={false}
+                  data={[
+                    '3d-model',
+                    'analog-film',
+                    'anime',
+                    'cinematic',
+                    'comic-book',
+                    'digital-art',
+                    'enhance',
+                    'fantasy-art',
+                    'isometric',
+                    'line-art',
+                    'low-poly',
+                    'modeling-compound',
+                    'neon-punk',
+                    'origami',
+                    'photographic',
+                    'pixel-art',
+                    'tile-texture'
+                  ]}
+                  value={storyboard.artStyle}
+                  onChange={(value) => {
+                    updateStoryboardImageStyle(props.id, value as StylePreset);
+                  }}
+                />
+              </Popover.Dropdown>
+            </Popover>
+
+            {icons}
+          </div>
         </div>
         <div className="mb-4">
           <Input
