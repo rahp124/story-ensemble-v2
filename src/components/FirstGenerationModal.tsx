@@ -74,7 +74,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
 
     const designContextNodeId = addProjectNode({
       designContext,
-      personaDescription,
+      ...(personaDescription && { personaDescription }),
       ...(finalStep !== '👤 Persona' &&
         problemDescription && { problemDescription }),
       ...(finalStep !== '👤 Persona' &&
