@@ -217,6 +217,8 @@ type RFState = {
 
   addCommentNode: (comment?: string) => string;
   updateCommentNode: (id: string, comment: string) => void;
+
+  addProjectNode: (project: Record<string, string>) => void;
 };
 
 function partialize(state: RFState): Partial<RFState> {
@@ -426,6 +428,31 @@ const createStore: StateCreator<
       updateNode<{ comment: string }>(id, (draft) => {
         draft.data.comment = comment;
       });
+    },
+
+    addProjectNode: (project) => {
+      const center = get().centerPosition;
+
+      const id = `project-${nanoid()}`;
+      const node: Node = {
+        id,
+        type: NodeType.Project,
+        position: center,
+        width: 400,
+        height: 300,
+        style: {
+          width: 400,
+          height: 300
+        },
+        data: {
+          content: project
+        }
+      };
+
+      get().takeSnapshot();
+      set({ nodes: [...get().nodes, node] });
+
+      return id;
     },
 
     addEmptyPersonaNode: () => {

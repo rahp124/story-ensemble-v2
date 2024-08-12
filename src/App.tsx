@@ -38,13 +38,15 @@ import { DependentGenerationModal } from './components/DependentGenerationModal'
 import { GenerateMoreModal } from './components/GenerateMoreModal';
 import { findDirectDependencies } from './lib/graphHelper';
 import CommentNode from './rf-components/CommentNode';
+import ProjectNode from './rf-components/ProjectNode';
 
 const nodeTypes = {
   [NodeType.Persona]: PersonaNode,
   [NodeType.Problem]: ProblemNode,
   [NodeType.Solution]: SolutionNode,
   [NodeType.Storyboard]: StoryboardNode,
-  [NodeType.Comment]: CommentNode
+  [NodeType.Comment]: CommentNode,
+  [NodeType.Project]: ProjectNode
 };
 
 const edgeTypes = {

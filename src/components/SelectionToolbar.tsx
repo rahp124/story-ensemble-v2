@@ -31,50 +31,53 @@ export interface SelectionToolbarProps {
 export default function SelectionToolbarMenu(props: SelectionToolbarProps) {
   const { selectedNodes } = props;
 
-  const nonCommentNodes = selectedNodes.filter(
-    (node) => node.type !== NodeType.Comment
+  const coreNodes = selectedNodes.filter(
+    (node) =>
+      node.type === NodeType.Persona ||
+      node.type === NodeType.Problem ||
+      node.type === NodeType.Solution ||
+      node.type === NodeType.Storyboard
   );
 
   const showGenerateProblems =
-    nonCommentNodes.length &&
-    nonCommentNodes.every((node) => node.type === NodeType.Persona);
+    coreNodes.length &&
+    coreNodes.every((node) => node.type === NodeType.Persona);
   const showGenerateSolutions =
-    nonCommentNodes.length &&
-    nonCommentNodes.every((node) => node.type === NodeType.Problem);
+    coreNodes.length &&
+    coreNodes.every((node) => node.type === NodeType.Problem);
   const showGenerateStoryboard =
-    nonCommentNodes.length &&
-    nonCommentNodes.every((node) => node.type === NodeType.Solution);
+    coreNodes.length &&
+    coreNodes.every((node) => node.type === NodeType.Solution);
 
   const showGenerateSimilarPersonas =
-    nonCommentNodes.length &&
-    nonCommentNodes.every((node) => node.type === NodeType.Persona);
+    coreNodes.length &&
+    coreNodes.every((node) => node.type === NodeType.Persona);
   const showGenerateSimilarProblems =
-    nonCommentNodes.length &&
-    nonCommentNodes.every((node) => node.type === NodeType.Problem);
+    coreNodes.length &&
+    coreNodes.every((node) => node.type === NodeType.Problem);
   const showGenerateSimilarSolutions =
-    nonCommentNodes.length &&
-    nonCommentNodes.every((node) => node.type === NodeType.Solution);
+    coreNodes.length &&
+    coreNodes.every((node) => node.type === NodeType.Solution);
   const showGenerateSimilarStoryboard =
-    nonCommentNodes.length &&
-    nonCommentNodes.every((node) => node.type === NodeType.Storyboard);
+    coreNodes.length &&
+    coreNodes.every((node) => node.type === NodeType.Storyboard);
 
   const iterateButtons = [
     {
-      show: nonCommentNodes.length > 0,
+      show: coreNodes.length > 0,
       label: 'View feedback',
       leftSection: <MessageSquareIcon className="size-4" />,
       onClick: props.onFeedback
     },
     {
-      show: nonCommentNodes.length > 0,
+      show: coreNodes.length > 0,
       label: 'Revise',
       leftSection: <WandSparklesIcon className="size-4" />,
       onClick: props.onRegenerate
     },
     {
       show:
-        nonCommentNodes.length === 1 &&
-        selectedNodes[0].type !== NodeType.Storyboard,
+        coreNodes.length === 1 && selectedNodes[0].type !== NodeType.Storyboard,
       label: 'Edit manually',
       leftSection: <PencilIcon className="size-4" />,
       onClick: props.onEdit
