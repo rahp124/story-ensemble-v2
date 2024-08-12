@@ -241,11 +241,10 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                     <h4 className="font-bold mb-4">
                       Edit frame {frameIdx + 1}
                     </h4>
-                    <div>
+                    <div className="flex flex-col gap-2">
                       <Select
                         label="Edit Frame Type"
                         comboboxProps={{ withinPortal: false }}
-                        className="mb-2"
                         allowDeselect={false}
                         data={(
                           [
@@ -273,7 +272,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                       />
                       <Textarea
                         label="Description"
-                        description="Describes the contents and visuals of the frame. Update the description to regenerate the image."
+                        description="Describe the contents and visuals of the frame to directly guide image generation."
                         autosize
                         minRows={3}
                         maxRows={8}
@@ -292,6 +291,31 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                               props.id,
                               frameIdx,
                               descriptions[frameIdx]
+                            );
+                          }
+                        }}
+                      />
+                      <Textarea
+                        label="Caption"
+                        description="Text that appears below the image."
+                        autosize
+                        minRows={2}
+                        maxRows={8}
+                        rows={2}
+                        value={captions[frameIdx]}
+                        onChange={(e) => {
+                          setCaptions(
+                            captions.map((c, i) =>
+                              i === frameIdx ? e.target.value : c
+                            )
+                          );
+                        }}
+                        onBlur={() => {
+                          if (captions[frameIdx] !== frame.caption) {
+                            updateStoryboardCaption(
+                              props.id,
+                              frameIdx,
+                              captions[frameIdx]
                             );
                           }
                         }}
@@ -351,37 +375,36 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               </div>
 
               {/* don't show tooltip if a frame doesn't have a generated image */}
-              {
-                frame.image === undefined ? (
-                  <div
-                    className={`border-2 rounded-sm ${frameTypeBorder(
-                      frame.frameType
-                    )}`}
-                  >
-                    <AspectRatio ratio={1}>
-                      {regenerating ||
-                      loadingMap[frameIdx] ||
-                      frame.image === '' ? (
-                        <div className="size-full flex items-center justify-center">
-                          <Loader />
-                        </div>
-                      ) : frame.image === undefined ? (
-                        <div className="size-full flex items-center justify-center">
-                          <p className="text-center">
-                            This frame has no image.
-                            <br />
-                            Click the <Pencil className="inline size-4" /> icon to
-                            generate one.
-                          </p>
-                        </div>
-                      ) : (
-                        <img src={frame.image} />
-                      )}
-                    </AspectRatio>
-                  </div>
-                ) : (
-                  // show tooltip containing detailed description of a frame when a frame has a generated image
-                  <Tooltip
+              {frame.image === undefined ? (
+                <div
+                  className={`border-2 rounded-sm ${frameTypeBorder(
+                    frame.frameType
+                  )}`}
+                >
+                  <AspectRatio ratio={1}>
+                    {regenerating ||
+                    loadingMap[frameIdx] ||
+                    frame.image === '' ? (
+                      <div className="size-full flex items-center justify-center">
+                        <Loader />
+                      </div>
+                    ) : frame.image === undefined ? (
+                      <div className="size-full flex items-center justify-center">
+                        <p className="text-center">
+                          This frame has no image.
+                          <br />
+                          Click the <Pencil className="inline size-4" /> icon to
+                          generate one.
+                        </p>
+                      </div>
+                    ) : (
+                      <img src={frame.image} />
+                    )}
+                  </AspectRatio>
+                </div>
+              ) : (
+                // show tooltip containing detailed description of a frame when a frame has a generated image
+                <Tooltip
                   multiline
                   w={300}
                   withArrow
@@ -406,8 +429,8 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                           <p className="text-center">
                             This frame has no image.
                             <br />
-                            Click the <Pencil className="inline size-4" /> icon to
-                            generate one.
+                            Click the <Pencil className="inline size-4" /> icon
+                            to generate one.
                           </p>
                         </div>
                       ) : (
@@ -416,31 +439,9 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                     </AspectRatio>
                   </div>
                 </Tooltip>
-                )
-              }
+              )}
 
-              <Textarea
-                className="nodrag"
-                autosize
-                disabled={regenerating || loadingMap[frameIdx]}
-                value={captions[frameIdx]}
-                onChange={(e) => {
-                  setCaptions(
-                    captions.map((c, i) =>
-                      i === frameIdx ? e.target.value : c
-                    )
-                  );
-                }}
-                onBlur={() => {
-                  if (captions[frameIdx] !== frame.caption) {
-                    updateStoryboardCaption(
-                      props.id,
-                      frameIdx,
-                      captions[frameIdx]
-                    );
-                  }
-                }}
-              />
+              <p>{captions[frameIdx]}</p>
               {frameIdx === 0 && (
                 <button
                   className="absolute top-0 -left-3 h-full flex items-center px-1 hover:bg-slate-100 -translate-x-1/2 rounded-sm"
