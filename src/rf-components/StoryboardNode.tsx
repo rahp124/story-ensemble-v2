@@ -197,7 +197,14 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
           height: 10
         }}
       />
-      <Card className="h-full" withBorder>
+      <Card
+        className={`size-full ${
+          props.selected ? 'nowheel border-blue-600' : 'border-transparent'
+        }`}
+        withBorder
+        shadow="sm"
+        radius="lg"
+      >
         <div className="flex justify-between mb-2">
           <p className="font-bold text-sm">
             <span className="mr-1">{displayAttributes.emoji}</span> Storyboard

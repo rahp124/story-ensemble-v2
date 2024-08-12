@@ -25,6 +25,9 @@ export default function CommentNode(props: NodeProps<{ comment: string }>) {
           height: 10,
           width: 10
         }}
+        lineStyle={{
+          display: 'none'
+        }}
       />
       <Tooltip
         disabled={!isZoomedOut || !_comment}
@@ -36,7 +39,9 @@ export default function CommentNode(props: NodeProps<{ comment: string }>) {
         events={{ hover: true, focus: true, touch: true }}
       >
         <Card
-          className={`size-full bg-gray-100`}
+          className={`size-full bg-gray-100 ${
+            props.selected ? 'nowheel border-blue-600' : 'border-transparent'
+          }`}
           withBorder
           shadow="sm"
           radius="lg"
