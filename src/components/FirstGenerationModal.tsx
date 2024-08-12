@@ -158,7 +158,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
 
           addStudyEvent({
             initiator: 'user',
-            type: 'BRAINSTORM_GENERATE_STORYBOARD',
+            type: 'BRAINSTORM_GENERATE_STORYBOARDS',
             count: storyboardIds.length,
             data: {
               designContext,

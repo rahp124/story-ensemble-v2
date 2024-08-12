@@ -40,6 +40,7 @@ import { GenerateMoreModal } from './components/GenerateMoreModal';
 import { findDirectDependencies } from './lib/graphHelper';
 import CommentNode from './rf-components/CommentNode';
 import ProjectNode from './rf-components/ProjectNode';
+import { downloadObjectAsJson } from './lib/utils';
 
 const nodeTypes = {
   [NodeType.Persona]: PersonaNode,
@@ -318,7 +319,7 @@ export default function App() {
             <div>
               <ControlButton
                 onClick={() => {
-                  console.log(JSON.stringify(studyEvents, null, 2));
+                  downloadObjectAsJson(studyEvents, 'study-usage-data');
                 }}
               >
                 <ClipboardList />

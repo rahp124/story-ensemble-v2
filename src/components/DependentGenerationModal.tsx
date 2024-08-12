@@ -168,7 +168,7 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
           ? 'DEPENDENT_GENERATE_PROBLEMS'
           : nodeToGenerate === 'Solution'
           ? 'DEPENDENT_GENERATE_SOLUTIONS'
-          : 'DEPENDENT_GENERATE_STORYBOARD',
+          : 'DEPENDENT_GENERATE_STORYBOARDS',
       count: nodesToFocus.length,
       data: {
         instructions,
@@ -300,7 +300,7 @@ export function DependentGenerationModal(props: DependentGenerationModalProps) {
 
     addStudyEvent({
       initiator: 'user',
-      type: 'DEPENDENT_TO_STORYBOARD_GENERATE_STORYBOARD',
+      type: 'DEPENDENT_TO_STORYBOARD_GENERATE_STORYBOARDS',
       count: storyboardIds.length,
       data: {
         instructions,

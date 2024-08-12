@@ -172,7 +172,7 @@ export function GenerateMoreModal(props: GenerateMoreModalProps) {
           ? 'MORE_GENERATE_PROBLEMS'
           : nodeToGenerate === 'Solution'
           ? 'MORE_GENERATE_SOLUTIONS'
-          : 'MORE_GENERATE_STORYBOARD',
+          : 'MORE_GENERATE_STORYBOARDS',
       count: nodesToFocus.length,
       data: {
         instructions,
