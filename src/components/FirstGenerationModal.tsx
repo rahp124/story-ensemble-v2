@@ -75,12 +75,15 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
     const designContextNodeId = addProjectNode({
       designContext,
       personaDescription,
-      ...(finalStep !== '👤 Persona' && { problemDescription }),
       ...(finalStep !== '👤 Persona' &&
-        finalStep !== '🚨 Problem' && {
+        problemDescription && { problemDescription }),
+      ...(finalStep !== '👤 Persona' &&
+        finalStep !== '🚨 Problem' &&
+        solutionDescription && {
           solutionDescription
         }),
-      ...(finalStep === '🎞 Storyboard' && { storyboardDescription })
+      ...(finalStep === '🎞 Storyboard' &&
+        storyboardDescription && { storyboardDescription })
     });
 
     const personaIds = await generatePersonaNodes(
