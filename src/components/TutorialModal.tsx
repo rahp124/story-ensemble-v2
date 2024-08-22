@@ -2,11 +2,14 @@ import {
   Menu,
   Button,
   Modal,
-  ScrollAreaAutosize
+  ScrollAreaAutosize,
+  rem
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   MonitorPlayIcon,
+  SquareMenuIcon,
+  SparkleIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { ProjectThemesList } from './ProjectList';
@@ -130,7 +133,15 @@ export function TutorialModal() {
 
             <Menu.Label>Task</Menu.Label>
             <Menu.Item
-              leftSection={<>👤</>}
+              leftSection={<SquareMenuIcon style={{ width: rem(14), height: rem(14) }} />}
+              onClick={() =>
+                handleOpen("Task Instruction", "https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS")
+              }
+            >
+              Instruction
+            </Menu.Item>
+            <Menu.Item
+              leftSection={<SparkleIcon style={{ width: rem(14), height: rem(14) }} />}
               onClick={() =>
                 showProjectList()
               }

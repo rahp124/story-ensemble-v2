@@ -90,7 +90,7 @@ export const tutorialMenuData: tutorialMenuItem = {
     ],
     "Create": [
         {
-            "title": "Manually",
+            "title": "Add empty node",
             "url": "https://www.youtube.com/embed/5krg8HNvIg8",
             "left_section": <UserRoundIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
