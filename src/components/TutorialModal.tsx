@@ -37,7 +37,7 @@ export function TutorialModal() {
 
   return (
     <>
-      <Modal.Root opened={opened} onClose={close} size="80%" centered>
+      <Modal.Root opened={opened} onClose={close} size="90%" centered>
         <Modal.Overlay backgroundOpacity={0.55} blur={0} />
         <Modal.Content>
           <Modal.Header
