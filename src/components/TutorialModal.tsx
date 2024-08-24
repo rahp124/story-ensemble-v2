@@ -37,8 +37,8 @@ export function TutorialModal() {
 
   return (
     <>
-      <Modal.Root opened={opened} onClose={close} size="xl" centered>
-        <Modal.Overlay backgroundOpacity={0.55} blur={3} />
+      <Modal.Root opened={opened} onClose={close} size="80%" centered>
+        <Modal.Overlay backgroundOpacity={0.55} blur={0} />
         <Modal.Content>
           <Modal.Header
             style={{
@@ -65,12 +65,22 @@ export function TutorialModal() {
                 <div
                   className="text-center"
                   style={{
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    width: '100%',
+                    height: '0',
+                    paddingBottom: '56.25%',
+                    position: 'relative',
+                    border: 'none'
                   }}
                 >
                   <iframe
-                    width="560"
-                    height="315"
+                    style={{
+                      position: 'absolute',
+                      top: '0',
+                      left: '0',
+                      width: '100%',
+                      height: '100%',
+                    }}
                     src={url}
                     title="YouTube video player"
                     frameBorder="0"
