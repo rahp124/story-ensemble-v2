@@ -4,7 +4,7 @@ import { useStore } from '@/store';
 import BaseNode from './BaseNode';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
 import { useDisplayStore } from '@/lib/displayStore';
-import { findAllDependents } from '@/lib/graphHelper';
+import { findDirectDependents } from '@/lib/graphHelper';
 
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Problem);
 
@@ -105,10 +105,8 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
           setRegeneratingNode(await idPromise, false);
         });
 
-        const dependentIds = findAllDependents([props.id], edges);
-
-        const solutionIds = dependentIds.filter((id) =>
-          id.startsWith('solution-')
+        const solutionIds = findDirectDependents([props.id], edges).filter(
+          (id) => id.startsWith('solution-')
         );
         if (solutionIds.length > 0) {
           await Promise.all(
@@ -144,8 +142,8 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
           });
         }
 
-        const storyboardIds = dependentIds.filter((id) =>
-          id.startsWith('storyboard-')
+        const storyboardIds = findDirectDependents(solutionIds, edges).filter(
+          (id) => id.startsWith('storyboard-')
         );
         if (storyboardIds.length > 0) {
           await Promise.all(

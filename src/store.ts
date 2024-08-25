@@ -55,7 +55,6 @@ import {
 } from './lib/positioningUtils';
 import { calculatePreviousChangedValues } from './lib/calculatePreviousChangedValues';
 import {
-  findAllDependencies,
   findDirectDependencies,
   findDirectDependents
 } from './lib/graphHelper';
@@ -1369,11 +1368,15 @@ const createStore: StateCreator<
       const storyboardNode = get().nodes.find((node) => node.id === id);
       if (!storyboardNode) return;
 
-      const dependencies = findAllDependencies([id], get().edges);
-      const personaIds = dependencies.filter((id) => id.startsWith('persona-'));
-      const problemIds = dependencies.filter((id) => id.startsWith('problem-'));
-      const solutionIds = dependencies.filter((id) =>
-        id.startsWith('solution-')
+      const solutionIds = findDirectDependencies([id], get().edges).filter(
+        (id) => id.startsWith('solution-')
+      );
+      const problemIds = findDirectDependencies(
+        solutionIds,
+        get().edges
+      ).filter((id) => id.startsWith('problem-'));
+      const personaIds = findDirectDependencies(problemIds, get().edges).filter(
+        (id) => id.startsWith('persona-')
       );
 
       const personaNodes = get().nodes.filter(

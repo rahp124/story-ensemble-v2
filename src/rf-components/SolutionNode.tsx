@@ -4,7 +4,7 @@ import { useStore } from '@/store';
 import BaseNode from './BaseNode';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
 import { useDisplayStore } from '@/lib/displayStore';
-import { findAllDependents } from '@/lib/graphHelper';
+import { findDirectDependents } from '@/lib/graphHelper';
 
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Solution);
 
@@ -104,10 +104,8 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
           setRegeneratingNode(await idPromise, false);
         });
 
-        const dependentIds = findAllDependents([props.id], edges);
-
-        const storyboardIds = dependentIds.filter((id) =>
-          id.startsWith('storyboard-')
+        const storyboardIds = findDirectDependents([props.id], edges).filter(
+          (id) => id.startsWith('storyboard-')
         );
         if (storyboardIds.length > 0) {
           await Promise.all(
