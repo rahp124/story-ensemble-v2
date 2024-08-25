@@ -344,7 +344,7 @@ export default function App() {
               </ControlButton>
             </div>
           </Tooltip>
-          <Tooltip label="Download Study Usage Data" withArrow>
+          <Tooltip label="Download study usage data" withArrow>
             <div>
               <ControlButton
                 onClick={() => {
@@ -356,7 +356,7 @@ export default function App() {
             </div>
           </Tooltip>
 
-          <Tooltip label="Reset Canvas">
+          <Tooltip label="Reset canvas">
             <div>
               <ControlButton
                 onClick={() => {
