@@ -20,11 +20,13 @@ import {
     ShowerHeadIcon,
     ReplaceIcon,
     Rotate3DIcon,
+    BlendIcon,
+    CableIcon,
+    MessageSquareQuoteIcon,
 } from "lucide-react"
 import {
     rem,
     Text,
-    Kbd,
 } from '@mantine/core';
 
 export interface TutorialItem {    
@@ -41,8 +43,10 @@ export interface tutorialMenuItem {
     "Basic Components": TutorialItem[],
     "Generate": TutorialItem[],
     "Storyboard": TutorialItem[],
-    "Explore": TutorialItem[],
-    "Iterate": TutorialItem[],
+    "Explore (Diverge)": TutorialItem[],
+    "Sensemaking & Organization": TutorialItem[],
+    "Focus (Converge)": TutorialItem[],
+    "Iterate (cascading changes)": TutorialItem[],
 }
 
 export const tutorialMenuData: tutorialMenuItem = {
@@ -52,10 +56,9 @@ export const tutorialMenuData: tutorialMenuItem = {
             "url": "https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS",
             "left_section": <CopyIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
-                <Text size="xs" c="dimmed">
-                {' '}
-                <Kbd>Space</Kbd> + Drag
-              </Text>
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
     ],
     "Basic Components" : [
@@ -63,18 +66,20 @@ export const tutorialMenuData: tutorialMenuItem = {
             "title": "UI & Nodes",
             "url": "https://www.youtube.com/embed/ri9fEu4iZ_4",
             "left_section": <AppWindowIcon style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                1 m
+            </Text>
         },
     ],
     "Basic Navigation" : [
         {
             "title": "Pan",
-            "url": "https://www.youtube.com/embed/1r6zH3yAoCE",
+            "url": "https://www.youtube.com/embed/v1pU3UtcHiw",
             "left_section": <Move3DIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                {' '}
-                <Kbd>Space</Kbd> + Drag
+                0.5 min
             </Text>
         },
         {
@@ -83,9 +88,8 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <ScanSearchIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                {' '}
-                <Kbd>⌘</Kbd> + Scroll
-            </Text>,
+                0.5 min
+            </Text>
         },
     ],
     "Create": [
@@ -95,7 +99,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <UserRoundIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                <Kbd>Add empty node</Kbd>
+                min
             </Text>
         },
         {
@@ -104,26 +108,35 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <MessageSquareDiffIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                <Kbd>Edit manually</Kbd>
+                min
             </Text>
         },
         {
             "title": "Fill in missing values",
             "url": "https://www.youtube.com/embed/iaF1N8jQ8Yo",
             "left_section": <ReplaceIcon style={{ width: rem(14), height: rem(14) }}/>,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
         {
             "title": "Start brainstorming",
             "url": "https://www.youtube.com/embed/NDzwv7rKhwM",
             "left_section": <BotIcon style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
         {
-            "title": "Use AI-generated Suggestions",
+            "title": "Use AI-generated suggestions",
             "url": "https://www.youtube.com/embed/lKxOaaZP5TI",
             "left_section": <ShowerHeadIcon style={{ width: rem(14), height: rem(14) }}/>,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
     ],
     "Generate": [
@@ -131,85 +144,155 @@ export const tutorialMenuData: tutorialMenuItem = {
             "title": "Generate _____ (next node)",
             "url": "https://www.youtube.com/embed/IJPQO-Jpcc4",
             "left_section": <SparklesIcon style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
         {
             "title": "Generate up to storyboard",
             "url": "https://www.youtube.com/embed/atRBSxO5vwo",
             "left_section": <BookImageIcon style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
     ],
     "Storyboard": [
         {
-            "title": "Add Frame",
+            "title": "Add frame",
             "url": "https://www.youtube.com/embed/Y2Q7QOALk3g",
             "left_section": <PlusIcon style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
         {
-            "title": "Delete Frame",
+            "title": "Delete frame",
             "url": "https://www.youtube.com/embed/IErc0PgbrAE",
             "left_section": <Trash2 style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
         {
-            "title": "Update Frame(s)",
+            "title": "Update frame(s)",
             "url": "https://www.youtube.com/embed/KX5TyebxzOM",
             "left_section": <RefreshCwIcon style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
         {
-            "title": "Update Image Style",
+            "title": "Update image style",
             "url": "https://www.youtube.com/embed/a053X_SFoFY",
             "left_section": <Rotate3DIcon style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
     ],
-    "Explore": [
+    "Explore (Diverge)": [
         {
-            "title": "Supporting Exploration",
+            "title": "Supporting exploration",
             "url": "https://www.youtube.com/embed/uEmG0bF_cZA",
             "left_section": <RocketIcon style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
         {
             "title": "Duplicate",
             "url": "https://www.youtube.com/embed/E_sVXimnyVI",
             "left_section": <CopyIcon style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
         {
             "title": "More",
             "url": "https://www.youtube.com/embed/nsMqmdq34lY",
             "left_section": <SquareStackIcon style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
-        },
-        {
-            "title": "Semantic Zoom",
-            "url": "https://www.youtube.com/embed/jgcszBFpQ94",
-            "left_section": <ScanEyeIcon style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
     ],
-    "Iterate": [
+    "Sensemaking & Organization": [
         {
-            "title": "Edit Manually",
+            "title": "Semantic zoom",
+            "url": "https://www.youtube.com/embed/jgcszBFpQ94",
+            "left_section": <ScanEyeIcon style={{ width: rem(14), height: rem(14) }} />,
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
+        },
+        {
+            "title": "Use comment",
+            "url": "https://www.youtube.com/embed/lhiC4slErlI",
+            "left_section": <MessageSquareQuoteIcon style={{ width: rem(14), height: rem(14) }} />,
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
+        },
+    ],
+    "Focus (Converge)": [
+        {
+            "title": "Synthesize ideas",
+            "url": "https://www.youtube.com/embed/mIiIz_7sCdA",
+            "left_section": <BlendIcon style={{ width: rem(14), height: rem(14) }} />,
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
+        },
+    ],
+    "Iterate (cascading changes)": [
+        {
+            "title": "Edit manually",
             "url": "https://www.youtube.com/embed/KAB0IAQOJbM",
             "left_section": <PencilIcon style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
         {
             "title": "Revise with AI",
             "url": "https://www.youtube.com/embed/y2q_BhCjt7o",
             "left_section": <WandSparklesIcon style={{ width: rem(14), height: rem(14) }} />,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
         {
-            "title": "View Feedback",
+            "title": "Connect nodes",
+            "url": "https://www.youtube.com/embed/5DoJJEzwh7k",
+            "left_section": <CableIcon style={{ width: rem(14), height: rem(14) }}/>,
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
+        },
+        {
+            "title": "View feedback",
             "url": "https://www.youtube.com/embed/dq1JVwbeGuc",
             "left_section": <MessageSquareIcon style={{ width: rem(14), height: rem(14) }}/>,
-            "right_section": ''
+            "right_section": 
+            <Text size="xs" c="dimmed">
+                min
+            </Text>
         },
     ],
 }
