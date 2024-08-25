@@ -53,7 +53,7 @@ export const tutorialMenuData: tutorialMenuItem = {
     "Design Thinking": [
         {
             "title": "What is it?",
-            "url": "https://www.youtube.com/embed/xpVMp1WRwI0?si=8pjPtVNAOdltBADS",
+            "url": "https://www.youtube.com/embed/AOjTLjLY8eM",
             "left_section": <CopyIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
