@@ -46,7 +46,7 @@ export interface tutorialMenuItem {
     "Explore (Diverge)": TutorialItem[],
     "Sensemaking & Organization": TutorialItem[],
     "Focus (Converge)": TutorialItem[],
-    "Iterate (cascading changes)": TutorialItem[],
+    "Iterate (Change Propagation)": TutorialItem[],
 }
 
 export const tutorialMenuData: tutorialMenuItem = {
@@ -57,7 +57,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <CopyIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               1.5 min
             </Text>
         },
     ],
@@ -99,7 +99,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <UserRoundIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               0.5 min
             </Text>
         },
         {
@@ -108,7 +108,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <MessageSquareDiffIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               1 min
             </Text>
         },
         {
@@ -117,7 +117,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <ReplaceIcon style={{ width: rem(14), height: rem(14) }}/>,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               0.7 min
             </Text>
         },
         {
@@ -126,7 +126,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <BotIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               3 min
             </Text>
         },
         {
@@ -135,7 +135,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <ShowerHeadIcon style={{ width: rem(14), height: rem(14) }}/>,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               0.9 min
             </Text>
         },
     ],
@@ -146,7 +146,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <SparklesIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               1.1 min
             </Text>
         },
         {
@@ -155,7 +155,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <BookImageIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               2 min
             </Text>
         },
     ],
@@ -166,7 +166,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <PlusIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               2 min
             </Text>
         },
         {
@@ -175,7 +175,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <Trash2 style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               1 min
             </Text>
         },
         {
@@ -184,7 +184,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <RefreshCwIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               1.5 min
             </Text>
         },
         {
@@ -193,7 +193,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <Rotate3DIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               1.2 min
             </Text>
         },
     ],
@@ -204,7 +204,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <RocketIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               0.6 min
             </Text>
         },
         {
@@ -213,7 +213,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <CopyIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               1 min
             </Text>
         },
         {
@@ -222,7 +222,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <SquareStackIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               2.5 min
             </Text>
         },
     ],
@@ -233,7 +233,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <ScanEyeIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               1.6 min
             </Text>
         },
         {
@@ -242,7 +242,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <MessageSquareQuoteIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               0.5 min
             </Text>
         },
     ],
@@ -253,18 +253,18 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <BlendIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               1.6 min
             </Text>
         },
     ],
-    "Iterate (cascading changes)": [
+    "Iterate (Change Propagation)": [
         {
             "title": "Edit manually",
             "url": "https://www.youtube.com/embed/O0hPmom2ot0",
             "left_section": <PencilIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               3.3 min
             </Text>
         },
         {
@@ -273,7 +273,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <WandSparklesIcon style={{ width: rem(14), height: rem(14) }} />,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               2 min
             </Text>
         },
         {
@@ -282,7 +282,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <CableIcon style={{ width: rem(14), height: rem(14) }}/>,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               1.9 min
             </Text>
         },
         {
@@ -291,7 +291,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             "left_section": <MessageSquareIcon style={{ width: rem(14), height: rem(14) }}/>,
             "right_section": 
             <Text size="xs" c="dimmed">
-                min
+               2.1 min
             </Text>
         },
     ],
