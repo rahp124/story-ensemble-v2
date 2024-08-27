@@ -119,7 +119,8 @@ type RFState = {
   ) => Promise<string[]>;
   regeneratePersonaNodes: (
     personaIds: string[],
-    context: string
+    context: string,
+    useDependents?: boolean
   ) => Promise<{
     previousChangedValuesById: Record<string, Record<string, string>>;
     regeneratedImageNodeIds: Promise<string>[];
@@ -615,11 +616,32 @@ const createStore: StateCreator<
 
       return nodes.map((node) => node.id);
     },
-    regeneratePersonaNodes: async (personaIds: string[], context: string) => {
+    regeneratePersonaNodes: async (
+      personaIds: string[],
+      context: string,
+      useDependents
+    ) => {
       const personaNodes = get().nodes.filter(
         (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
       );
-      const personas = personaNodes.map((node) => node.data.content);
+      const personas = personaNodes.map((node) => {
+        if (useDependents) {
+          const problemIds = findDirectDependents([node.id], get().edges);
+          const problems = get()
+            .nodes.filter(
+              (node) =>
+                problemIds.includes(node.id) && node.type === NodeType.Problem
+            )
+            .map((node) => node.data.content);
+
+          return {
+            problemDependents: problems,
+            persona: node.data.content
+          };
+        } else {
+          return node.data.content;
+        }
+      });
 
       const newPersonas = await regeneratePersonas(personas, context);
 

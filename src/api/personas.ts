@@ -36,6 +36,10 @@ export async function regeneratePersonas(personas: string[], context: unknown) {
   const prompt = `${USER_PERSONA_PROMPT}
 Update the given personas based on the new context/instructions keep the essence of the persona intact, but make necessary changes to ensure cohesiveness.
 
+When the context requests regenerating personas based on updated problems:
+- Rewrite the personas to directly address the problems.
+- Remove any information that isn't directly related to the new problems.
+
 Personas: """
 ${JSON.stringify(personas)}
 """
