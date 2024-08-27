@@ -165,7 +165,9 @@ type RFState = {
   ) => Promise<string[]>;
   regenerateSolutionNodes: (
     solutionIds: string[],
-    context: string
+    context: string,
+    useStoryboards?: boolean,
+    useProblems?: boolean
   ) => Promise<{
     previousChangedValuesById: Record<string, Record<string, string>>;
     regeneratedImageNodeIds: Promise<string>[];
@@ -1110,7 +1112,12 @@ const createStore: StateCreator<
 
       return nodes.map((node) => node.id);
     },
-    regenerateSolutionNodes: async (solutionIds: string[], context: string) => {
+    regenerateSolutionNodes: async (
+      solutionIds: string[],
+      context: string,
+      useStoryboards = false,
+      useProblems = true
+    ) => {
       const solutionNodes = get().nodes.filter(
         (node) =>
           node.type === NodeType.Solution && solutionIds.includes(node.id)
@@ -1129,9 +1136,29 @@ const createStore: StateCreator<
           )
           .map((node) => node.data.content);
 
+        const storyboardIds = findDirectDependencies([node.id], get().edges);
+        const storyboards = get()
+          .nodes.filter(
+            (node) =>
+              storyboardIds.includes(node.id) &&
+              node.type === NodeType.Storyboard
+          )
+          .map((node) => {
+            return {
+              title: node.data.storyboard.title,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              outline: node.data.storyboard.outline.map((frame: any) => ({
+                frameType: frame.frameType,
+                description: frame.description,
+                caption: frame.caption
+              }))
+            };
+          });
+
         return {
-          problemDependencies: problems,
-          solution: node.data.content
+          problemDependencies: useProblems ? problems : undefined,
+          solution: node.data.content,
+          storyboardDependents: useStoryboards ? storyboards : undefined
         };
       });
 
@@ -1480,6 +1507,11 @@ const createStore: StateCreator<
         draft.data.dependentsOutOfSync = false;
       });
 
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
+      });
+
       await get().generateStoryboardImages(id);
     },
 
@@ -1560,11 +1592,21 @@ const createStore: StateCreator<
           frame.imageOutOfSync = true;
         });
       });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
+      });
     },
     updateStoryboardDescription: (id, frameIndex, description) => {
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline[frameIndex].description = description;
         draft.data.storyboard.outline[frameIndex].imageOutOfSync = true;
+      });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
       });
     },
     updateStoryboardCaption: (id, frameIndex, caption) => {
@@ -1572,11 +1614,21 @@ const createStore: StateCreator<
         draft.data.storyboard.outline[frameIndex].caption = caption;
         draft.data.storyboard.outline[frameIndex].imageOutOfSync = true;
       });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
+      });
     },
     updateStoryboardFrameType: (id, frameIndex, frameType) => {
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline[frameIndex].frameType = frameType;
         draft.data.storyboard.outline[frameIndex].imageOutOfSync = true;
+      });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
       });
     },
     updateStoryboardImageStyle: (id, imageStyle) => {
@@ -1632,10 +1684,20 @@ const createStore: StateCreator<
           draft.position.y = newY;
         }
       });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
+      });
     },
     deleteStoryboardFrame: (id, frameIndex) => {
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline.splice(frameIndex, 1);
+      });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
       });
     },
 

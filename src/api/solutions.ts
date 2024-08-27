@@ -42,6 +42,10 @@ When the context requests regenerating solutions based on updated problems:
 - Rewrite the solutions to directly address the problems.
 - Remove any information that isn't directly related to the new problems.
 
+When the context requests regenerating solutions based on updated storyboards:
+- Rewrite the solutions to directly address the storyboards.
+- Remove any information that isn't directly related to the new storyboards.
+
 Solutions: """
 ${JSON.stringify(solutions)}
 """
