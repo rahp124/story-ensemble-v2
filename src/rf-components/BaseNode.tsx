@@ -30,8 +30,14 @@ export interface BaseNodeProps<T extends Record<string, string>> {
   content: T;
 
   onRegenerateImage: () => Promise<void>;
+
+  dependenciesUpdatedText?: string;
+  dependentsUpdatedText?: string;
+  bothUpdatedText?: string;
+
   onSync?: () => Promise<void>;
-  onSyncAll?: () => Promise<void>;
+  onSyncDown?: () => Promise<void>;
+  onSyncUp?: () => Promise<void>;
 
   targetHandle: boolean;
   sourceHandle: boolean;
@@ -40,7 +46,7 @@ export default function BaseNode<T extends Record<string, string>>(
   props: BaseNodeProps<T>
 ) {
   const { nodeProps } = props;
-  const { outOfSync, image } = nodeProps.data;
+  const { outOfSync, dependentsOutOfSync, image } = nodeProps.data;
 
   const zoom = useStore(zoomSelector);
   const isZoomedOut = zoom < semanticZoomThreshold;
@@ -64,8 +70,13 @@ export default function BaseNode<T extends Record<string, string>>(
   const icons = [
     {
       key: 'sync',
-      show: outOfSync,
-      tooltip: 'Dependencies updated. Regenerate node.',
+      show: outOfSync || dependentsOutOfSync,
+      tooltip:
+        outOfSync && dependentsOutOfSync
+          ? `${props.bothUpdatedText} Regenerate node.`
+          : outOfSync
+          ? `${props.dependenciesUpdatedText} Regenerate node.`
+          : `${props.dependentsUpdatedText} Regenerate node.`,
       icon: <RefreshCwIcon className="size-4/5" />,
       notification: true,
       loading: regenerating,
@@ -73,12 +84,12 @@ export default function BaseNode<T extends Record<string, string>>(
     },
     {
       key: 'syncAll',
-      show: outOfSync && props.onSyncAll,
+      show: outOfSync && props.onSyncDown,
       tooltip: 'Dependencies updated. Regenerate node and all dependents',
       icon: <ArrowDownFromLineIcon className="size-4/5" />,
       notification: true,
       loading: regenerating,
-      onClick: props.onSyncAll
+      onClick: props.onSyncDown
     }
   ]
     .filter(({ show }) => show)

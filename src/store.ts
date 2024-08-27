@@ -97,6 +97,7 @@ type RFState = {
   centerPosition: XYPosition;
 
   connectionInProgress: boolean;
+  connectionSource: string | null;
   onConnectStart: OnConnectStart;
   onConnectEnd: OnConnectEnd;
 
@@ -104,8 +105,6 @@ type RFState = {
   setIterateModalOpen: (open: boolean) => void;
   iterateModalTab: 'feedback' | 'regenerate' | 'edit' | null;
   setIterateModalTab: (tab: 'feedback' | 'regenerate' | 'edit' | null) => void;
-
-  setNodeOutOfSync: (id: string, outOfSync: boolean) => void;
 
   /* Personas */
   addEmptyPersonaNode: () => void;
@@ -327,6 +326,7 @@ const createStore: StateCreator<
         get().takeSnapshot();
 
         const edgesIdsToRemove = removeChanges.map(({ id }) => id);
+
         const disconnectedNodeIds = get()
           .edges.filter((edge) => edgesIdsToRemove.includes(edge.id))
           .map((edge) => edge.target);
@@ -340,6 +340,13 @@ const createStore: StateCreator<
 
         updateNodes(disconnectedNodeIds, (draft) => {
           draft.data.outOfSync = true;
+        });
+
+        const nodeIdsWithoutDependents = get()
+          .edges.filter((edge) => edgesIdsToRemove.includes(edge.id))
+          .map((edge) => edge.source);
+        updateNodes(nodeIdsWithoutDependents, (draft) => {
+          draft.data.dependentsOutOfSync = true;
         });
       }
 
@@ -386,6 +393,12 @@ const createStore: StateCreator<
       updateNode(targetNode.id, (draft) => {
         draft.data.outOfSync = true;
       });
+
+      if (get().connectionSource === target) {
+        updateNode(source, (draft) => {
+          draft.data.dependentsOutOfSync = true;
+        });
+      }
     },
     onSelectionChange: (params) => {
       const { nodes } = params;
@@ -422,19 +435,18 @@ const createStore: StateCreator<
     centerPosition: { x: 0, y: 0 },
 
     connectionInProgress: false,
-    onConnectStart: () => set({ connectionInProgress: true }),
-    onConnectEnd: () => set({ connectionInProgress: false }),
+    connectionSource: null,
+    onConnectStart: (_, params) => {
+      set({ connectionInProgress: true, connectionSource: params.nodeId });
+    },
+    onConnectEnd: () => {
+      set({ connectionInProgress: false });
+    },
 
     iterateModalOpen: false,
     setIterateModalOpen: (open) => set({ iterateModalOpen: open }),
     iterateModalTab: null,
     setIterateModalTab: (tab) => set({ iterateModalTab: tab }),
-
-    setNodeOutOfSync: (id: string, outOfSync: boolean) => {
-      updateNode(id, (draft) => {
-        draft.data.outOfSync = outOfSync;
-      });
-    },
 
     addCommentNode: (comment = '') => {
       const center = get().centerPosition;
@@ -642,6 +654,7 @@ const createStore: StateCreator<
           pick(persona, Object.keys(draft.data.content))
         );
         draft.data.outOfSync = false;
+        draft.data.dependentsOutOfSync = false;
       });
 
       const node = getNode(id);
@@ -651,9 +664,14 @@ const createStore: StateCreator<
         draft.data.visualCharacterDescriptions = visualCharacterDescriptions;
       });
 
-      // Update dependencies
+      // Update dependents
       updateNodes(findDirectDependents([id], get().edges), (draft) => {
         draft.data.outOfSync = true;
+      });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
       });
 
       return get().generatePersonaImage(id);
@@ -894,6 +912,7 @@ const createStore: StateCreator<
           pick(problem, Object.keys(draft.data.content))
         );
         draft.data.outOfSync = false;
+        draft.data.dependentsOutOfSync = false;
       });
 
       const node = getNode(id);
@@ -908,9 +927,14 @@ const createStore: StateCreator<
         draft.data.visualCharacterDescriptions = visualCharacterDescriptions;
       });
 
-      // Update dependencies
+      // Update dependents
       updateNodes(findDirectDependents([id], get().edges), (draft) => {
         draft.data.outOfSync = true;
+      });
+
+      // Update dependencies
+      updateNodes(dependencies, (draft) => {
+        draft.data.dependentsOutOfSync = true;
       });
 
       return get().generateProblemImage(id);
@@ -1111,6 +1135,7 @@ const createStore: StateCreator<
           pick(solution, Object.keys(draft.data.content))
         );
         draft.data.outOfSync = false;
+        draft.data.dependentsOutOfSync = false;
       });
 
       const node = getNode(id);
@@ -1125,9 +1150,14 @@ const createStore: StateCreator<
         draft.data.visualCharacterDescriptions = visualCharacterDescriptions;
       });
 
-      // Update dependencies
+      // Update dependents
       updateNodes(findDirectDependents([id], get().edges), (draft) => {
         draft.data.outOfSync = true;
+      });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
       });
 
       return get().generateSolutionImage(id);
@@ -1417,6 +1447,7 @@ const createStore: StateCreator<
         merge(draft.data.storyboard, storyboardData);
         draft.data.visualCharacterDescriptions = visualCharacterDescriptions;
         draft.data.outOfSync = false;
+        draft.data.dependentsOutOfSync = false;
       });
 
       await get().generateStoryboardImages(id);

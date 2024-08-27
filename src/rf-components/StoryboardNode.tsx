@@ -134,7 +134,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     {
       key: 'sync',
       show: outOfSync,
-      tooltip: 'Dependencies updated. Regenerate node.',
+      tooltip: 'Solutions updated. Regenerate node.',
       icon: <RefreshCwIcon />,
       notification: true,
       loading: regenerating,

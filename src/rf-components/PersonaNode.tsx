@@ -19,6 +19,7 @@ export default function PersonaNode(props: NodeProps<NodeData>) {
       onRegenerateImage={() => generatePersonaImage(props.id)}
       targetHandle={false}
       sourceHandle={true}
+      dependentsUpdatedText="Problems updated."
     />
   );
 }

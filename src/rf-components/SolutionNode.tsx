@@ -49,6 +49,9 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
       nodeBackgroundClass={displayAttributes.backgroundClass}
       content={props.data.content}
       onRegenerateImage={() => generateSolutionImage(props.id)}
+      dependenciesUpdatedText="Problems updated."
+      dependentsUpdatedText="Storyboards updated."
+      bothUpdatedText="Problems & storyboards updated."
       onSync={async () => {
         if (regenerating) return;
 
@@ -76,7 +79,7 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
           setRegeneratingNode(await idPromise, false);
         });
       }}
-      onSyncAll={async () => {
+      onSyncDown={async () => {
         if (regenerating) return;
 
         setRegeneratingNode(props.id, true);
