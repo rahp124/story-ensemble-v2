@@ -16,14 +16,14 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
     regenerating,
     setRegeneratingNode,
 
-    previousChangedValuesById,
-    setPreviousChangedValuesById
+    setPreviousChangedValuesById,
+    addPreviousChangedValuesById
   } = useDisplayStore((state) => ({
     regenerating: state.regeneratingNodes.has(props.id),
     setRegeneratingNode: state.setRegeneratingNode,
 
-    previousChangedValuesById: state.previousChangedValuesById,
-    setPreviousChangedValuesById: state.setPreviousChangedValuesById
+    setPreviousChangedValuesById: state.setPreviousChangedValuesById,
+    addPreviousChangedValuesById: state.addPreviousChangedValuesById
   }));
 
   const {
@@ -138,10 +138,7 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
                 'Regenerate solution based on updated problems'
               );
 
-              setPreviousChangedValuesById({
-                ...previousChangedValuesById,
-                ..._previousChangedValuesById
-              });
+              addPreviousChangedValuesById(_previousChangedValuesById);
 
               regeneratedImageNodeIds.forEach(async (idPromise) => {
                 setRegeneratingNode(await idPromise, false);
@@ -232,10 +229,7 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
                 true
               );
 
-              setPreviousChangedValuesById({
-                ...previousChangedValuesById,
-                ..._previousChangedValuesById
-              });
+              addPreviousChangedValuesById(_previousChangedValuesById);
 
               regeneratedImageNodeIds.forEach(async (idPromise) => {
                 setRegeneratingNode(await idPromise, false);

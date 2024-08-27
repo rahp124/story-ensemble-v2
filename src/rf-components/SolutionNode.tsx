@@ -16,14 +16,14 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
     regenerating,
     setRegeneratingNode,
 
-    previousChangedValuesById,
-    setPreviousChangedValuesById
+    setPreviousChangedValuesById,
+    addPreviousChangedValuesById
   } = useDisplayStore((state) => ({
     regenerating: state.regeneratingNodes.has(props.id),
     setRegeneratingNode: state.setRegeneratingNode,
 
-    previousChangedValuesById: state.previousChangedValuesById,
-    setPreviousChangedValuesById: state.setPreviousChangedValuesById
+    setPreviousChangedValuesById: state.setPreviousChangedValuesById,
+    addPreviousChangedValuesById: state.addPreviousChangedValuesById
   }));
 
   const {
@@ -187,20 +187,15 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
             problemIds.map(async (problemId) => {
               setRegeneratingNode(problemId, true);
 
-              const {
-                previousChangedValuesById: _previousChangedValuesById,
-                regeneratedImageNodeIds
-              } = await regenerateProblemNodes(
-                [problemId],
-                'Regenerate problem based on updated solutions',
-                true,
-                false
-              );
+              const { previousChangedValuesById, regeneratedImageNodeIds } =
+                await regenerateProblemNodes(
+                  [problemId],
+                  'Regenerate problem based on updated solutions',
+                  true,
+                  false
+                );
 
-              setPreviousChangedValuesById({
-                ...previousChangedValuesById,
-                ..._previousChangedValuesById
-              });
+              addPreviousChangedValuesById(previousChangedValuesById);
 
               regeneratedImageNodeIds.forEach(async (idPromise) => {
                 setRegeneratingNode(await idPromise, false);
@@ -226,19 +221,14 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
             personaIds.map(async (personaId) => {
               setRegeneratingNode(personaId, true);
 
-              const {
-                previousChangedValuesById: _previousChangedValuesById,
-                regeneratedImageNodeIds
-              } = await regeneratePersonaNodes(
-                [personaId],
-                'Regenerate persona based on updated problems',
-                true
-              );
+              const { previousChangedValuesById, regeneratedImageNodeIds } =
+                await regeneratePersonaNodes(
+                  [personaId],
+                  'Regenerate persona based on updated problems',
+                  true
+                );
 
-              setPreviousChangedValuesById({
-                ...previousChangedValuesById,
-                ..._previousChangedValuesById
-              });
+              addPreviousChangedValuesById(previousChangedValuesById);
 
               regeneratedImageNodeIds.forEach(async (idPromise) => {
                 setRegeneratingNode(await idPromise, false);

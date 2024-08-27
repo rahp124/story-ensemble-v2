@@ -11,6 +11,9 @@ export type DisplayState = {
   setPreviousChangedValuesById: (
     value: Record<string, Record<string, string>>
   ) => void;
+  addPreviousChangedValuesById: (
+    value: Record<string, Record<string, string>>
+  ) => void;
 };
 
 enableMapSet();
@@ -36,6 +39,13 @@ export const useDisplayStore = create<DisplayState>()(
     previousChangedValuesById: {},
     setPreviousChangedValuesById: (value) => {
       set({ previousChangedValuesById: value });
+    },
+    addPreviousChangedValuesById: (value) => {
+      set((draft) => {
+        Object.entries(value).forEach(([key, value]) => {
+          draft.previousChangedValuesById[key] = value;
+        });
+      });
     }
   }))
 );
