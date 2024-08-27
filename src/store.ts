@@ -120,12 +120,17 @@ type RFState = {
   regeneratePersonaNodes: (
     personaIds: string[],
     context: string,
-    useProblems?: boolean
+    useProblems?: boolean,
+    setProblemsOutOfSync?: boolean
   ) => Promise<{
     previousChangedValuesById: Record<string, Record<string, string>>;
     regeneratedImageNodeIds: Promise<string>[];
   }>;
-  updatePersonaNode: (id: string, persona: Partial<Persona>) => Promise<void>;
+  updatePersonaNode: (
+    id: string,
+    persona: Partial<Persona>,
+    setProblemsOutOfSync?: boolean
+  ) => Promise<void>;
   generatePersonaImage: (id: string) => Promise<void>;
 
   /* Problems */
@@ -143,12 +148,19 @@ type RFState = {
     problemIds: string[],
     context: string,
     useSolutions?: boolean,
-    usePersonas?: boolean
+    usePersonas?: boolean,
+    setSolutionsOutOfSync?: boolean,
+    setPersonasOutOfSync?: boolean
   ) => Promise<{
     previousChangedValuesById: Record<string, Record<string, string>>;
     regeneratedImageNodeIds: Promise<string>[];
   }>;
-  updateProblemNode: (id: string, problem: Partial<Problem>) => Promise<void>;
+  updateProblemNode: (
+    id: string,
+    problem: Partial<Problem>,
+    setSolutionsOutOfSync?: boolean,
+    setPersonasOutOfSync?: boolean
+  ) => Promise<void>;
 
   generateProblemImage: (id: string) => Promise<void>;
 
@@ -167,14 +179,18 @@ type RFState = {
     solutionIds: string[],
     context: string,
     useStoryboards?: boolean,
-    useProblems?: boolean
+    useProblems?: boolean,
+    setStoryboardsOutOfSync?: boolean,
+    setProblemsOutOfSync?: boolean
   ) => Promise<{
     previousChangedValuesById: Record<string, Record<string, string>>;
     regeneratedImageNodeIds: Promise<string>[];
   }>;
   updateSolutionNode: (
     id: string,
-    solution: Partial<Solution>
+    solution: Partial<Solution>,
+    setStoryboardsOutOfSync?: boolean,
+    setProblemsOutOfSync?: boolean
   ) => Promise<void>;
 
   generateSolutionImage: (id: string) => Promise<void>;
@@ -191,7 +207,11 @@ type RFState = {
     instructions: string,
     storyboardIds: string[]
   ) => Promise<string[]>;
-  regenerateStoryboardNode: (id: string, instructions: string) => Promise<void>;
+  regenerateStoryboardNode: (
+    id: string,
+    instructions: string,
+    setSolutionsOutOfSync?: boolean
+  ) => Promise<void>;
   updateStoryboardTitle: (id: string, title: string) => void;
   updateStoryboardDescription: (
     id: string,
@@ -623,7 +643,8 @@ const createStore: StateCreator<
     regeneratePersonaNodes: async (
       personaIds: string[],
       context: string,
-      useProblems
+      useProblems,
+      setProblemsOutOfSync = true
     ) => {
       const personaNodes = get().nodes.filter(
         (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
@@ -650,7 +671,11 @@ const createStore: StateCreator<
       const newPersonas = await regeneratePersonas(personas, context);
 
       const regeneratedImageNodeIds = personaIds.map(async (id, idx) => {
-        await get().updatePersonaNode(id, newPersonas[idx]);
+        await get().updatePersonaNode(
+          id,
+          newPersonas[idx],
+          setProblemsOutOfSync
+        );
         return id;
       });
 
@@ -672,7 +697,11 @@ const createStore: StateCreator<
         regeneratedImageNodeIds
       };
     },
-    updatePersonaNode: async (id: string, persona: Partial<Persona>) => {
+    updatePersonaNode: async (
+      id: string,
+      persona: Partial<Persona>,
+      setProblemsOutOfSync = true
+    ) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
         merge(
@@ -691,14 +720,11 @@ const createStore: StateCreator<
       });
 
       // Update dependents
-      updateNodes(findDirectDependents([id], get().edges), (draft) => {
-        draft.data.outOfSync = true;
-      });
-
-      // Update dependencies
-      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
-        draft.data.dependentsOutOfSync = true;
-      });
+      if (setProblemsOutOfSync) {
+        updateNodes(findDirectDependents([id], get().edges), (draft) => {
+          draft.data.outOfSync = true;
+        });
+      }
 
       return get().generatePersonaImage(id);
     },
@@ -888,7 +914,9 @@ const createStore: StateCreator<
       problemIds: string[],
       context: string,
       useSolutions = false,
-      usePersonas = true
+      usePersonas = true,
+      setSolutionsOutOfSync = true,
+      setPersonasOutOfSync = true
     ) => {
       const problemNodes = get().nodes.filter(
         (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
@@ -917,7 +945,12 @@ const createStore: StateCreator<
       const newProblems = await regenerateProblems(problems, context);
 
       const regeneratedImageNodeIds = problemIds.map(async (id, idx) => {
-        await get().updateProblemNode(id, newProblems[idx]);
+        await get().updateProblemNode(
+          id,
+          newProblems[idx],
+          setSolutionsOutOfSync,
+          setPersonasOutOfSync
+        );
         return id;
       });
 
@@ -936,7 +969,12 @@ const createStore: StateCreator<
 
       return { previousChangedValuesById, regeneratedImageNodeIds };
     },
-    updateProblemNode: async (id, problem) => {
+    updateProblemNode: async (
+      id,
+      problem,
+      setSolutionsOutOfSync,
+      setPersonasOutOfSync
+    ) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
         merge(
@@ -960,14 +998,18 @@ const createStore: StateCreator<
       });
 
       // Update dependents
-      updateNodes(findDirectDependents([id], get().edges), (draft) => {
-        draft.data.outOfSync = true;
-      });
+      if (setSolutionsOutOfSync) {
+        updateNodes(findDirectDependents([id], get().edges), (draft) => {
+          draft.data.outOfSync = true;
+        });
+      }
 
       // Update dependencies
-      updateNodes(dependencies, (draft) => {
-        draft.data.dependentsOutOfSync = true;
-      });
+      if (setPersonasOutOfSync) {
+        updateNodes(dependencies, (draft) => {
+          draft.data.dependentsOutOfSync = true;
+        });
+      }
 
       return get().generateProblemImage(id);
     },
@@ -1116,7 +1158,9 @@ const createStore: StateCreator<
       solutionIds: string[],
       context: string,
       useStoryboards = false,
-      useProblems = true
+      useProblems = true,
+      setStoryboardsOutOfSync = true,
+      setProblemsOutOfSync = true
     ) => {
       const solutionNodes = get().nodes.filter(
         (node) =>
@@ -1165,7 +1209,12 @@ const createStore: StateCreator<
       const newSolutions = await regenerateSolutions(solutions, context);
 
       const regeneratedImageNodeIds = solutionIds.map(async (id, idx) => {
-        await get().updateSolutionNode(id, newSolutions[idx]);
+        await get().updateSolutionNode(
+          id,
+          newSolutions[idx],
+          setStoryboardsOutOfSync,
+          setProblemsOutOfSync
+        );
         return id;
       });
 
@@ -1184,7 +1233,12 @@ const createStore: StateCreator<
 
       return { previousChangedValuesById, regeneratedImageNodeIds };
     },
-    updateSolutionNode: async (id, solution) => {
+    updateSolutionNode: async (
+      id,
+      solution,
+      setStoryboardsOutOfSync,
+      setProblemsOutOfSync
+    ) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
         merge(
@@ -1208,14 +1262,18 @@ const createStore: StateCreator<
       });
 
       // Update dependents
-      updateNodes(findDirectDependents([id], get().edges), (draft) => {
-        draft.data.outOfSync = true;
-      });
+      if (setStoryboardsOutOfSync) {
+        updateNodes(findDirectDependents([id], get().edges), (draft) => {
+          draft.data.outOfSync = true;
+        });
+      }
 
       // Update dependencies
-      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
-        draft.data.dependentsOutOfSync = true;
-      });
+      if (setProblemsOutOfSync) {
+        updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+          draft.data.dependentsOutOfSync = true;
+        });
+      }
 
       return get().generateSolutionImage(id);
     },
@@ -1451,7 +1509,11 @@ const createStore: StateCreator<
 
       return [node.id];
     },
-    regenerateStoryboardNode: async (id, instructions) => {
+    regenerateStoryboardNode: async (
+      id,
+      instructions,
+      setSolutionsOutOfSync
+    ) => {
       const storyboardNode = get().nodes.find((node) => node.id === id);
       if (!storyboardNode) return;
 
@@ -1508,9 +1570,11 @@ const createStore: StateCreator<
       });
 
       // Update dependencies
-      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
-        draft.data.dependentsOutOfSync = true;
-      });
+      if (setSolutionsOutOfSync) {
+        updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+          draft.data.dependentsOutOfSync = true;
+        });
+      }
 
       await get().generateStoryboardImages(id);
     },

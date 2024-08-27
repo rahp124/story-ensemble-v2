@@ -50,7 +50,8 @@ export default function PersonaNode(props: NodeProps<NodeData>) {
         } = await regeneratePersonaNodes(
           [props.id],
           'Regenerate persona based on updated problems',
-          true
+          true,
+          false
         );
         setPreviousChangedValuesById(_previousChangedValuesById);
 

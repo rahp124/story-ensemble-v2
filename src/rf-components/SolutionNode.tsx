@@ -77,7 +77,9 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
             ? 'Regenerate solution based on updated problems'
             : 'Regenerate solution based on updated storyboards',
           props.data.dependentsOutOfSync,
-          props.data.outOfSync
+          props.data.outOfSync,
+          !props.data.dependentsOutOfSync,
+          !props.data.outOfSync
         );
         setPreviousChangedValuesById(_previousChangedValuesById);
 
@@ -106,7 +108,9 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
           [props.id],
           'Regenerate solution based on updated problems',
           false,
-          true
+          true,
+          true,
+          false
         );
 
         addStudyEvent({
@@ -134,7 +138,8 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
 
               await regenerateStoryboardNode(
                 storyboardId,
-                'Regenerate storyboard based on updated personas, problems, and solutions'
+                'Regenerate storyboard based on updated personas, problems, and solutions',
+                false
               );
 
               setRegeneratingNode(storyboardId, false);
@@ -162,7 +167,9 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
           [props.id],
           'Regenerate solution based on updated storyboards',
           true,
-          false
+          false,
+          false,
+          true
         );
         setPreviousChangedValuesById(_previousChangedValuesById);
 
@@ -192,7 +199,9 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
                   [problemId],
                   'Regenerate problem based on updated solutions',
                   true,
-                  false
+                  false,
+                  false,
+                  true
                 );
 
               addPreviousChangedValuesById(previousChangedValuesById);
@@ -225,7 +234,8 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
                 await regeneratePersonaNodes(
                   [personaId],
                   'Regenerate persona based on updated problems',
-                  true
+                  true,
+                  false
                 );
 
               addPreviousChangedValuesById(previousChangedValuesById);
