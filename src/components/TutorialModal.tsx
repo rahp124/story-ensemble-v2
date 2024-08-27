@@ -145,7 +145,7 @@ export function TutorialModal() {
             <Menu.Item
               leftSection={<SquareMenuIcon style={{ width: rem(14), height: rem(14) }} />}
               onClick={() =>
-                handleOpen("Task Instruction", "https://www.youtube.com/embed/FYj63AEgDLU")
+                handleOpen("Task Instruction", "https://www.youtube.com/embed/JmWrs_Xxb3w")
               }
             >
               Instruction
