@@ -13,7 +13,12 @@ import {
   AspectRatio
 } from '@mantine/core';
 import { omit } from 'lodash';
-import { ArrowDownFromLineIcon, ImageIcon, RefreshCwIcon } from 'lucide-react';
+import {
+  ArrowDownFromLineIcon,
+  ArrowUpFromLineIcon,
+  ImageIcon,
+  RefreshCwIcon
+} from 'lucide-react';
 import { useCallback, useRef } from 'react';
 import { NodeProps, ReactFlowState, useStore } from 'reactflow';
 
@@ -85,11 +90,20 @@ export default function BaseNode<T extends Record<string, string>>(
     {
       key: 'syncAll',
       show: outOfSync && props.onSyncDown,
-      tooltip: 'Dependencies updated. Regenerate node and all dependents',
+      tooltip: `${props.dependenciesUpdatedText} Regenerate node and all dependents`,
       icon: <ArrowDownFromLineIcon className="size-4/5" />,
       notification: true,
       loading: regenerating,
       onClick: props.onSyncDown
+    },
+    {
+      key: 'syncUp',
+      show: dependentsOutOfSync && props.onSyncUp,
+      tooltip: `${props.dependentsUpdatedText} Regenerate node and all dependencies`,
+      icon: <ArrowUpFromLineIcon className="size-4/5" />,
+      notification: true,
+      loading: regenerating,
+      onClick: props.onSyncUp
     }
   ]
     .filter(({ show }) => show)

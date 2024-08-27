@@ -120,7 +120,7 @@ type RFState = {
   regeneratePersonaNodes: (
     personaIds: string[],
     context: string,
-    useDependents?: boolean
+    useProblems?: boolean
   ) => Promise<{
     previousChangedValuesById: Record<string, Record<string, string>>;
     regeneratedImageNodeIds: Promise<string>[];
@@ -141,7 +141,9 @@ type RFState = {
   ) => Promise<string[]>;
   regenerateProblemNodes: (
     problemIds: string[],
-    context: string
+    context: string,
+    useSolutions?: boolean,
+    usePersonas?: boolean
   ) => Promise<{
     previousChangedValuesById: Record<string, Record<string, string>>;
     regeneratedImageNodeIds: Promise<string>[];
@@ -619,13 +621,13 @@ const createStore: StateCreator<
     regeneratePersonaNodes: async (
       personaIds: string[],
       context: string,
-      useDependents
+      useProblems
     ) => {
       const personaNodes = get().nodes.filter(
         (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
       );
       const personas = personaNodes.map((node) => {
-        if (useDependents) {
+        if (useProblems) {
           const problemIds = findDirectDependents([node.id], get().edges);
           const problems = get()
             .nodes.filter(
@@ -880,17 +882,17 @@ const createStore: StateCreator<
         draft.data.image = image;
       });
     },
-    regenerateProblemNodes: async (problemIds: string[], context: string) => {
+    regenerateProblemNodes: async (
+      problemIds: string[],
+      context: string,
+      useSolutions = false,
+      usePersonas = true
+    ) => {
       const problemNodes = get().nodes.filter(
         (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
       );
       const problems = problemNodes.map((node) => {
-        const personaIds = get()
-          .edges.filter(
-            (edge) =>
-              edge.target === node.id && edge.source.startsWith('persona')
-          )
-          .map((edge) => edge.source);
+        const personaIds = findDirectDependencies([node.id], get().edges);
         const personas = get()
           .nodes.filter(
             (node) =>
@@ -898,9 +900,15 @@ const createStore: StateCreator<
           )
           .map((node) => node.data.content);
 
+        const solutionIds = findDirectDependents([node.id], get().edges);
+        const solutions = get()
+          .nodes.filter((node) => solutionIds.includes(node.id))
+          .map((node) => node.data.content);
+
         return {
-          personaDependencies: personas,
-          problem: node.data.content
+          personaDependencies: usePersonas ? personas : undefined,
+          problem: node.data.content,
+          solutionDependents: useSolutions ? solutions : undefined
         };
       });
 

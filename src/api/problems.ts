@@ -47,6 +47,10 @@ When the context requests regenerating problems based on updated personas:
 - Rewrite the problem statements to directly address the personas.
 - Remove any information that isn't directly related to the new personas.
 
+When the context requests regenerating problems based on updated solutions:
+- Rewrite the problem statements to directly address the solutions.
+- Remove any information that isn't directly related to the new solutions.
+
 Problems: """
 ${JSON.stringify(problems)}
 """
