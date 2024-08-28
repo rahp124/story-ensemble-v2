@@ -23,6 +23,7 @@ import {
     BlendIcon,
     CableIcon,
     MessageSquareQuoteIcon,
+    ArrowUpFromLineIcon,
 } from "lucide-react"
 import {
     rem,
@@ -46,7 +47,7 @@ export interface tutorialMenuItem {
     "Explore (Diverge)": TutorialItem[],
     "Sensemaking & Organization": TutorialItem[],
     "Focus (Converge)": TutorialItem[],
-    "Iterate (Change Propagation)": TutorialItem[],
+    "Iterate (Propagating Change ↓↑)": TutorialItem[],
 }
 
 export const tutorialMenuData: tutorialMenuItem = {
@@ -257,7 +258,7 @@ export const tutorialMenuData: tutorialMenuItem = {
             </Text>
         },
     ],
-    "Iterate (Change Propagation)": [
+    "Iterate (Propagating Change ↓↑)": [
         {
             "title": "Edit manually",
             "url": "https://www.youtube.com/embed/O0hPmom2ot0",
@@ -292,6 +293,15 @@ export const tutorialMenuData: tutorialMenuItem = {
             "right_section": 
             <Text size="xs" c="dimmed">
                2.1 min
+            </Text>
+        },
+        {
+            "title": "Propagate changes ↑",
+            "url": "https://www.youtube.com/embed/tdL4VCWEejc",
+            "left_section": <ArrowUpFromLineIcon style={{ width: rem(14), height: rem(14) }}/>,
+            "right_section": 
+            <Text size="xs" c="dimmed">
+               2.5 min
             </Text>
         },
     ],
