@@ -297,7 +297,7 @@ export const tutorialMenuData: tutorialMenuItem = {
         },
         {
             "title": "Propagate changes ↑",
-            "url": "https://www.youtube.com/embed/tdL4VCWEejc",
+            "url": "https://www.youtube.com/embed/VkUS4Q71V_o",
             "left_section": <ArrowUpFromLineIcon style={{ width: rem(14), height: rem(14) }}/>,
             "right_section": 
             <Text size="xs" c="dimmed">
