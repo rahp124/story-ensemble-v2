@@ -87,3 +87,8 @@ body {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow on hover */
   transform: scale(1.005); /* Slightly increase the size on hover */
 }
+
+g.arrow-edge.selected path {
+  stroke: rgba(255, 53, 17, 0.841) !important;
+  stroke-dasharray: 30, 30;
+}

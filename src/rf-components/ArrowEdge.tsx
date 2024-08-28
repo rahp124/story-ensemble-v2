@@ -12,7 +12,8 @@ export const createArrowEdge = (source: string, target: string)  => {
     sourceHandle: 'source-e-1',
     target,
     targetHandle: 'target-e-1',
-    interactionWidth: 50,
+    className: 'arrow-edge',
+    interactionWidth: 80,
     data: {
       state: {},
     },
@@ -26,6 +27,7 @@ export const createArrowEdge = (source: string, target: string)  => {
     style: {
       stroke: '#3facff',
       transition: 'ease',
+      strokeDasharray: '15, 15'
     },
   }
 }
