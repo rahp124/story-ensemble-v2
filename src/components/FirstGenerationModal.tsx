@@ -3,7 +3,6 @@ import {
   Anchor,
   Button,
   Divider,
-  Kbd,
   LoadingOverlay,
   Modal,
   Select,
@@ -224,7 +223,7 @@ export function FirstGenerationModal(props: FirstGenerationModal) {
       opened={opened}
       onClose={onClose}
       size="xl"
-      title={<span style={{ display: 'flex' }} className="text-lg font-bold">Start brainstorming (<><div className="text-sm"><Kbd>⌘</Kbd> + <Kbd>s</Kbd></div></>) </span>}
+      title={<span style={{ display: 'flex' }} className="text-lg font-bold">Start brainstorming </span>}
     >
       <div className="relative">
         <LoadingOverlay visible={generating} />

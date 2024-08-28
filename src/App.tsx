@@ -27,7 +27,7 @@ import {
   StickyNoteIcon,
 } from 'lucide-react';
 
-import { Button, Menu, Tooltip } from '@mantine/core';
+import { Button, Kbd, Menu, Tooltip } from '@mantine/core';
 import { useShallow } from 'zustand/react/shallow';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { TutorialModal } from './components/TutorialModal';
@@ -245,6 +245,7 @@ export default function App() {
       >
         <Panel position="top-left">
           <div className="flex gap-4 items-center">
+            <Tooltip label={<><Kbd>⌘</Kbd> or <Kbd>Ctrl</Kbd> + <Kbd>s</Kbd></>} withArrow>
             <Button 
               onClick={() => {
                 setFirstGenerationModalOpened(true);
@@ -253,6 +254,7 @@ export default function App() {
             >
               Start brainstorming
             </Button>
+            </Tooltip>
             <Menu position="bottom-start" trigger="click-hover">
               <Menu.Target>
                 <Button 
