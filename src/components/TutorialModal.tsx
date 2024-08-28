@@ -10,6 +10,7 @@ import {
   MonitorPlayIcon,
   SquareMenuIcon,
   SparkleIcon,
+  BookOpenTextIcon
 } from 'lucide-react';
 import { useState } from 'react';
 import { ProjectThemesList } from './ProjectList';
@@ -112,7 +113,9 @@ export function TutorialModal() {
         }}
       >
         <Menu.Target>
-          <Button>Tutorial</Button>
+          <Button 
+          leftSection={<BookOpenTextIcon />}
+          >Tutorial</Button>
         </Menu.Target>
         <Menu.Dropdown>
           <ScrollAreaAutosize

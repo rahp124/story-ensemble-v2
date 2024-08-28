@@ -484,7 +484,7 @@ export function IterateModal() {
           ))}
 
           <Button type="submit" className="mt-4">
-            Edit
+            Save
           </Button>
         </form>
       </Tabs.Panel>
@@ -526,7 +526,7 @@ export function IterateModal() {
 
   return (
     <Modal
-      title={<span className="text-lg font-bold">Iterate</span>}
+      title={<span className="text-lg font-bold">Edit</span>}
       size="xl"
       opened={iterateModalOpen}
       onClose={() => {

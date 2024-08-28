@@ -22,11 +22,12 @@ import {
   ClipboardList,
   PlusIcon,
   // Redo,
-  Trash
-  //  Undo
+  Trash,
+  //  Undo,
+  StickyNoteIcon,
 } from 'lucide-react';
 
-import { Button, Menu, Tooltip } from '@mantine/core';
+import { Button, Menu, Tooltip, Kbd } from '@mantine/core';
 import { useShallow } from 'zustand/react/shallow';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { TutorialModal } from './components/TutorialModal';
@@ -34,7 +35,6 @@ import PersonaNode from './rf-components/PersonaNode';
 import ProblemNode from './rf-components/ProblemNode';
 import SolutionNode from './rf-components/SolutionNode';
 import StoryboardNode from './rf-components/StoryboardNode';
-import ContextEdge from './rf-components/ContextEdge';
 import { IterateModal } from './components/IterateModal';
 import { FirstGenerationModal } from './components/FirstGenerationModal';
 import { DependentGenerationModal } from './components/DependentGenerationModal';
@@ -43,6 +43,7 @@ import { findDirectDependencies } from './lib/graphHelper';
 import CommentNode from './rf-components/CommentNode';
 import ProjectNode from './rf-components/ProjectNode';
 import { downloadObjectAsJson } from './lib/utils';
+import ContextEdge from './rf-components/ContextEdge';
 
 const nodeTypes = {
   [NodeType.Persona]: PersonaNode,
@@ -54,7 +55,7 @@ const nodeTypes = {
 };
 
 const edgeTypes = {
-  [EdgeType.Context]: ContextEdge
+  [EdgeType.Context]: ContextEdge,
 };
 
 export default function App() {
@@ -126,6 +127,7 @@ export default function App() {
   // useHotkeys('mod+y', () => redo(), { preventDefault: true });
   useHotkeys('mod+c', () => copy(), { preventDefault: true });
   useHotkeys('mod+v', () => paste(), { preventDefault: true });
+  useHotkeys('mod+s', () => setFirstGenerationModalOpened(true), { preventDefault: true });
 
   const [currentlySelecting, setCurrentlySelecting] = useState(false);
   const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
@@ -243,16 +245,22 @@ export default function App() {
       >
         <Panel position="top-left">
           <div className="flex gap-4 items-center">
-            <Button
+            <Button 
               onClick={() => {
                 setFirstGenerationModalOpened(true);
               }}
+              leftSection={<StickyNoteIcon className="size-5" />}
             >
               Start brainstorming
             </Button>
             <Menu position="bottom-start" trigger="click-hover">
               <Menu.Target>
-                <Button variant="light">Add empty node</Button>
+                <Button 
+                variant="light"
+                leftSection={<PlusIcon className="size-5" />}
+                >
+                  Add empty node
+                </Button>
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Item
