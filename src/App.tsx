@@ -245,7 +245,7 @@ export default function App() {
       >
         <Panel position="top-left">
           <div className="flex gap-4 items-center">
-            <Tooltip label={<><Kbd>⌘</Kbd> or <Kbd>Ctrl</Kbd> + <Kbd>s</Kbd></>} withArrow>
+            <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> or <Kbd>Ctrl</Kbd> + <Kbd>s</Kbd></div>} withArrow color={'#00000'}>
             <Button 
               onClick={() => {
                 setFirstGenerationModalOpened(true);
