@@ -97,6 +97,7 @@ type RFState = {
   centerPosition: XYPosition;
 
   connectionInProgress: boolean;
+  connectionSource: string | null;
   onConnectStart: OnConnectStart;
   onConnectEnd: OnConnectEnd;
 
@@ -104,8 +105,6 @@ type RFState = {
   setIterateModalOpen: (open: boolean) => void;
   iterateModalTab: 'feedback' | 'regenerate' | 'edit' | null;
   setIterateModalTab: (tab: 'feedback' | 'regenerate' | 'edit' | null) => void;
-
-  setNodeOutOfSync: (id: string, outOfSync: boolean) => void;
 
   /* Personas */
   addEmptyPersonaNode: () => void;
@@ -120,12 +119,18 @@ type RFState = {
   ) => Promise<string[]>;
   regeneratePersonaNodes: (
     personaIds: string[],
-    context: string
+    context: string,
+    useProblems?: boolean,
+    setProblemsOutOfSync?: boolean
   ) => Promise<{
     previousChangedValuesById: Record<string, Record<string, string>>;
     regeneratedImageNodeIds: Promise<string>[];
   }>;
-  updatePersonaNode: (id: string, persona: Partial<Persona>) => Promise<void>;
+  updatePersonaNode: (
+    id: string,
+    persona: Partial<Persona>,
+    setProblemsOutOfSync?: boolean
+  ) => Promise<void>;
   generatePersonaImage: (id: string) => Promise<void>;
 
   /* Problems */
@@ -141,12 +146,21 @@ type RFState = {
   ) => Promise<string[]>;
   regenerateProblemNodes: (
     problemIds: string[],
-    context: string
+    context: string,
+    useSolutions?: boolean,
+    usePersonas?: boolean,
+    setSolutionsOutOfSync?: boolean,
+    setPersonasOutOfSync?: boolean
   ) => Promise<{
     previousChangedValuesById: Record<string, Record<string, string>>;
     regeneratedImageNodeIds: Promise<string>[];
   }>;
-  updateProblemNode: (id: string, problem: Partial<Problem>) => Promise<void>;
+  updateProblemNode: (
+    id: string,
+    problem: Partial<Problem>,
+    setSolutionsOutOfSync?: boolean,
+    setPersonasOutOfSync?: boolean
+  ) => Promise<void>;
 
   generateProblemImage: (id: string) => Promise<void>;
 
@@ -163,14 +177,20 @@ type RFState = {
   ) => Promise<string[]>;
   regenerateSolutionNodes: (
     solutionIds: string[],
-    context: string
+    context: string,
+    useStoryboards?: boolean,
+    useProblems?: boolean,
+    setStoryboardsOutOfSync?: boolean,
+    setProblemsOutOfSync?: boolean
   ) => Promise<{
     previousChangedValuesById: Record<string, Record<string, string>>;
     regeneratedImageNodeIds: Promise<string>[];
   }>;
   updateSolutionNode: (
     id: string,
-    solution: Partial<Solution>
+    solution: Partial<Solution>,
+    setStoryboardsOutOfSync?: boolean,
+    setProblemsOutOfSync?: boolean
   ) => Promise<void>;
 
   generateSolutionImage: (id: string) => Promise<void>;
@@ -187,7 +207,11 @@ type RFState = {
     instructions: string,
     storyboardIds: string[]
   ) => Promise<string[]>;
-  regenerateStoryboardNode: (id: string, instructions: string) => Promise<void>;
+  regenerateStoryboardNode: (
+    id: string,
+    instructions: string,
+    setSolutionsOutOfSync?: boolean
+  ) => Promise<void>;
   updateStoryboardTitle: (id: string, title: string) => void;
   updateStoryboardDescription: (
     id: string,
@@ -327,6 +351,7 @@ const createStore: StateCreator<
         get().takeSnapshot();
 
         const edgesIdsToRemove = removeChanges.map(({ id }) => id);
+
         const disconnectedNodeIds = get()
           .edges.filter((edge) => edgesIdsToRemove.includes(edge.id))
           .map((edge) => edge.target);
@@ -338,9 +363,16 @@ const createStore: StateCreator<
           data: {}
         });
 
-        updateNodes(disconnectedNodeIds, (draft) => {
-          draft.data.outOfSync = true;
-        });
+        // updateNodes(disconnectedNodeIds, (draft) => {
+        //   draft.data.outOfSync = true;
+        // });
+
+        // const nodeIdsWithoutDependents = get()
+        //   .edges.filter((edge) => edgesIdsToRemove.includes(edge.id))
+        //   .map((edge) => edge.source);
+        // updateNodes(nodeIdsWithoutDependents, (draft) => {
+        //   draft.data.dependentsOutOfSync = true;
+        // });
       }
 
       set({
@@ -356,6 +388,7 @@ const createStore: StateCreator<
 
       const { target, source } = connection;
       if (!target || !source) return;
+
       const isPersonaToProblemConnection =
         source.startsWith('persona') && target.startsWith('problem');
       const isProblemToSolutionConnection =
@@ -381,11 +414,31 @@ const createStore: StateCreator<
       )
         return;
 
-      const targetNode = get().nodes.find((node) => node.id === target);
-      if (!targetNode) return;
-      updateNode(targetNode.id, (draft) => {
-        draft.data.outOfSync = true;
-      });
+      const connectionSource = get().connectionSource;
+      const targetNode = getNode(target);
+      const sourceNode = getNode(source);
+      if (!targetNode || !sourceNode || !connectionSource) return;
+
+      const isNodeEmpty = (node: Node) =>
+        (node.type === NodeType.Storyboard &&
+          !(node.data as StoryboardNodeData)?.storyboard?.title) ||
+        (node.type !== NodeType.Storyboard &&
+          Object.values(node.data.content).every((value) => !value));
+
+      const isSourceEmpty = isNodeEmpty(getNode(source)!);
+      const isTargetEmpty = isNodeEmpty(getNode(target)!);
+
+      if (!isSourceEmpty) {
+        updateNode(targetNode.id, (draft) => {
+          draft.data.outOfSync = true;
+        });
+      }
+
+      if (connectionSource === target && !isTargetEmpty) {
+        updateNode(source, (draft) => {
+          draft.data.dependentsOutOfSync = true;
+        });
+      }
     },
     onSelectionChange: (params) => {
       const { nodes } = params;
@@ -422,19 +475,18 @@ const createStore: StateCreator<
     centerPosition: { x: 0, y: 0 },
 
     connectionInProgress: false,
-    onConnectStart: () => set({ connectionInProgress: true }),
-    onConnectEnd: () => set({ connectionInProgress: false }),
+    connectionSource: null,
+    onConnectStart: (_, params) => {
+      set({ connectionInProgress: true, connectionSource: params.nodeId });
+    },
+    onConnectEnd: () => {
+      set({ connectionInProgress: false });
+    },
 
     iterateModalOpen: false,
     setIterateModalOpen: (open) => set({ iterateModalOpen: open }),
     iterateModalTab: null,
     setIterateModalTab: (tab) => set({ iterateModalTab: tab }),
-
-    setNodeOutOfSync: (id: string, outOfSync: boolean) => {
-      updateNode(id, (draft) => {
-        draft.data.outOfSync = outOfSync;
-      });
-    },
 
     addCommentNode: (comment = '') => {
       const center = get().centerPosition;
@@ -603,16 +655,42 @@ const createStore: StateCreator<
 
       return nodes.map((node) => node.id);
     },
-    regeneratePersonaNodes: async (personaIds: string[], context: string) => {
+    regeneratePersonaNodes: async (
+      personaIds: string[],
+      context: string,
+      useProblems,
+      setProblemsOutOfSync = true
+    ) => {
       const personaNodes = get().nodes.filter(
         (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
       );
-      const personas = personaNodes.map((node) => node.data.content);
+      const personas = personaNodes.map((node) => {
+        if (useProblems) {
+          const problemIds = findDirectDependents([node.id], get().edges);
+          const problems = get()
+            .nodes.filter(
+              (node) =>
+                problemIds.includes(node.id) && node.type === NodeType.Problem
+            )
+            .map((node) => node.data.content);
+
+          return {
+            problemDependents: problems,
+            persona: node.data.content
+          };
+        } else {
+          return node.data.content;
+        }
+      });
 
       const newPersonas = await regeneratePersonas(personas, context);
 
       const regeneratedImageNodeIds = personaIds.map(async (id, idx) => {
-        await get().updatePersonaNode(id, newPersonas[idx]);
+        await get().updatePersonaNode(
+          id,
+          newPersonas[idx],
+          setProblemsOutOfSync
+        );
         return id;
       });
 
@@ -634,7 +712,11 @@ const createStore: StateCreator<
         regeneratedImageNodeIds
       };
     },
-    updatePersonaNode: async (id: string, persona: Partial<Persona>) => {
+    updatePersonaNode: async (
+      id: string,
+      persona: Partial<Persona>,
+      setProblemsOutOfSync = true
+    ) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
         merge(
@@ -642,6 +724,7 @@ const createStore: StateCreator<
           pick(persona, Object.keys(draft.data.content))
         );
         draft.data.outOfSync = false;
+        draft.data.dependentsOutOfSync = false;
       });
 
       const node = getNode(id);
@@ -651,10 +734,12 @@ const createStore: StateCreator<
         draft.data.visualCharacterDescriptions = visualCharacterDescriptions;
       });
 
-      // Update dependencies
-      updateNodes(findDirectDependents([id], get().edges), (draft) => {
-        draft.data.outOfSync = true;
-      });
+      // Update dependents
+      if (setProblemsOutOfSync) {
+        updateNodes(findDirectDependents([id], get().edges), (draft) => {
+          draft.data.outOfSync = true;
+        });
+      }
 
       return get().generatePersonaImage(id);
     },
@@ -840,17 +925,19 @@ const createStore: StateCreator<
         draft.data.image = image;
       });
     },
-    regenerateProblemNodes: async (problemIds: string[], context: string) => {
+    regenerateProblemNodes: async (
+      problemIds: string[],
+      context: string,
+      useSolutions = false,
+      usePersonas = true,
+      setSolutionsOutOfSync = true,
+      setPersonasOutOfSync = true
+    ) => {
       const problemNodes = get().nodes.filter(
         (node) => node.type === NodeType.Problem && problemIds.includes(node.id)
       );
       const problems = problemNodes.map((node) => {
-        const personaIds = get()
-          .edges.filter(
-            (edge) =>
-              edge.target === node.id && edge.source.startsWith('persona')
-          )
-          .map((edge) => edge.source);
+        const personaIds = findDirectDependencies([node.id], get().edges);
         const personas = get()
           .nodes.filter(
             (node) =>
@@ -858,16 +945,27 @@ const createStore: StateCreator<
           )
           .map((node) => node.data.content);
 
+        const solutionIds = findDirectDependents([node.id], get().edges);
+        const solutions = get()
+          .nodes.filter((node) => solutionIds.includes(node.id))
+          .map((node) => node.data.content);
+
         return {
-          personaDependencies: personas,
-          problem: node.data.content
+          personaDependencies: usePersonas ? personas : undefined,
+          problem: node.data.content,
+          solutionDependents: useSolutions ? solutions : undefined
         };
       });
 
       const newProblems = await regenerateProblems(problems, context);
 
       const regeneratedImageNodeIds = problemIds.map(async (id, idx) => {
-        await get().updateProblemNode(id, newProblems[idx]);
+        await get().updateProblemNode(
+          id,
+          newProblems[idx],
+          setSolutionsOutOfSync,
+          setPersonasOutOfSync
+        );
         return id;
       });
 
@@ -886,7 +984,12 @@ const createStore: StateCreator<
 
       return { previousChangedValuesById, regeneratedImageNodeIds };
     },
-    updateProblemNode: async (id, problem) => {
+    updateProblemNode: async (
+      id,
+      problem,
+      setSolutionsOutOfSync,
+      setPersonasOutOfSync
+    ) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
         merge(
@@ -894,6 +997,7 @@ const createStore: StateCreator<
           pick(problem, Object.keys(draft.data.content))
         );
         draft.data.outOfSync = false;
+        draft.data.dependentsOutOfSync = false;
       });
 
       const node = getNode(id);
@@ -908,10 +1012,19 @@ const createStore: StateCreator<
         draft.data.visualCharacterDescriptions = visualCharacterDescriptions;
       });
 
+      // Update dependents
+      if (setSolutionsOutOfSync) {
+        updateNodes(findDirectDependents([id], get().edges), (draft) => {
+          draft.data.outOfSync = true;
+        });
+      }
+
       // Update dependencies
-      updateNodes(findDirectDependents([id], get().edges), (draft) => {
-        draft.data.outOfSync = true;
-      });
+      if (setPersonasOutOfSync) {
+        updateNodes(dependencies, (draft) => {
+          draft.data.dependentsOutOfSync = true;
+        });
+      }
 
       return get().generateProblemImage(id);
     },
@@ -1056,7 +1169,14 @@ const createStore: StateCreator<
 
       return nodes.map((node) => node.id);
     },
-    regenerateSolutionNodes: async (solutionIds: string[], context: string) => {
+    regenerateSolutionNodes: async (
+      solutionIds: string[],
+      context: string,
+      useStoryboards = false,
+      useProblems = true,
+      setStoryboardsOutOfSync = true,
+      setProblemsOutOfSync = true
+    ) => {
       const solutionNodes = get().nodes.filter(
         (node) =>
           node.type === NodeType.Solution && solutionIds.includes(node.id)
@@ -1075,16 +1195,41 @@ const createStore: StateCreator<
           )
           .map((node) => node.data.content);
 
+        const storyboardIds = findDirectDependencies([node.id], get().edges);
+        const storyboards = get()
+          .nodes.filter(
+            (node) =>
+              storyboardIds.includes(node.id) &&
+              node.type === NodeType.Storyboard
+          )
+          .map((node) => {
+            return {
+              title: node.data.storyboard.title,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              outline: node.data.storyboard.outline.map((frame: any) => ({
+                frameType: frame.frameType,
+                description: frame.description,
+                caption: frame.caption
+              }))
+            };
+          });
+
         return {
-          problemDependencies: problems,
-          solution: node.data.content
+          problemDependencies: useProblems ? problems : undefined,
+          solution: node.data.content,
+          storyboardDependents: useStoryboards ? storyboards : undefined
         };
       });
 
       const newSolutions = await regenerateSolutions(solutions, context);
 
       const regeneratedImageNodeIds = solutionIds.map(async (id, idx) => {
-        await get().updateSolutionNode(id, newSolutions[idx]);
+        await get().updateSolutionNode(
+          id,
+          newSolutions[idx],
+          setStoryboardsOutOfSync,
+          setProblemsOutOfSync
+        );
         return id;
       });
 
@@ -1103,7 +1248,12 @@ const createStore: StateCreator<
 
       return { previousChangedValuesById, regeneratedImageNodeIds };
     },
-    updateSolutionNode: async (id, solution) => {
+    updateSolutionNode: async (
+      id,
+      solution,
+      setStoryboardsOutOfSync,
+      setProblemsOutOfSync
+    ) => {
       get().takeSnapshot();
       updateNode(id, (draft) => {
         merge(
@@ -1111,6 +1261,7 @@ const createStore: StateCreator<
           pick(solution, Object.keys(draft.data.content))
         );
         draft.data.outOfSync = false;
+        draft.data.dependentsOutOfSync = false;
       });
 
       const node = getNode(id);
@@ -1125,10 +1276,19 @@ const createStore: StateCreator<
         draft.data.visualCharacterDescriptions = visualCharacterDescriptions;
       });
 
+      // Update dependents
+      if (setStoryboardsOutOfSync) {
+        updateNodes(findDirectDependents([id], get().edges), (draft) => {
+          draft.data.outOfSync = true;
+        });
+      }
+
       // Update dependencies
-      updateNodes(findDirectDependents([id], get().edges), (draft) => {
-        draft.data.outOfSync = true;
-      });
+      if (setProblemsOutOfSync) {
+        updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+          draft.data.dependentsOutOfSync = true;
+        });
+      }
 
       return get().generateSolutionImage(id);
     },
@@ -1364,7 +1524,11 @@ const createStore: StateCreator<
 
       return [node.id];
     },
-    regenerateStoryboardNode: async (id, instructions) => {
+    regenerateStoryboardNode: async (
+      id,
+      instructions,
+      setSolutionsOutOfSync
+    ) => {
       const storyboardNode = get().nodes.find((node) => node.id === id);
       if (!storyboardNode) return;
 
@@ -1417,7 +1581,15 @@ const createStore: StateCreator<
         merge(draft.data.storyboard, storyboardData);
         draft.data.visualCharacterDescriptions = visualCharacterDescriptions;
         draft.data.outOfSync = false;
+        draft.data.dependentsOutOfSync = false;
       });
+
+      // Update dependencies
+      if (setSolutionsOutOfSync) {
+        updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+          draft.data.dependentsOutOfSync = true;
+        });
+      }
 
       await get().generateStoryboardImages(id);
     },
@@ -1499,11 +1671,21 @@ const createStore: StateCreator<
           frame.imageOutOfSync = true;
         });
       });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
+      });
     },
     updateStoryboardDescription: (id, frameIndex, description) => {
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline[frameIndex].description = description;
         draft.data.storyboard.outline[frameIndex].imageOutOfSync = true;
+      });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
       });
     },
     updateStoryboardCaption: (id, frameIndex, caption) => {
@@ -1511,11 +1693,21 @@ const createStore: StateCreator<
         draft.data.storyboard.outline[frameIndex].caption = caption;
         draft.data.storyboard.outline[frameIndex].imageOutOfSync = true;
       });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
+      });
     },
     updateStoryboardFrameType: (id, frameIndex, frameType) => {
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline[frameIndex].frameType = frameType;
         draft.data.storyboard.outline[frameIndex].imageOutOfSync = true;
+      });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
       });
     },
     updateStoryboardImageStyle: (id, imageStyle) => {
@@ -1571,10 +1763,20 @@ const createStore: StateCreator<
           draft.position.y = newY;
         }
       });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
+      });
     },
     deleteStoryboardFrame: (id, frameIndex) => {
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline.splice(frameIndex, 1);
+      });
+
+      // Update dependencies
+      updateNodes(findDirectDependencies([id], get().edges), (draft) => {
+        draft.data.dependentsOutOfSync = true;
       });
     },
 

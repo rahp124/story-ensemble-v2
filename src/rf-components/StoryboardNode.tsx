@@ -134,7 +134,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     {
       key: 'sync',
       show: outOfSync,
-      tooltip: 'Dependencies updated. Regenerate node.',
+      tooltip: 'Solutions updated. Regenerate node.',
       icon: <RefreshCwIcon />,
       notification: true,
       loading: regenerating,
@@ -144,7 +144,8 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
         setRegeneratingNode(props.id, true);
         await regenerateStoryboardNode(
           props.id,
-          'Regenerate storyboard based on updated personas, problems, and solutions'
+          'Regenerate storyboard based on updated personas, problems, and solutions',
+          false
         );
         setRegeneratingNode(props.id, false);
 

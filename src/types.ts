@@ -3,6 +3,7 @@ import { StylePreset } from './api/stableDiffusion';
 
 export type NodeData = {
   outOfSync?: boolean;
+  dependentsOutOfSync?: boolean;
 
   content: Record<string, string>;
 

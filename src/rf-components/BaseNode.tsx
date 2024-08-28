@@ -13,7 +13,12 @@ import {
   AspectRatio
 } from '@mantine/core';
 import { omit } from 'lodash';
-import { ArrowDownFromLineIcon, ImageIcon, RefreshCwIcon } from 'lucide-react';
+import {
+  ArrowDownFromLineIcon,
+  ArrowUpFromLineIcon,
+  ImageIcon,
+  RefreshCwIcon
+} from 'lucide-react';
 import { useCallback, useRef } from 'react';
 import { NodeProps, ReactFlowState, useStore } from 'reactflow';
 
@@ -30,8 +35,14 @@ export interface BaseNodeProps<T extends Record<string, string>> {
   content: T;
 
   onRegenerateImage: () => Promise<void>;
+
+  dependenciesUpdatedText?: string;
+  dependentsUpdatedText?: string;
+  bothUpdatedText?: string;
+
   onSync?: () => Promise<void>;
-  onSyncAll?: () => Promise<void>;
+  onSyncDown?: () => Promise<void>;
+  onSyncUp?: () => Promise<void>;
 
   targetHandle: boolean;
   sourceHandle: boolean;
@@ -40,7 +51,7 @@ export default function BaseNode<T extends Record<string, string>>(
   props: BaseNodeProps<T>
 ) {
   const { nodeProps } = props;
-  const { outOfSync, image } = nodeProps.data;
+  const { outOfSync, dependentsOutOfSync, image } = nodeProps.data;
 
   const zoom = useStore(zoomSelector);
   const isZoomedOut = zoom < semanticZoomThreshold;
@@ -64,8 +75,13 @@ export default function BaseNode<T extends Record<string, string>>(
   const icons = [
     {
       key: 'sync',
-      show: outOfSync,
-      tooltip: 'Dependencies updated. Regenerate node.',
+      show: outOfSync || dependentsOutOfSync,
+      tooltip:
+        outOfSync && dependentsOutOfSync
+          ? `${props.bothUpdatedText} Regenerate node.`
+          : outOfSync
+          ? `${props.dependenciesUpdatedText} Regenerate node.`
+          : `${props.dependentsUpdatedText} Regenerate node.`,
       icon: <RefreshCwIcon className="size-4/5" />,
       notification: true,
       loading: regenerating,
@@ -73,12 +89,21 @@ export default function BaseNode<T extends Record<string, string>>(
     },
     {
       key: 'syncAll',
-      show: outOfSync && props.onSyncAll,
-      tooltip: 'Dependencies updated. Regenerate node and all dependents',
+      show: outOfSync && props.onSyncDown,
+      tooltip: `${props.dependenciesUpdatedText} Regenerate node and all dependents`,
       icon: <ArrowDownFromLineIcon className="size-4/5" />,
       notification: true,
       loading: regenerating,
-      onClick: props.onSyncAll
+      onClick: props.onSyncDown
+    },
+    {
+      key: 'syncUp',
+      show: dependentsOutOfSync && props.onSyncUp,
+      tooltip: `${props.dependentsUpdatedText} Regenerate node and all dependencies`,
+      icon: <ArrowUpFromLineIcon className="size-4/5" />,
+      notification: true,
+      loading: regenerating,
+      onClick: props.onSyncUp
     }
   ]
     .filter(({ show }) => show)

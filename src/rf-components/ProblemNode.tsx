@@ -4,7 +4,10 @@ import { useStore } from '@/store';
 import BaseNode from './BaseNode';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
 import { useDisplayStore } from '@/lib/displayStore';
-import { findDirectDependents } from '@/lib/graphHelper';
+import {
+  findDirectDependencies,
+  findDirectDependents
+} from '@/lib/graphHelper';
 
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Problem);
 
@@ -13,18 +16,19 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
     regenerating,
     setRegeneratingNode,
 
-    previousChangedValuesById,
-    setPreviousChangedValuesById
+    setPreviousChangedValuesById,
+    addPreviousChangedValuesById
   } = useDisplayStore((state) => ({
     regenerating: state.regeneratingNodes.has(props.id),
     setRegeneratingNode: state.setRegeneratingNode,
 
-    previousChangedValuesById: state.previousChangedValuesById,
-    setPreviousChangedValuesById: state.setPreviousChangedValuesById
+    setPreviousChangedValuesById: state.setPreviousChangedValuesById,
+    addPreviousChangedValuesById: state.addPreviousChangedValuesById
   }));
 
   const {
     edges,
+    regeneratePersonaNodes,
     generateProblemImage,
     regenerateProblemNodes,
     regenerateSolutionNodes,
@@ -32,6 +36,8 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
     addStudyEvent
   } = useStore((state) => ({
     edges: state.edges,
+
+    regeneratePersonaNodes: state.regeneratePersonaNodes,
 
     generateProblemImage: state.generateProblemImage,
     regenerateProblemNodes: state.regenerateProblemNodes,
@@ -51,6 +57,9 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
       nodeBackgroundClass={displayAttributes.backgroundClass}
       content={props.data.content}
       onRegenerateImage={() => generateProblemImage(props.id)}
+      dependenciesUpdatedText="Personas updated."
+      dependentsUpdatedText="Solutions updated."
+      bothUpdatedText="Personas & solutions updated."
       onSync={async () => {
         if (regenerating) return;
 
@@ -61,7 +70,15 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
           regeneratedImageNodeIds
         } = await regenerateProblemNodes(
           [props.id],
-          'Regenerate problem based on updated personas'
+          props.data.outOfSync && props.data.dependentsOutOfSync
+            ? 'Regenerate problem based on updated personas and solutions'
+            : props.data.outOfSync
+            ? 'Regenerate problem based on updated personas'
+            : 'Regenerate problem based on updated solutions',
+          props.data.dependentsOutOfSync,
+          props.data.outOfSync,
+          !props.data.dependentsOutOfSync,
+          !props.data.outOfSync
         );
         setPreviousChangedValuesById(_previousChangedValuesById);
 
@@ -78,7 +95,7 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
           setRegeneratingNode(await idPromise, false);
         });
       }}
-      onSyncAll={async () => {
+      onSyncDown={async () => {
         if (regenerating) return;
 
         setRegeneratingNode(props.id, true);
@@ -88,7 +105,11 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
           regeneratedImageNodeIds
         } = await regenerateProblemNodes(
           [props.id],
-          'Regenerate problem based on updated personas'
+          'Regenerate problem based on updated personas',
+          false,
+          true,
+          true,
+          false
         );
         setPreviousChangedValuesById(_previousChangedValuesById);
 
@@ -118,13 +139,14 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
                 regeneratedImageNodeIds
               } = await regenerateSolutionNodes(
                 [solutionId],
-                'Regenerate solution based on updated problems'
+                'Regenerate solution based on updated problems',
+                false,
+                true,
+                true,
+                false
               );
 
-              setPreviousChangedValuesById({
-                ...previousChangedValuesById,
-                ..._previousChangedValuesById
-              });
+              addPreviousChangedValuesById(_previousChangedValuesById);
 
               regeneratedImageNodeIds.forEach(async (idPromise) => {
                 setRegeneratingNode(await idPromise, false);
@@ -152,7 +174,8 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
 
               await regenerateStoryboardNode(
                 storyboardId,
-                'Regenerate storyboard based on updated personas, problems, and solutions'
+                'Regenerate storyboard based on updated personas, problems, and solutions',
+                false
               );
 
               setRegeneratingNode(storyboardId, false);
@@ -163,6 +186,73 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
             initiator: 'user',
             type: 'SYNC_ALL_REGENERATE_STORYBOARDS',
             count: storyboardIds.length,
+            data: {
+              sourceNodeType: 'PROBLEM'
+            }
+          });
+        }
+      }}
+      onSyncUp={async () => {
+        if (regenerating) return;
+
+        setRegeneratingNode(props.id, true);
+
+        const {
+          previousChangedValuesById: _previousChangedValuesById,
+          regeneratedImageNodeIds
+        } = await regenerateProblemNodes(
+          [props.id],
+          'Regenerate problem based on updated solutions',
+          true,
+          false,
+          false,
+          true
+        );
+        setPreviousChangedValuesById(_previousChangedValuesById);
+
+        addStudyEvent({
+          initiator: 'user',
+          type: 'SYNC_UP_REGENERATE_PROBLEMS',
+          count: 1,
+          data: {
+            sourceNodeType: 'PROBLEM'
+          }
+        });
+
+        regeneratedImageNodeIds.forEach(async (idPromise) => {
+          setRegeneratingNode(await idPromise, false);
+        });
+
+        const personaIds = findDirectDependencies([props.id], edges).filter(
+          (id) => id.startsWith('persona-')
+        );
+        if (personaIds.length > 0) {
+          await Promise.all(
+            personaIds.map(async (personaId) => {
+              setRegeneratingNode(personaId, true);
+
+              const {
+                previousChangedValuesById: _previousChangedValuesById,
+                regeneratedImageNodeIds
+              } = await regeneratePersonaNodes(
+                [personaId],
+                'Regenerate persona based on updated problems',
+                true,
+                false
+              );
+
+              addPreviousChangedValuesById(_previousChangedValuesById);
+
+              regeneratedImageNodeIds.forEach(async (idPromise) => {
+                setRegeneratingNode(await idPromise, false);
+              });
+            })
+          );
+
+          addStudyEvent({
+            initiator: 'user',
+            type: 'SYNC_UP_REGENERATE_PERSONAS',
+            count: personaIds.length,
             data: {
               sourceNodeType: 'PROBLEM'
             }
