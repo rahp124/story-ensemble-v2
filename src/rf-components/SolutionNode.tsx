@@ -197,7 +197,7 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
               const { previousChangedValuesById, regeneratedImageNodeIds } =
                 await regenerateProblemNodes(
                   [problemId],
-                  'Regenerate problem based on updated solutions',
+                  "Regenerate problem based on updated solutions. Don't talk about solutions in generated problems. Find the problems that may lead to updated solutions.",
                   true,
                   false,
                   false,
@@ -233,7 +233,7 @@ export default function SolutionNode(props: NodeProps<NodeData>) {
               const { previousChangedValuesById, regeneratedImageNodeIds } =
                 await regeneratePersonaNodes(
                   [personaId],
-                  'Regenerate persona based on updated problems',
+                  "Regenerate persona based on updated problems. The persona's needs and challenges should reflect updated problems.",
                   true,
                   false
                 );
