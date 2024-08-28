@@ -90,7 +90,7 @@ export default function BaseNode<T extends Record<string, string>>(
     {
       key: 'syncAll',
       show: outOfSync && props.onSyncDown,
-      tooltip: `${props.dependenciesUpdatedText} Regenerate node and all dependents`,
+      tooltip: `${props.dependenciesUpdatedText} Regenerate this node and all dependent nodes`,
       icon: <ArrowDownFromLineIcon className="size-4/5" />,
       notification: true,
       loading: regenerating,
@@ -99,7 +99,7 @@ export default function BaseNode<T extends Record<string, string>>(
     {
       key: 'syncUp',
       show: dependentsOutOfSync && props.onSyncUp,
-      tooltip: `${props.dependentsUpdatedText} Regenerate node and all dependencies`,
+      tooltip: `${props.dependentsUpdatedText} Regenerate this node and prior nodes`,
       icon: <ArrowUpFromLineIcon className="size-4/5" />,
       notification: true,
       loading: regenerating,
