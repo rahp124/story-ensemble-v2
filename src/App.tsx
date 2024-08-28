@@ -34,7 +34,6 @@ import PersonaNode from './rf-components/PersonaNode';
 import ProblemNode from './rf-components/ProblemNode';
 import SolutionNode from './rf-components/SolutionNode';
 import StoryboardNode from './rf-components/StoryboardNode';
-import ContextEdge from './rf-components/ContextEdge';
 import { IterateModal } from './components/IterateModal';
 import { FirstGenerationModal } from './components/FirstGenerationModal';
 import { DependentGenerationModal } from './components/DependentGenerationModal';
@@ -43,6 +42,7 @@ import { findDirectDependencies } from './lib/graphHelper';
 import CommentNode from './rf-components/CommentNode';
 import ProjectNode from './rf-components/ProjectNode';
 import { downloadObjectAsJson } from './lib/utils';
+import ContextEdge from './rf-components/ContextEdge';
 
 const nodeTypes = {
   [NodeType.Persona]: PersonaNode,
@@ -54,7 +54,7 @@ const nodeTypes = {
 };
 
 const edgeTypes = {
-  [EdgeType.Context]: ContextEdge
+  [EdgeType.Context]: ContextEdge,
 };
 
 export default function App() {

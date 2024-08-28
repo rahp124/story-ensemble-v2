@@ -19,7 +19,8 @@ import {
   OnConnectStart,
   OnConnectEnd,
   EdgeRemoveChange,
-  OnSelectionChangeFunc
+  OnSelectionChangeFunc,
+  MarkerType
 } from 'reactflow';
 import {
   generateStoryboardImagePrompts,
@@ -59,6 +60,7 @@ import {
   findDirectDependents
 } from './lib/graphHelper';
 import { generateVisualCharacterDescriptions } from './api/visualCharacterDescription';
+import { createArrowEdge } from './rf-components/ArrowEdge';
 
 const indexDbStorage: StateStorage = {
   getItem: async (name) => {
@@ -382,11 +384,16 @@ const createStore: StateCreator<
     onConnect: (connection: Connection) => {
       get().takeSnapshot();
 
+      const { target, source } = connection;
+
+      const newEdge = createArrowEdge(source as string, target  as string);
+
       set({
-        edges: addEdge(connection, get().edges)
+        edges: addEdge(newEdge, get().edges)
       });
 
-      const { target, source } = connection;
+      // const { target, source } = connection;
+
       if (!target || !source) return;
       const isPersonaToProblemConnection =
         source.startsWith('persona') && target.startsWith('problem');
@@ -821,17 +828,13 @@ const createStore: StateCreator<
         })
       );
       const edges = oneNodeForEachPersona
-        ? personaIds.map((personaId, idx) => ({
-            id: `edge-${nanoid()}`,
-            source: personaId,
-            target: nodes[idx].id
-          }))
+        ? personaIds.map((personaId, idx) => (
+          createArrowEdge(personaId, nodes[idx].id)
+        ))
         : personaIds.flatMap((personaId) =>
-            nodes.map((node) => ({
-              id: `edge-${nanoid()}`,
-              source: personaId,
-              target: node.id
-            }))
+            nodes.map((node) => (
+              createArrowEdge(personaId, node.id)
+          ))
           );
 
       get().takeSnapshot();
@@ -1084,17 +1087,13 @@ const createStore: StateCreator<
         })
       );
       const edges = oneNodeForEachProblem
-        ? problemIds.map((problemId, idx) => ({
-            id: `edge-${nanoid()}`,
-            source: problemId,
-            target: nodes[idx].id
-          }))
+        ? problemIds.map((problemId, idx) => (
+          createArrowEdge(problemId as string, nodes[idx].id as string)
+        ))
         : problemIds.flatMap((problemId) =>
-            nodes.map((node) => ({
-              id: `edge-${nanoid()}`,
-              source: problemId,
-              target: node.id
-            }))
+            nodes.map((node) => (
+              createArrowEdge(problemId as string, node.id as string)
+          ))
           );
 
       get().takeSnapshot();
@@ -1428,11 +1427,9 @@ const createStore: StateCreator<
           }
         }
       };
-      const edges = solutionIds.map((sourceId) => ({
-        id: `edge-${nanoid()}`,
-        source: sourceId,
-        target: node.id
-      }));
+      const edges = solutionIds.map((sourceId) => (
+        createArrowEdge(sourceId as string, node.id as string)
+      ));
 
       get().takeSnapshot();
       set({
@@ -1858,7 +1855,22 @@ const createStore: StateCreator<
             ...edge,
             id: `edge-${nanoid()}`,
             source: newIdByOldId.get(edge.source)!,
-            target: newIdByOldId.get(edge.target)!
+            target: newIdByOldId.get(edge.target)!,
+            data: {
+              state: {},
+            },
+            animated: true,
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              width: 50,
+              height: 50,
+              color: '#3facff',
+            },
+            style: {
+              stroke: '#3facff',
+              transition: 'ease',
+            },
+
           }))
       );
 
