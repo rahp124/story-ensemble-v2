@@ -27,7 +27,7 @@ import {
   StickyNoteIcon,
 } from 'lucide-react';
 
-import { Button, Menu, Tooltip, Kbd } from '@mantine/core';
+import { Button, Menu, Tooltip } from '@mantine/core';
 import { useShallow } from 'zustand/react/shallow';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { TutorialModal } from './components/TutorialModal';
