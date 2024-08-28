@@ -363,16 +363,16 @@ const createStore: StateCreator<
           data: {}
         });
 
-        updateNodes(disconnectedNodeIds, (draft) => {
-          draft.data.outOfSync = true;
-        });
+        // updateNodes(disconnectedNodeIds, (draft) => {
+        //   draft.data.outOfSync = true;
+        // });
 
-        const nodeIdsWithoutDependents = get()
-          .edges.filter((edge) => edgesIdsToRemove.includes(edge.id))
-          .map((edge) => edge.source);
-        updateNodes(nodeIdsWithoutDependents, (draft) => {
-          draft.data.dependentsOutOfSync = true;
-        });
+        // const nodeIdsWithoutDependents = get()
+        //   .edges.filter((edge) => edgesIdsToRemove.includes(edge.id))
+        //   .map((edge) => edge.source);
+        // updateNodes(nodeIdsWithoutDependents, (draft) => {
+        //   draft.data.dependentsOutOfSync = true;
+        // });
       }
 
       set({
