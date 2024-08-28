@@ -127,7 +127,7 @@ export default function App() {
   // useHotkeys('mod+y', () => redo(), { preventDefault: true });
   useHotkeys('mod+c', () => copy(), { preventDefault: true });
   useHotkeys('mod+v', () => paste(), { preventDefault: true });
-  useHotkeys('mod+b', () => setFirstGenerationModalOpened(true), { preventDefault: true });
+  useHotkeys('mod+s', () => setFirstGenerationModalOpened(true), { preventDefault: true });
 
 
   useHotkeys('mod+e', () => {
@@ -140,7 +140,7 @@ export default function App() {
     addCommentNode()
   }, { preventDefault: true });
 
-  useHotkeys('mod+a', () => {
+  useHotkeys('mod+1', () => {
     addStudyEvent({
       initiator: 'user',
       type: 'ADD_EMPTY_PERSONA',
@@ -149,7 +149,7 @@ export default function App() {
     });  
     addEmptyPersonaNode()
   }, { preventDefault: true });
-  useHotkeys('mod+z', () => {
+  useHotkeys('mod+2', () => {
     addStudyEvent({
       initiator: 'user',
       type: 'ADD_EMPTY_PROBLEM',
@@ -158,7 +158,7 @@ export default function App() {
     });
     addEmptyProblemNode()
   }, { preventDefault: true });
-  useHotkeys('mod+s', () => {
+  useHotkeys('mod+3', () => {
     addStudyEvent({
       initiator: 'user',
       type: 'ADD_EMPTY_SOLUTION',
@@ -167,7 +167,7 @@ export default function App() {
     });
     addEmptySolutionNode()
   }, { preventDefault: true });
-  useHotkeys('mod+x', () => {
+  useHotkeys('mod+4', () => {
     addStudyEvent({
       initiator: 'user',
       type: 'ADD_EMPTY_STORYBOARD',
@@ -294,7 +294,7 @@ export default function App() {
       >
         <Panel position="top-left">
           <div className="flex gap-4 items-center">
-            <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> or <Kbd>Ctrl</Kbd> + <Kbd>b</Kbd></div>} arrowSize={10} withArrow color={'#00000'}>
+            <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> or <Kbd>Ctrl</Kbd> + <Kbd>s</Kbd></div>} arrowSize={10} withArrow color={'#00000'}>
             <Button 
               onClick={() => {
                 setFirstGenerationModalOpened(true);
@@ -314,7 +314,7 @@ export default function App() {
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>a</Kbd></div>} position="right" withArrow color={'#00000'}>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>1</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
@@ -330,7 +330,7 @@ export default function App() {
                   Persona {displayConfigByNodeType[NodeType.Persona].emoji}
                 </Menu.Item>
                 </Tooltip>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>z</Kbd></div>} position="right" withArrow color={'#00000'}>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>2</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
@@ -346,7 +346,7 @@ export default function App() {
                   Problem {displayConfigByNodeType[NodeType.Problem].emoji}
                 </Menu.Item>
                 </Tooltip>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>s</Kbd></div>} position="right" withArrow color={'#00000'}>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>3</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
@@ -362,7 +362,7 @@ export default function App() {
                   Solution {displayConfigByNodeType[NodeType.Solution].emoji}
                 </Menu.Item>
                 </Tooltip>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>x</Kbd></div>} position="right" withArrow color={'#00000'}>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>4</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
