@@ -388,6 +388,7 @@ const createStore: StateCreator<
 
       const { target, source } = connection;
       if (!target || !source) return;
+
       const isPersonaToProblemConnection =
         source.startsWith('persona') && target.startsWith('problem');
       const isProblemToSolutionConnection =
@@ -413,13 +414,27 @@ const createStore: StateCreator<
       )
         return;
 
-      const targetNode = get().nodes.find((node) => node.id === target);
-      if (!targetNode) return;
-      updateNode(targetNode.id, (draft) => {
-        draft.data.outOfSync = true;
-      });
+      const connectionSource = get().connectionSource;
+      const targetNode = getNode(target);
+      const sourceNode = getNode(source);
+      if (!targetNode || !sourceNode || !connectionSource) return;
 
-      if (get().connectionSource === target) {
+      const isNodeEmpty = (node: Node) =>
+        (node.type === NodeType.Storyboard &&
+          !(node.data as StoryboardNodeData)?.storyboard?.title) ||
+        (node.type !== NodeType.Storyboard &&
+          Object.values(node.data.content).every((value) => !value));
+
+      const isSourceEmpty = isNodeEmpty(getNode(source)!);
+      const isTargetEmpty = isNodeEmpty(getNode(target)!);
+
+      if (!isSourceEmpty) {
+        updateNode(targetNode.id, (draft) => {
+          draft.data.outOfSync = true;
+        });
+      }
+
+      if (connectionSource === target && !isTargetEmpty) {
         updateNode(source, (draft) => {
           draft.data.dependentsOutOfSync = true;
         });
