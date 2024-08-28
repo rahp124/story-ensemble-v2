@@ -127,7 +127,56 @@ export default function App() {
   // useHotkeys('mod+y', () => redo(), { preventDefault: true });
   useHotkeys('mod+c', () => copy(), { preventDefault: true });
   useHotkeys('mod+v', () => paste(), { preventDefault: true });
-  useHotkeys('mod+s', () => setFirstGenerationModalOpened(true), { preventDefault: true });
+  useHotkeys('mod+b', () => setFirstGenerationModalOpened(true), { preventDefault: true });
+
+
+  useHotkeys('mod+e', () => {
+    addStudyEvent({
+      initiator: 'user',
+      type: 'ADD_EMPTY_COMMENT',
+      count: 1,
+      data: {}
+    });
+    addCommentNode()
+  }, { preventDefault: true });
+
+  useHotkeys('mod+a', () => {
+    addStudyEvent({
+      initiator: 'user',
+      type: 'ADD_EMPTY_PERSONA',
+      count: 1,
+      data: {}
+    });  
+    addEmptyPersonaNode()
+  }, { preventDefault: true });
+  useHotkeys('mod+z', () => {
+    addStudyEvent({
+      initiator: 'user',
+      type: 'ADD_EMPTY_PROBLEM',
+      count: 1,
+      data: {}
+    });
+    addEmptyProblemNode()
+  }, { preventDefault: true });
+  useHotkeys('mod+s', () => {
+    addStudyEvent({
+      initiator: 'user',
+      type: 'ADD_EMPTY_SOLUTION',
+      count: 1,
+      data: {}
+    });
+    addEmptySolutionNode()
+  }, { preventDefault: true });
+  useHotkeys('mod+x', () => {
+    addStudyEvent({
+      initiator: 'user',
+      type: 'ADD_EMPTY_STORYBOARD',
+      count: 1,
+      data: {}
+    });
+    addEmptyStoryboardNode()
+  }, { preventDefault: true });
+
 
   const [currentlySelecting, setCurrentlySelecting] = useState(false);
   const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
@@ -245,7 +294,7 @@ export default function App() {
       >
         <Panel position="top-left">
           <div className="flex gap-4 items-center">
-            <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> or <Kbd>Ctrl</Kbd> + <Kbd>s</Kbd></div>} withArrow color={'#00000'}>
+            <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> or <Kbd>Ctrl</Kbd> + <Kbd>b</Kbd></div>} arrowSize={10} withArrow color={'#00000'}>
             <Button 
               onClick={() => {
                 setFirstGenerationModalOpened(true);
@@ -265,6 +314,7 @@ export default function App() {
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>a</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
@@ -279,6 +329,8 @@ export default function App() {
                 >
                   Persona {displayConfigByNodeType[NodeType.Persona].emoji}
                 </Menu.Item>
+                </Tooltip>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>z</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
@@ -293,6 +345,8 @@ export default function App() {
                 >
                   Problem {displayConfigByNodeType[NodeType.Problem].emoji}
                 </Menu.Item>
+                </Tooltip>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>s</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
@@ -307,6 +361,8 @@ export default function App() {
                 >
                   Solution {displayConfigByNodeType[NodeType.Solution].emoji}
                 </Menu.Item>
+                </Tooltip>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>x</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
@@ -322,6 +378,8 @@ export default function App() {
                   Storyboard{' '}
                   {displayConfigByNodeType[NodeType.Storyboard].emoji}
                 </Menu.Item>
+                </Tooltip>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>e</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
@@ -336,6 +394,7 @@ export default function App() {
                 >
                   Comment {displayConfigByNodeType[NodeType.Comment].emoji}
                 </Menu.Item>
+                </Tooltip>
               </Menu.Dropdown>
             </Menu>
           </div>
