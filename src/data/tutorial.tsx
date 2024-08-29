@@ -297,11 +297,11 @@ export const tutorialMenuData: tutorialMenuItem = {
         },
         {
             "title": "Propagate changes ↑",
-            "url": "https://www.youtube.com/embed/VkUS4Q71V_o",
+            "url": "https://www.youtube.com/embed/YiN9mWniszw",
             "left_section": <ArrowUpFromLineIcon style={{ width: rem(14), height: rem(14) }}/>,
             "right_section": 
             <Text size="xs" c="dimmed">
-               2.5 min
+               2.1 min
             </Text>
         },
     ],
