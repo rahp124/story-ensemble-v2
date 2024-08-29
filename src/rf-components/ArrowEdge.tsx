@@ -26,6 +26,7 @@ export const createArrowEdge = (source: string, target: string)  => {
     },
     style: {
       stroke: '#3facff',
+      strokeWidth: '1.4',
       transition: 'ease',
       strokeDasharray: '15, 15'
     },

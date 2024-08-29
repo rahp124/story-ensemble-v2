@@ -107,7 +107,7 @@ export function calculateDependentNodePositionAttributes(
     width: 400,
     height: 500,
     gap: 50,
-    margin: 100
+    margin: 150
   }
 ) {
   const { width, height, gap, margin } = nodeDimensions;
