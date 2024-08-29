@@ -10,7 +10,7 @@ export default function SourceHandle(
       position={Position.Bottom}
       className={cn(
         props.className,
-        'w-[120px] h-[40px] -bottom-[40px] bg-[#EAF3FD] border-[#dbdbdb] border-[0px] rounded-[8px]'
+        'w-[120px] h-[40px] -bottom-[40px] bg-[#97c8ff] border-[#dbdbdb] border-[0px] rounded-[8px]'
       )}
       {...props}
     />
