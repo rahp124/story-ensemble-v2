@@ -10,7 +10,7 @@ export default function TargetHandle(
       position={Position.Top}
       className={cn(
         props.className,
-        'size-[20px] -top-[10px] bg-gray-50 border-gray-400 border-2'
+        'w-[120px] h-[40px] -top-[40px] bg-[#EAF3FD] border-[#EAF3FD] border-[0px] rounded-[8px]'
       )}
       {...props}
     />
