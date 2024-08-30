@@ -1401,7 +1401,7 @@ const createStore: StateCreator<
           width: 1600,
           height: 600,
           gap: 0,
-          margin: 100
+          margin: 150
         }
       )[0];
 
