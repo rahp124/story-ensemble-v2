@@ -129,6 +129,7 @@ export default function App() {
   useHotkeys('mod+v', () => paste(), { preventDefault: true });
   useHotkeys('mod+s', () => setFirstGenerationModalOpened(true), { preventDefault: true });
 
+  useHotkeys('mod+f', () => fitView(), { preventDefault: true });
 
   useHotkeys('mod+e', () => {
     addStudyEvent({
