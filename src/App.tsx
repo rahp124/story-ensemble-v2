@@ -125,13 +125,13 @@ export default function App() {
 
   // useHotkeys('mod+z', () => undo(), { preventDefault: true });
   // useHotkeys('mod+y', () => redo(), { preventDefault: true });
-  useHotkeys('mod+c', () => copy(), { preventDefault: true });
-  useHotkeys('mod+v', () => paste(), { preventDefault: true });
-  useHotkeys('mod+s', () => setFirstGenerationModalOpened(true), { preventDefault: true });
+  useHotkeys('ctrl+c', () => copy(), { preventDefault: true });
+  useHotkeys('ctrl+v', () => paste(), { preventDefault: true });
+  useHotkeys('ctrl+s', () => setFirstGenerationModalOpened(true), { preventDefault: true });
 
-  useHotkeys('mod+f', () => fitView(), { preventDefault: true });
+  useHotkeys('ctrl+f', () => fitView(), { preventDefault: true });
 
-  useHotkeys('mod+e', () => {
+  useHotkeys('ctrl+e', () => {
     addStudyEvent({
       initiator: 'user',
       type: 'ADD_EMPTY_COMMENT',
@@ -141,7 +141,7 @@ export default function App() {
     addCommentNode()
   }, { preventDefault: true });
 
-  useHotkeys('mod+1', () => {
+  useHotkeys('ctrl+1', () => {
     addStudyEvent({
       initiator: 'user',
       type: 'ADD_EMPTY_PERSONA',
@@ -150,7 +150,7 @@ export default function App() {
     });  
     addEmptyPersonaNode()
   }, { preventDefault: true });
-  useHotkeys('mod+2', () => {
+  useHotkeys('ctrl+2', () => {
     addStudyEvent({
       initiator: 'user',
       type: 'ADD_EMPTY_PROBLEM',
@@ -159,7 +159,7 @@ export default function App() {
     });
     addEmptyProblemNode()
   }, { preventDefault: true });
-  useHotkeys('mod+3', () => {
+  useHotkeys('ctrl+3', () => {
     addStudyEvent({
       initiator: 'user',
       type: 'ADD_EMPTY_SOLUTION',
@@ -168,7 +168,7 @@ export default function App() {
     });
     addEmptySolutionNode()
   }, { preventDefault: true });
-  useHotkeys('mod+4', () => {
+  useHotkeys('ctrl+4', () => {
     addStudyEvent({
       initiator: 'user',
       type: 'ADD_EMPTY_STORYBOARD',
@@ -295,7 +295,7 @@ export default function App() {
       >
         <Panel position="top-left">
           <div className="flex gap-4 items-center">
-            <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> or <Kbd>Ctrl</Kbd> + <Kbd>s</Kbd></div>} arrowSize={10} withArrow color={'#00000'}>
+            <Tooltip label={<div style={{color: 'black'}}><Kbd>Ctrl</Kbd> + <Kbd>s</Kbd></div>} arrowSize={10} withArrow color={'#00000'}>
             <Button 
               onClick={() => {
                 setFirstGenerationModalOpened(true);
@@ -315,7 +315,7 @@ export default function App() {
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>1</Kbd></div>} position="right" withArrow color={'#00000'}>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>Ctrl</Kbd> + <Kbd>1</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
@@ -331,7 +331,7 @@ export default function App() {
                   Persona {displayConfigByNodeType[NodeType.Persona].emoji}
                 </Menu.Item>
                 </Tooltip>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>2</Kbd></div>} position="right" withArrow color={'#00000'}>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>Ctrl</Kbd> + <Kbd>2</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
@@ -347,7 +347,7 @@ export default function App() {
                   Problem {displayConfigByNodeType[NodeType.Problem].emoji}
                 </Menu.Item>
                 </Tooltip>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>3</Kbd></div>} position="right" withArrow color={'#00000'}>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>Ctrl</Kbd> + <Kbd>3</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
@@ -363,7 +363,7 @@ export default function App() {
                   Solution {displayConfigByNodeType[NodeType.Solution].emoji}
                 </Menu.Item>
                 </Tooltip>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>4</Kbd></div>} position="right" withArrow color={'#00000'}>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>Ctrl</Kbd> + <Kbd>4</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
@@ -380,7 +380,7 @@ export default function App() {
                   {displayConfigByNodeType[NodeType.Storyboard].emoji}
                 </Menu.Item>
                 </Tooltip>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>⌘</Kbd> + <Kbd>e</Kbd></div>} position="right" withArrow color={'#00000'}>
+                <Tooltip label={<div style={{color: 'black'}}><Kbd>Ctrl</Kbd> + <Kbd>e</Kbd></div>} position="right" withArrow color={'#00000'}>
                 <Menu.Item
                   leftSection={<PlusIcon className="size-5" />}
                   onClick={() => {
