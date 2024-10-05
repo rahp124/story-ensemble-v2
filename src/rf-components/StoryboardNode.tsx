@@ -10,6 +10,7 @@ import {
   Card,
   CloseButton,
   Divider,
+  FileButton,
   Input,
   Loader,
   Popover,
@@ -17,12 +18,26 @@ import {
   Textarea,
   Tooltip
 } from '@mantine/core';
-import { Pencil, RefreshCwIcon, Settings, Trash2 } from 'lucide-react';
+import {
+  DownloadIcon,
+  ImageUpIcon,
+  Pencil,
+  RefreshCwIcon,
+  Settings,
+  Trash2
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { NodeProps, NodeResizer } from 'reactflow';
+import {
+  getNodesBounds,
+  getViewportForBounds,
+  NodeProps,
+  NodeResizer,
+  useReactFlow
+} from 'reactflow';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
 import { useDisplayStore } from '@/lib/displayStore';
 import { StylePreset } from '@/api/stableDiffusion';
+import { toJpeg } from 'html-to-image';
 
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Storyboard);
 
@@ -58,6 +73,9 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   }));
 
   const {
+    currentNode,
+    selectNodes,
+
     regenerateStoryboardNode,
 
     generateStoryboardImages,
@@ -68,12 +86,15 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     updateStoryboardCaption,
     updateStoryboardFrameType,
     updateStoryboardImageStyle,
+    updateStoryboardImage,
 
     addStoryboardFrame,
     deleteStoryboardFrame,
 
     addStudyEvent
   } = useStore((state) => ({
+    currentNode: state.nodes.find((node) => node.id === props.id),
+
     regenerateStoryboardNode: state.regenerateStoryboardNode,
 
     generateStoryboardImages: state.generateStoryboardImages,
@@ -84,6 +105,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     updateStoryboardCaption: state.updateStoryboardCaption,
     updateStoryboardFrameType: state.updateStoryboardFrameType,
     updateStoryboardImageStyle: state.updateStoryboardImageStyle,
+    updateStoryboardImage: state.updateStoryboardImage,
 
     addStoryboardFrame: state.addStoryboardFrame,
     deleteStoryboardFrame: state.deleteStoryboardFrame,
@@ -120,6 +142,61 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
       data: {}
     });
   };
+
+  const { fitView } = useReactFlow();
+
+  async function downloadStoryboardImage() {
+    fitView({ nodes: [{ id: props.id }] });
+    selectNodes([]);
+
+    const width = currentNode!.width!;
+    const height = currentNode!.height!;
+
+    const nodesBounds = getNodesBounds([currentNode!], [0.5, 0.5]);
+    const viewport = getViewportForBounds(
+      nodesBounds,
+      width,
+      height,
+      0.5,
+      2,
+      0
+    );
+
+    const reactflowSelector = '.react-flow__viewport';
+
+    const image = await toJpeg(
+      document.querySelector(reactflowSelector)! as HTMLElement,
+      {
+        backgroundColor: 'white',
+        width,
+        height,
+        style: {
+          width: `${width}`,
+          height: `${height}`,
+          transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
+        },
+        filter: (domNode) => {
+          if (
+            domNode &&
+            domNode.classList &&
+            domNode.classList.contains('hide-in-screenshot')
+          ) {
+            return false;
+          }
+          return true;
+        },
+        pixelRatio: 2
+      }
+    );
+
+    const a = document.createElement('a');
+
+    a.setAttribute('href', image);
+    a.setAttribute('download', 'storyboard.jpg');
+    document.body.appendChild(a); // required for firefox
+    a.click();
+    a.remove();
+  }
 
   const icons = [
     {
@@ -158,6 +235,15 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
           }
         });
       }
+    },
+    {
+      key: 'download',
+      show: true,
+      tooltip: 'Download storyboard image',
+      icon: <DownloadIcon />,
+      notification: false,
+      loading: false,
+      onClick: downloadStoryboardImage
     }
   ]
     .filter(({ show }) => show)
@@ -207,10 +293,10 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
         radius="lg"
       >
         <div className="flex justify-between mb-2">
-          <p className="font-bold text-sm">
+          <p className="font-bold text-sm whitespace-nowrap">
             <span className="mr-1">{displayAttributes.emoji}</span> Storyboard
           </p>
-          <div className="flex gap-2 items-center nodrag">
+          <div className="hide-in-screenshot flex gap-2 items-center nodrag">
             <Popover
               width={350}
               withArrow
@@ -306,185 +392,212 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               className="w-[350px] flex flex-col gap-2 pb-2 relative"
             >
               <div className="flex justify-between mb-2">
-                <p className="font-bold text-sm">
+                <p className="font-bold text-sm whitespace-nowrap">
                   Frame {frameIdx + 1} - {frameTypeText(frame.frameType)}
                 </p>
-                <Popover
-                  width={350}
-                  position="left-end"
-                  withArrow
-                  shadow="md"
-                  disabled={regenerating || loadingMap[frameIdx]}
-                  opened={openPopoverId === frame.id}
-                  onChange={(change) =>
-                    setOpenPopoverId(change ? frame.id : null)
-                  }
-                >
-                  <Popover.Target>
-                    <ActionIcon
-                      size="sm"
-                      variant="outline"
-                      disabled={regenerating || loadingMap[frameIdx]}
-                      onClick={() => {
-                        if (openPopoverId === frame.id) {
-                          setOpenPopoverId(null);
-                        } else {
-                          setOpenPopoverId(frame.id);
-                        }
-                      }}
-                    >
-                      <Pencil className="size-4" />
-                    </ActionIcon>
-                  </Popover.Target>
-                  <Popover.Dropdown>
-                    <h4 className="font-bold mb-4">
-                      Edit frame {frameIdx + 1}
-                    </h4>
-                    <div className="flex flex-col gap-2">
-                      <Select
-                        label="Edit Frame Type"
-                        comboboxProps={{ withinPortal: false }}
-                        allowDeselect={false}
-                        data={(
-                          [
-                            'Context',
-                            'Problem',
-                            'Solution',
-                            'Resolution'
-                          ] as const
-                        ).map((value) => ({
-                          value,
-                          label: frameTypeText(value) ?? ''
-                        }))}
-                        value={frame.frameType}
-                        onChange={(value) => {
-                          updateStoryboardFrameType(
-                            props.id,
-                            frameIdx,
-                            value as
-                              | 'Context'
-                              | 'Problem'
-                              | 'Solution'
-                              | 'Resolution'
-                          );
-                        }}
-                      />
-                      <Textarea
-                        label="Description"
-                        description="Describe the contents and visuals of the frame to directly guide image generation."
-                        autosize
-                        minRows={3}
-                        maxRows={8}
+                <div className="flex gap-2">
+                  <FileButton
+                    onChange={async (file) => {
+                      if (!file) return;
+
+                      const imageUrl = await convertFileToImageUrl(file);
+                      updateStoryboardImage(props.id, frameIdx, imageUrl);
+                    }}
+                    accept="image/png, image/jpeg, image/gif, image/webp, image/bmp, image/svg+xml, image/tiff"
+                  >
+                    {(props) => (
+                      <ActionIcon
+                        {...props}
+                        className="hide-in-screenshot"
+                        size="sm"
+                        variant="outline"
                         disabled={regenerating || loadingMap[frameIdx]}
-                        value={descriptions[frameIdx]}
-                        onChange={(e) => {
-                          setDescriptions(
-                            descriptions.map((d, i) =>
-                              i === frameIdx ? e.target.value : d
-                            )
-                          );
-                        }}
-                        onBlur={() => {
-                          if (descriptions[frameIdx] !== frame.description) {
-                            updateStoryboardDescription(
-                              props.id,
-                              frameIdx,
-                              descriptions[frameIdx]
-                            );
-                          }
-                        }}
-                      />
-                      <Textarea
-                        label="Caption"
-                        description="Text that appears below the image."
-                        autosize
-                        minRows={2}
-                        maxRows={8}
-                        rows={2}
-                        value={captions[frameIdx]}
-                        onChange={(e) => {
-                          setCaptions(
-                            captions.map((c, i) =>
-                              i === frameIdx ? e.target.value : c
-                            )
-                          );
-                        }}
-                        onBlur={() => {
-                          if (captions[frameIdx] !== frame.caption) {
-                            updateStoryboardCaption(
-                              props.id,
-                              frameIdx,
-                              captions[frameIdx]
-                            );
-                          }
-                        }}
-                      />
-                      <div className="flex gap-2 mt-4">
-                        <Button
-                          size="compact-sm"
-                          onClick={async () => {
-                            if (loadingMap[frameIdx]) return;
-
-                            setLoadingMap(
-                              loadingMap.map((regenerating, i) =>
-                                i === frameIdx ? true : regenerating
-                              )
-                            );
-                            await regenerateStoryboardImage(props.id, frameIdx);
-                            setLoadingMap(
-                              loadingMap.map((regenerating, i) =>
-                                i === frameIdx ? false : regenerating
-                              )
-                            );
-
-                            addStudyEvent({
-                              initiator: 'user',
-                              type: 'SINGLE_IMAGE_REGENERATE_STORYBOARD_FRAMES',
-                              count: 1,
-                              data: {}
-                            });
-                          }}
-                        >
-                          Regenerate image
-                        </Button>
-                        <Button
-                          size="compact-sm"
-                          onClick={async () => regenerateAllImages()}
-                        >
-                          Regenerate all images
-                        </Button>
-                      </div>
-                    </div>
-
-                    <Divider my="md" />
-
-                    <div>
-                      <Button
-                        size="compact-sm"
-                        color="red"
-                        leftSection={<Trash2 className="size-4" />}
+                      >
+                        <ImageUpIcon className="size-4" />
+                      </ActionIcon>
+                    )}
+                  </FileButton>
+                  <Popover
+                    width={350}
+                    position="left-end"
+                    withArrow
+                    shadow="md"
+                    disabled={regenerating || loadingMap[frameIdx]}
+                    opened={openPopoverId === frame.id}
+                    onChange={(change) =>
+                      setOpenPopoverId(change ? frame.id : null)
+                    }
+                  >
+                    <Popover.Target>
+                      <ActionIcon
+                        className="hide-in-screenshot"
+                        size="sm"
+                        variant="outline"
+                        disabled={regenerating || loadingMap[frameIdx]}
                         onClick={() => {
-                          if (
-                            confirm(
-                              'Are you sure you want to delete this frame?'
-                            )
-                          ) {
-                            deleteStoryboardFrame(props.id, frameIdx);
-
-                            addStudyEvent({
-                              initiator: 'user',
-                              type: 'DELETE_STORYBOARD_FRAMES',
-                              count: 1,
-                              data: {}
-                            });
+                          if (openPopoverId === frame.id) {
+                            setOpenPopoverId(null);
+                          } else {
+                            setOpenPopoverId(frame.id);
                           }
                         }}
                       >
-                        Delete frame
-                      </Button>
-                    </div>
-                  </Popover.Dropdown>
-                </Popover>
+                        <Pencil className="size-4" />
+                      </ActionIcon>
+                    </Popover.Target>
+                    <Popover.Dropdown className="hide-in-screenshot">
+                      <h4 className="font-bold mb-4">
+                        Edit frame {frameIdx + 1}
+                      </h4>
+                      <div className="flex flex-col gap-2">
+                        <Select
+                          label="Edit Frame Type"
+                          comboboxProps={{ withinPortal: false }}
+                          allowDeselect={false}
+                          data={(
+                            [
+                              'Context',
+                              'Problem',
+                              'Solution',
+                              'Resolution'
+                            ] as const
+                          ).map((value) => ({
+                            value,
+                            label: frameTypeText(value) ?? ''
+                          }))}
+                          value={frame.frameType}
+                          onChange={(value) => {
+                            updateStoryboardFrameType(
+                              props.id,
+                              frameIdx,
+                              value as
+                                | 'Context'
+                                | 'Problem'
+                                | 'Solution'
+                                | 'Resolution'
+                            );
+                          }}
+                        />
+                        <Textarea
+                          label="Description"
+                          description="Describe the contents and visuals of the frame to directly guide image generation."
+                          autosize
+                          minRows={3}
+                          maxRows={8}
+                          disabled={regenerating || loadingMap[frameIdx]}
+                          value={descriptions[frameIdx]}
+                          onChange={(e) => {
+                            setDescriptions(
+                              descriptions.map((d, i) =>
+                                i === frameIdx ? e.target.value : d
+                              )
+                            );
+                          }}
+                          onBlur={() => {
+                            if (descriptions[frameIdx] !== frame.description) {
+                              updateStoryboardDescription(
+                                props.id,
+                                frameIdx,
+                                descriptions[frameIdx]
+                              );
+                            }
+                          }}
+                        />
+                        <Textarea
+                          label="Caption"
+                          description="Text that appears below the image."
+                          autosize
+                          minRows={2}
+                          maxRows={8}
+                          rows={2}
+                          value={captions[frameIdx]}
+                          onChange={(e) => {
+                            setCaptions(
+                              captions.map((c, i) =>
+                                i === frameIdx ? e.target.value : c
+                              )
+                            );
+                          }}
+                          onBlur={() => {
+                            if (captions[frameIdx] !== frame.caption) {
+                              updateStoryboardCaption(
+                                props.id,
+                                frameIdx,
+                                captions[frameIdx]
+                              );
+                            }
+                          }}
+                        />
+                        <div className="flex gap-2 mt-4">
+                          <Button
+                            size="compact-sm"
+                            onClick={async () => {
+                              if (loadingMap[frameIdx]) return;
+
+                              setLoadingMap(
+                                loadingMap.map((regenerating, i) =>
+                                  i === frameIdx ? true : regenerating
+                                )
+                              );
+                              await regenerateStoryboardImage(
+                                props.id,
+                                frameIdx
+                              );
+                              setLoadingMap(
+                                loadingMap.map((regenerating, i) =>
+                                  i === frameIdx ? false : regenerating
+                                )
+                              );
+
+                              addStudyEvent({
+                                initiator: 'user',
+                                type: 'SINGLE_IMAGE_REGENERATE_STORYBOARD_FRAMES',
+                                count: 1,
+                                data: {}
+                              });
+                            }}
+                          >
+                            Regenerate image
+                          </Button>
+                          <Button
+                            size="compact-sm"
+                            onClick={async () => regenerateAllImages()}
+                          >
+                            Regenerate all images
+                          </Button>
+                        </div>
+                      </div>
+
+                      <Divider my="md" />
+
+                      <div>
+                        <Button
+                          size="compact-sm"
+                          color="red"
+                          leftSection={<Trash2 className="size-4" />}
+                          onClick={() => {
+                            if (
+                              confirm(
+                                'Are you sure you want to delete this frame?'
+                              )
+                            ) {
+                              deleteStoryboardFrame(props.id, frameIdx);
+
+                              addStudyEvent({
+                                initiator: 'user',
+                                type: 'DELETE_STORYBOARD_FRAMES',
+                                count: 1,
+                                data: {}
+                              });
+                            }
+                          }}
+                        >
+                          Delete frame
+                        </Button>
+                      </div>
+                    </Popover.Dropdown>
+                  </Popover>
+                </div>
               </div>
 
               {/* don't show tooltip if a frame doesn't have a generated image */}
@@ -557,7 +670,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               <p>{captions[frameIdx]}</p>
               {frameIdx === 0 && (
                 <button
-                  className="absolute top-0 -left-3 h-full flex items-center px-1 hover:bg-slate-100 -translate-x-1/2 rounded-sm"
+                  className="hide-in-screenshot absolute top-0 -left-3 h-full flex items-center px-1 hover:bg-slate-100 -translate-x-1/2 rounded-sm"
                   disabled={regenerating || someLoading}
                   onClick={() => {
                     addStudyEvent({
@@ -574,7 +687,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 </button>
               )}
               <button
-                className="absolute top-0 -right-3 h-full flex items-center px-1 hover:bg-slate-100 translate-x-1/2 rounded-sm"
+                className="hide-in-screenshot absolute top-0 -right-3 h-full flex items-center px-1 hover:bg-slate-100 translate-x-1/2 rounded-sm"
                 disabled={regenerating || someLoading}
                 onClick={() => {
                   addStudyEvent({
@@ -614,4 +727,24 @@ function frameTypeBorder(
   if (frameType === 'Problem') return 'border-red-500';
   if (frameType === 'Solution') return 'border-blue-500';
   if (frameType === 'Resolution') return 'border-green-500';
+}
+
+function convertFileToImageUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      if (event.target && typeof event.target.result === 'string') {
+        resolve(event.target.result);
+      } else {
+        reject(new Error('Failed to convert file to image URL'));
+      }
+    };
+
+    reader.onerror = () => {
+      reject(new Error('Error reading file'));
+    };
+
+    reader.readAsDataURL(file);
+  });
 }
