@@ -225,6 +225,7 @@ type RFState = {
     frameIdx: number,
     caption: string
   ) => void;
+  updateStoryboardImage: (id: string, frameIdx: number, image: string) => void;
   updateStoryboardFrameType: (
     id: string,
     frameIdx: number,
@@ -386,7 +387,7 @@ const createStore: StateCreator<
 
       const { target, source } = connection;
 
-      const newEdge = createArrowEdge(source as string, target  as string);
+      const newEdge = createArrowEdge(source as string, target as string);
 
       set({
         edges: addEdge(newEdge, get().edges)
@@ -843,13 +844,11 @@ const createStore: StateCreator<
         })
       );
       const edges = oneNodeForEachPersona
-        ? personaIds.map((personaId, idx) => (
-          createArrowEdge(personaId, nodes[idx].id)
-        ))
+        ? personaIds.map((personaId, idx) =>
+            createArrowEdge(personaId, nodes[idx].id)
+          )
         : personaIds.flatMap((personaId) =>
-            nodes.map((node) => (
-              createArrowEdge(personaId, node.id)
-          ))
+            nodes.map((node) => createArrowEdge(personaId, node.id))
           );
 
       get().takeSnapshot();
@@ -1102,13 +1101,13 @@ const createStore: StateCreator<
         })
       );
       const edges = oneNodeForEachProblem
-        ? problemIds.map((problemId, idx) => (
-          createArrowEdge(problemId as string, nodes[idx].id as string)
-        ))
+        ? problemIds.map((problemId, idx) =>
+            createArrowEdge(problemId as string, nodes[idx].id as string)
+          )
         : problemIds.flatMap((problemId) =>
-            nodes.map((node) => (
+            nodes.map((node) =>
               createArrowEdge(problemId as string, node.id as string)
-          ))
+            )
           );
 
       get().takeSnapshot();
@@ -1442,9 +1441,9 @@ const createStore: StateCreator<
           }
         }
       };
-      const edges = solutionIds.map((sourceId) => (
+      const edges = solutionIds.map((sourceId) =>
         createArrowEdge(sourceId as string, node.id as string)
-      ));
+      );
 
       get().takeSnapshot();
       set({
@@ -1696,6 +1695,12 @@ const createStore: StateCreator<
         draft.data.dependentsOutOfSync = true;
       });
     },
+    updateStoryboardImage: (id, frameIndex, image) => {
+      updateNode<StoryboardNodeData>(id, (draft) => {
+        draft.data.storyboard.outline[frameIndex].image = image;
+        draft.data.storyboard.outline[frameIndex].imageOutOfSync = false;
+      });
+    },
     updateStoryboardFrameType: (id, frameIndex, frameType) => {
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline[frameIndex].frameType = frameType;
@@ -1872,20 +1877,19 @@ const createStore: StateCreator<
             source: newIdByOldId.get(edge.source)!,
             target: newIdByOldId.get(edge.target)!,
             data: {
-              state: {},
+              state: {}
             },
             animated: true,
             markerEnd: {
               type: MarkerType.ArrowClosed,
               width: 50,
               height: 50,
-              color: '#3facff',
+              color: '#3facff'
             },
             style: {
               stroke: '#3facff',
-              transition: 'ease',
-            },
-
+              transition: 'ease'
+            }
           }))
       );
 
