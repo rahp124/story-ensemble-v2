@@ -17,12 +17,25 @@ import {
   Textarea,
   Tooltip
 } from '@mantine/core';
-import { Pencil, RefreshCwIcon, Settings, Trash2 } from 'lucide-react';
+import {
+  DownloadIcon,
+  Pencil,
+  RefreshCwIcon,
+  Settings,
+  Trash2
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { NodeProps, NodeResizer } from 'reactflow';
+import {
+  getNodesBounds,
+  getViewportForBounds,
+  NodeProps,
+  NodeResizer,
+  useReactFlow
+} from 'reactflow';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
 import { useDisplayStore } from '@/lib/displayStore';
 import { StylePreset } from '@/api/stableDiffusion';
+import { toJpeg } from 'html-to-image';
 
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Storyboard);
 
@@ -58,6 +71,9 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   }));
 
   const {
+    currentNode,
+    selectNodes,
+
     regenerateStoryboardNode,
 
     generateStoryboardImages,
@@ -74,6 +90,8 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
 
     addStudyEvent
   } = useStore((state) => ({
+    currentNode: state.nodes.find((node) => node.id === props.id),
+
     regenerateStoryboardNode: state.regenerateStoryboardNode,
 
     generateStoryboardImages: state.generateStoryboardImages,
@@ -121,6 +139,61 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
     });
   };
 
+  const { fitView } = useReactFlow();
+
+  async function downloadStoryboardImage() {
+    fitView({ nodes: [{ id: props.id }] });
+    selectNodes([]);
+
+    const width = currentNode!.width!;
+    const height = currentNode!.height!;
+
+    const nodesBounds = getNodesBounds([currentNode!], [0.5, 0.5]);
+    const viewport = getViewportForBounds(
+      nodesBounds,
+      width,
+      height,
+      0.5,
+      2,
+      0
+    );
+
+    const reactflowSelector = '.react-flow__viewport';
+
+    const image = await toJpeg(
+      document.querySelector(reactflowSelector)! as HTMLElement,
+      {
+        backgroundColor: 'white',
+        width,
+        height,
+        style: {
+          width: `${width}`,
+          height: `${height}`,
+          transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
+        },
+        filter: (domNode) => {
+          if (
+            domNode &&
+            domNode.classList &&
+            domNode.classList.contains('hide-in-screenshot')
+          ) {
+            return false;
+          }
+          return true;
+        },
+        pixelRatio: 2
+      }
+    );
+
+    const a = document.createElement('a');
+
+    a.setAttribute('href', image);
+    a.setAttribute('download', 'storyboard.jpg');
+    document.body.appendChild(a); // required for firefox
+    a.click();
+    a.remove();
+  }
+
   const icons = [
     {
       key: 'regenerate',
@@ -158,6 +231,15 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
           }
         });
       }
+    },
+    {
+      key: 'download',
+      show: true,
+      tooltip: 'Download storyboard image',
+      icon: <DownloadIcon />,
+      notification: false,
+      loading: false,
+      onClick: downloadStoryboardImage
     }
   ]
     .filter(({ show }) => show)
@@ -207,10 +289,10 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
         radius="lg"
       >
         <div className="flex justify-between mb-2">
-          <p className="font-bold text-sm">
+          <p className="font-bold text-sm whitespace-nowrap">
             <span className="mr-1">{displayAttributes.emoji}</span> Storyboard
           </p>
-          <div className="flex gap-2 items-center nodrag">
+          <div className="hide-in-screenshot flex gap-2 items-center nodrag">
             <Popover
               width={350}
               withArrow
@@ -306,7 +388,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               className="w-[350px] flex flex-col gap-2 pb-2 relative"
             >
               <div className="flex justify-between mb-2">
-                <p className="font-bold text-sm">
+                <p className="font-bold text-sm whitespace-nowrap">
                   Frame {frameIdx + 1} - {frameTypeText(frame.frameType)}
                 </p>
                 <Popover
@@ -322,6 +404,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 >
                   <Popover.Target>
                     <ActionIcon
+                      className="hide-in-screenshot"
                       size="sm"
                       variant="outline"
                       disabled={regenerating || loadingMap[frameIdx]}
@@ -336,7 +419,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                       <Pencil className="size-4" />
                     </ActionIcon>
                   </Popover.Target>
-                  <Popover.Dropdown>
+                  <Popover.Dropdown className="hide-in-screenshot">
                     <h4 className="font-bold mb-4">
                       Edit frame {frameIdx + 1}
                     </h4>
@@ -557,7 +640,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
               <p>{captions[frameIdx]}</p>
               {frameIdx === 0 && (
                 <button
-                  className="absolute top-0 -left-3 h-full flex items-center px-1 hover:bg-slate-100 -translate-x-1/2 rounded-sm"
+                  className="hide-in-screenshot absolute top-0 -left-3 h-full flex items-center px-1 hover:bg-slate-100 -translate-x-1/2 rounded-sm"
                   disabled={regenerating || someLoading}
                   onClick={() => {
                     addStudyEvent({
@@ -574,7 +657,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 </button>
               )}
               <button
-                className="absolute top-0 -right-3 h-full flex items-center px-1 hover:bg-slate-100 translate-x-1/2 rounded-sm"
+                className="hide-in-screenshot absolute top-0 -right-3 h-full flex items-center px-1 hover:bg-slate-100 translate-x-1/2 rounded-sm"
                 disabled={regenerating || someLoading}
                 onClick={() => {
                   addStudyEvent({
