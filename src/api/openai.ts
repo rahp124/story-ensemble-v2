@@ -60,3 +60,33 @@ export async function generateString(prompt: string) {
 
   return response || '';
 }
+
+export async function generateImageWithOpenAI({
+  prompt,
+  negativePrompt = '',
+  stylePreset
+}: {
+  prompt: string;
+  negativePrompt?: string;
+  stylePreset?: string;
+}) {
+  openai.apiKey = getOpenAiKey();
+
+  let combinedPrompt = prompt;
+  if (stylePreset) {
+    combinedPrompt += `, ${stylePreset} style`;
+  }
+  if (negativePrompt) {
+    combinedPrompt += `. Avoid: ${negativePrompt}`;
+  }
+
+  const response = await openai.images.generate({
+    model: 'dall-e-3',
+    prompt: combinedPrompt,
+    n: 1,
+    size: '1024x1024',
+    response_format: 'b64_json'
+  });
+  const image = response.data[0].b64_json;
+  return `data:image/webp;base64,${image}`;
+}

@@ -1,4 +1,5 @@
 import { getStabilityAiKey } from '@/lib/envUtils';
+import { generateImageWithOpenAI } from './openai';
 
 export type StylePreset =
   | '3d-model'
@@ -30,6 +31,16 @@ export async function generateImage({
   stylePreset?: StylePreset;
   aspectRatio?: '1:1' | '3:2' | '16:9';
 }) {
+  const stabilityKey = getStabilityAiKey();
+  if (!stabilityKey) {
+    // Use OpenAI fallback
+    return await generateImageWithOpenAI({
+      prompt,
+      negativePrompt,
+      stylePreset
+    });
+  }
+
   const formData = new FormData();
   formData.set('prompt', prompt);
   formData.set('negative_prompt', negativePrompt);
@@ -44,7 +55,7 @@ export async function generateImage({
       method: 'POST',
       body: formData,
       headers: {
-        Authorization: `Bearer ${getStabilityAiKey()}`,
+        Authorization: `Bearer ${stabilityKey}`,
         Accept: 'application/json'
       }
     }
