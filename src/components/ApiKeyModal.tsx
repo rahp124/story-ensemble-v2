@@ -1,16 +1,15 @@
 import {
   getOpenAiKey,
-  getStabilityAiKey,
   setOpenAiKey,
   setStabilityAiKey,
   validateOpenAiKey,
   validateStabilityAiKey
 } from '@/lib/envUtils';
-import { Button, Modal, PasswordInput } from '@mantine/core';
+import { Button, Divider, Modal, PasswordInput } from '@mantine/core';
 import { FormEvent, useState } from 'react';
 
 export function ApiKeyModal() {
-  const [show, setShow] = useState(!getOpenAiKey() || !getStabilityAiKey());
+  const [show, setShow] = useState(!getOpenAiKey());
 
   const [_openAiKey, _setOpenAiKey] = useState('');
   const [openAiError, setOpenAiError] = useState('');
@@ -26,16 +25,22 @@ export function ApiKeyModal() {
     setOpenAiError('');
     setStabilityAiError('');
 
-    const errors = await Promise.all([
-      await validateOpenAiKey(_openAiKey).then(({ error }) => {
+    // Only validate OpenAI key (required)
+    const openAiError = await validateOpenAiKey(_openAiKey).then(
+      ({ error }) => {
         if (error) {
           setOpenAiError(
             'Invalid OpenAI API key. Please double check your key.'
           );
         }
         return error;
-      }),
-      await validateStabilityAiKey(_stabilityAiKey).then(
+      }
+    );
+
+    // Only validate Stability AI key if provided (optional)
+    let stabilityAiError = false;
+    if (_stabilityAiKey.trim()) {
+      stabilityAiError = await validateStabilityAiKey(_stabilityAiKey).then(
         (validationResponse) => {
           if (validationResponse.error === 'INVALID_API_KEY') {
             setStabilityAiError(
@@ -49,14 +54,16 @@ export function ApiKeyModal() {
 
           return !!validationResponse.error;
         }
-      )
-    ]);
+      );
+    }
 
-    const isErrors = errors.some((isError) => isError);
+    const hasErrors = openAiError || stabilityAiError;
 
-    if (!isErrors) {
+    if (!hasErrors) {
       setOpenAiKey(_openAiKey);
-      setStabilityAiKey(_stabilityAiKey);
+      if (_stabilityAiKey.trim()) {
+        setStabilityAiKey(_stabilityAiKey);
+      }
 
       setShow(false);
     }
@@ -67,9 +74,29 @@ export function ApiKeyModal() {
   return (
     <Modal opened={show} onClose={() => {}} withCloseButton={false}>
       <h1 className="text-lg font-bold mb-2">Welcome to StoryEnsemble</h1>
-      <p className="text-sm mb-4">
-        Enter your OpenAI API key and Stability AI API key to get started.
-      </p>
+      <div className="mb-4">
+        <p className="mb-3">
+          StoryEnsemble is an interactive system designed to help users rapidly
+          explore and flexibly iterate on personas, problem statements,
+          solutions, and storyboards. Input an OpenAI API key to get started.
+        </p>
+
+        <Divider my="md" />
+
+        <p className="mb-3">
+          OpenAI's GPT-4o handles text generation, while DALL-E 3 serves as a
+          fallback for image generation. For the best experience, we recommend
+          adding a Stability AI key - this project was developed and tested with
+          Stability AI's Stable Image Core, so the style presets and aspect
+          ratios are optimized for their API.
+        </p>
+        <p className="text-sm">
+          API keys are stored in sessionStorage and are not persisted or shared
+          between sessions. A complete generation from persona to storyboard
+          will cost roughly 12-24 image generations and 8,000-16,000 GPT-4o
+          input and output tokens.
+        </p>
+      </div>
 
       <form onSubmit={handleSubmit}>
         <PasswordInput
@@ -81,9 +108,8 @@ export function ApiKeyModal() {
           error={openAiError}
         />
         <PasswordInput
-          label="Stability AI API key"
+          label="Stability AI API key (optional)"
           className="mb-4"
-          required
           value={_stabilityAiKey}
           onChange={(e) => _setStabilityAiKey(e.target.value)}
           error={stabilityAiError}
