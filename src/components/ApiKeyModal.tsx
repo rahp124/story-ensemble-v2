@@ -92,7 +92,9 @@ export function ApiKeyModal() {
         </p>
         <p className="text-sm">
           API keys are stored in sessionStorage and are not persisted or shared
-          between sessions.
+          between sessions. A complete generation from persona to storyboard
+          will cost roughly 12-24 image generations and 8,000-16,000 GPT-4o
+          input and output tokens.
         </p>
       </div>
 
