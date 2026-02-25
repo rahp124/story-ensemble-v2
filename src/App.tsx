@@ -38,6 +38,7 @@ import StoryboardNode from './rf-components/StoryboardNode';
 import { IterateModal } from './components/IterateModal';
 import { FirstGenerationModal } from './components/FirstGenerationModal';
 import { DependentGenerationModal } from './components/DependentGenerationModal';
+import { StoryWizard } from './components/StoryWizard';
 import { GenerateMoreModal } from './components/GenerateMoreModal';
 import { findDirectDependencies } from './lib/graphHelper';
 import CommentNode from './rf-components/CommentNode';
@@ -201,6 +202,7 @@ export default function App() {
   const [generateMoreNodeToGenerate, setGenerateMoreNodeToGenerate] = useState<
     'Persona' | 'Problem' | 'Solution' | 'Storyboard'
   >('Persona');
+  const [wizardOpened, setWizardOpened] = useState(nodes.length === 0);
 
   const updateCenterPosition = useCallback(() => {
     const centerPosition = screenToFlowPosition({
@@ -243,295 +245,29 @@ export default function App() {
         edgeTypes={edgeTypes}
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onConnectStart={onConnectStart}
-        onConnectEnd={onConnectEnd}
-        onSelectionChange={onSelectionChange}
-        isValidConnection={({ source, target }) => {
-          if (!source || !target) return false;
-
-          const isPersonaToProblem =
-            source.startsWith('persona-') && target.startsWith('problem-');
-          const isProblemToSolution =
-            source.startsWith('problem-') && target.startsWith('solution-');
-          const isSolutionToStoryboard =
-            source.startsWith('solution-') && target.startsWith('storyboard-');
-
-          return (
-            isPersonaToProblem || isProblemToSolution || isSolutionToStoryboard
-          );
-        }}
-        // Viewport
-        panOnScroll
-        selectionOnDrag
-        panOnDrag={false}
-        panActivationKeyCode={panActivationKeyCode}
-        nodesDraggable={!isPanning}
-        nodesConnectable={!isPanning}
-        nodesFocusable={!isPanning}
-        edgesFocusable={!isPanning}
-        elementsSelectable={!isPanning}
+        panOnScroll={true}
+        panOnDrag={true}
+        zoomOnScroll={true}
+        zoomOnPinch={false}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        nodesFocusable={true}
+        elementsSelectable={true}
+        preventScrolling={false}
         nodeOrigin={[0.5, 0.5]}
-        selectionMode={SelectionMode.Partial}
-        snapToGrid={true}
-        defaultViewport={{
-          x: 0,
-          y: 0,
-          zoom: 1
-        }}
-        minZoom={0}
-        proOptions={{ hideAttribution: true }}
-        // Selection menu logic
-        onSelectionStart={() => {
-          setCurrentlySelecting(true);
-        }}
-        onSelectionEnd={() => {
-          setCurrentlySelecting(false);
-        }}
-        // Track viewport
-        onMoveEnd={updateCenterPosition}
       >
-        <Panel position="top-left">
-          <div className="flex gap-4 items-center">
-            <Tooltip label={<div style={{color: 'black'}}><Kbd>Ctrl</Kbd> + <Kbd>s</Kbd></div>} arrowSize={10} withArrow color={'#00000'}>
-            <Button 
-              onClick={() => {
-                setFirstGenerationModalOpened(true);
-              }}
-              leftSection={<StickyNoteIcon className="size-5" />}
-            >
-              Start brainstorming
-            </Button>
-            </Tooltip>
-            <Menu position="bottom-start" trigger="click-hover">
-              <Menu.Target>
-                <Button 
-                variant="light"
-                leftSection={<PlusIcon className="size-5" />}
-                >
-                  Add empty node
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>Ctrl</Kbd> + <Kbd>1</Kbd></div>} position="right" withArrow color={'#00000'}>
-                <Menu.Item
-                  leftSection={<PlusIcon className="size-5" />}
-                  onClick={() => {
-                    addStudyEvent({
-                      initiator: 'user',
-                      type: 'ADD_EMPTY_PERSONA',
-                      count: 1,
-                      data: {}
-                    });
-                    addEmptyPersonaNode();
-                  }}
-                >
-                  Persona {displayConfigByNodeType[NodeType.Persona].emoji}
-                </Menu.Item>
-                </Tooltip>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>Ctrl</Kbd> + <Kbd>2</Kbd></div>} position="right" withArrow color={'#00000'}>
-                <Menu.Item
-                  leftSection={<PlusIcon className="size-5" />}
-                  onClick={() => {
-                    addStudyEvent({
-                      initiator: 'user',
-                      type: 'ADD_EMPTY_PROBLEM',
-                      count: 1,
-                      data: {}
-                    });
-                    addEmptyProblemNode();
-                  }}
-                >
-                  Problem {displayConfigByNodeType[NodeType.Problem].emoji}
-                </Menu.Item>
-                </Tooltip>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>Ctrl</Kbd> + <Kbd>3</Kbd></div>} position="right" withArrow color={'#00000'}>
-                <Menu.Item
-                  leftSection={<PlusIcon className="size-5" />}
-                  onClick={() => {
-                    addStudyEvent({
-                      initiator: 'user',
-                      type: 'ADD_EMPTY_SOLUTION',
-                      count: 1,
-                      data: {}
-                    });
-                    addEmptySolutionNode();
-                  }}
-                >
-                  Solution {displayConfigByNodeType[NodeType.Solution].emoji}
-                </Menu.Item>
-                </Tooltip>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>Ctrl</Kbd> + <Kbd>4</Kbd></div>} position="right" withArrow color={'#00000'}>
-                <Menu.Item
-                  leftSection={<PlusIcon className="size-5" />}
-                  onClick={() => {
-                    addStudyEvent({
-                      initiator: 'user',
-                      type: 'ADD_EMPTY_STORYBOARD',
-                      count: 1,
-                      data: {}
-                    });
-                    addEmptyStoryboardNode();
-                  }}
-                >
-                  Storyboard{' '}
-                  {displayConfigByNodeType[NodeType.Storyboard].emoji}
-                </Menu.Item>
-                </Tooltip>
-                <Tooltip label={<div style={{color: 'black'}}><Kbd>Ctrl</Kbd> + <Kbd>e</Kbd></div>} position="right" withArrow color={'#00000'}>
-                <Menu.Item
-                  leftSection={<PlusIcon className="size-5" />}
-                  onClick={() => {
-                    addStudyEvent({
-                      initiator: 'user',
-                      type: 'ADD_EMPTY_COMMENT',
-                      count: 1,
-                      data: {}
-                    });
-                    addCommentNode();
-                  }}
-                >
-                  Comment {displayConfigByNodeType[NodeType.Comment].emoji}
-                </Menu.Item>
-                </Tooltip>
-              </Menu.Dropdown>
-            </Menu>
-          </div>
-        </Panel>
-        <Controls position="bottom-right" showInteractive={false}>
-          {/* <ControlButton onClick={() => undo()}>
-            <Undo />
-          </ControlButton>
-          <ControlButton onClick={() => redo()}>
-            <Redo />
-          </ControlButton> */}
-          <Tooltip label="Download canvas screenshot" withArrow>
-            <div>
-              <ControlButton onClick={downloadImage}>
-                <Camera />
-              </ControlButton>
-            </div>
-          </Tooltip>
-          <Tooltip label="Download study usage data" withArrow>
-            <div>
-              <ControlButton
-                onClick={() => {
-                  downloadObjectAsJson(studyEvents, 'study-usage-data');
-                }}
-              >
-                <ClipboardList />
-              </ControlButton>
-            </div>
-          </Tooltip>
-
-          <Tooltip label="Reset canvas">
-            <div>
-              <ControlButton
-                onClick={() => {
-                  const confirmation = confirm(
-                    'Are you want to reset the canvas? All data will be lost.'
-                  );
-                  if (confirmation) {
-                    useStore.persist.clearStorage();
-                    window.location.reload();
-                  }
-                }}
-              >
-                <Trash />
-              </ControlButton>
-            </div>
-          </Tooltip>
-        </Controls>
-        <MiniMap
-          pannable
-          zoomable
-          position="bottom-left"
-          nodeColor={(node) => {
-            if (node.type === NodeType.Persona) return '#fef9c3';
-            else if (node.type === NodeType.Problem) return '#fee2e2';
-            else if (node.type === NodeType.Solution) return '#dbeafe';
-            else return '#e2e2e2';
-          }}
-          nodeStrokeColor={(node) => {
-            if (node.selected) return '#ADD8E6';
-            else return 'transparent';
-          }}
-          nodeStrokeWidth={20}
+        <Controls 
+          showInteractive={false} 
+          position="bottom-right" 
+          className="mb-4 mr-4 bg-white border border-gray-200 shadow-md rounded-md"
         />
         <Background variant={BackgroundVariant.Dots} />
-        {showSelectionTooltip && (
-          <SelectionToolbar
-            selectedNodes={selectedNodes}
-            onGenerateProblems={() => {
-              setDependentNodeToGenerate('Problem');
-              setDependentGenerationModalOpened(true);
-            }}
-            onGenerateSolutions={() => {
-              setDependentNodeToGenerate('Solution');
-              setDependentGenerationModalOpened(true);
-            }}
-            onGenerateStoryboard={() => {
-              const solutionIds = selectedNodes.map((node) => node.id);
-
-              const problemIds = findDirectDependencies(solutionIds, edges);
-              const personaIds = findDirectDependencies(problemIds, edges);
-
-              selectNodes([...personaIds, ...problemIds, ...solutionIds]);
-
-              setDependentNodeToGenerate('Storyboard');
-              setDependentGenerationModalOpened(true);
-            }}
-            onGenerateMorePersonas={() => {
-              setGenerateMoreNodeToGenerate('Persona');
-              setGenerateMoreModalOpened(true);
-            }}
-            onGenerateMoreProblems={() => {
-              setGenerateMoreNodeToGenerate('Problem');
-              setGenerateMoreModalOpened(true);
-            }}
-            onGenerateMoreSolutions={() => {
-              setGenerateMoreNodeToGenerate('Solution');
-              setGenerateMoreModalOpened(true);
-            }}
-            onGenerateMoreStoryboard={() => {
-              setGenerateMoreNodeToGenerate('Storyboard');
-              setGenerateMoreModalOpened(true);
-            }}
-            onFeedback={() => {
-              setIterateModalTab('feedback');
-              setIterateModalOpen(true);
-            }}
-            onRegenerate={() => {
-              setIterateModalTab('regenerate');
-              setIterateModalOpen(true);
-            }}
-            onEdit={() => {
-              setIterateModalTab('edit');
-              setIterateModalOpen(true);
-            }}
-            onDuplicate={() => {
-              addStudyEvent({
-                initiator: 'user',
-                type: 'DUPLICATE_NODES',
-                count: selectedNodes.length,
-                data: {}
-              });
-
-              copy();
-              paste();
-            }}
-          />
-        )}
-        <Panel position="top-right">
-          <TutorialModal />
-        </Panel>
+        {/* DELETED: Panel, Controls, MiniMap, SelectionToolbar */}
       </ReactFlow>
-      <FirstGenerationModal
-        opened={firstGenerationModalOpened}
-        onClose={() => setFirstGenerationModalOpened(false)}
-      />
+
+      {wizardOpened && (
+        <StoryWizard onComplete={() => setWizardOpened(false)} />
+      )}
       <DependentGenerationModal
         opened={dependentGenerationModalOpened}
         onClose={() => {

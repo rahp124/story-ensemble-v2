@@ -96,3 +96,13 @@ g.arrow-edge.selected path {
 div.react-flow__handle:hover, div.react-flow__handle:hover {
   background-color: rgb(69, 128, 248) !important;
 }
+
+/* Hide all React Flow connection handles (the blue/gray boxes) */
+.react-flow__handle {
+  display: none !important;
+}
+
+/* Hide the connecting lines (edges) */
+.react-flow__edge {
+  display: none !important;
+}

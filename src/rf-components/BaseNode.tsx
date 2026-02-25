@@ -204,7 +204,7 @@ export default function BaseNode<T extends Record<string, string>>(
                     cursor: 'pointer'
                   }
                 }}
-                className={`py-2`}
+                className={`py-2 nowheel nodrag`} 
               >
                 <NodeContent
                   content={omit(props.content, 'Name')}

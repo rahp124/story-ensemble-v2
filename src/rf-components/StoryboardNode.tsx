@@ -272,20 +272,8 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
 
   return (
     <>
-      <NodeResizer
-        nodeId={props.id}
-        isVisible={props.selected}
-        handleClassName="[&:is(.top,.bottom.left)]:hidden"
-        lineClassName="hidden"
-        minWidth={300}
-        minHeight={200}
-        handleStyle={{
-          width: 10,
-          height: 10
-        }}
-      />
       <Card
-        className={`size-full ${
+        className={`w-full h-max pb-6 ${
           props.selected ? 'nowheel border-blue-600' : 'border-transparent'
         }`}
         withBorder
@@ -417,186 +405,43 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                       </ActionIcon>
                     )}
                   </FileButton>
-                  <Popover
-                    width={350}
-                    position="left-end"
-                    withArrow
-                    shadow="md"
-                    disabled={regenerating || loadingMap[frameIdx]}
-                    opened={openPopoverId === frame.id}
-                    onChange={(change) =>
-                      setOpenPopoverId(change ? frame.id : null)
-                    }
-                  >
-                    <Popover.Target>
-                      <ActionIcon
-                        className="hide-in-screenshot"
-                        size="sm"
-                        variant="outline"
-                        disabled={regenerating || loadingMap[frameIdx]}
-                        onClick={() => {
-                          if (openPopoverId === frame.id) {
-                            setOpenPopoverId(null);
-                          } else {
-                            setOpenPopoverId(frame.id);
-                          }
-                        }}
-                      >
-                        <Pencil className="size-4" />
-                      </ActionIcon>
-                    </Popover.Target>
-                    <Popover.Dropdown className="hide-in-screenshot">
-                      <h4 className="font-bold mb-4">
-                        Edit frame {frameIdx + 1}
-                      </h4>
-                      <div className="flex flex-col gap-2">
-                        <Select
-                          label="Edit Frame Type"
-                          comboboxProps={{ withinPortal: false }}
-                          allowDeselect={false}
-                          data={(
-                            [
-                              'Context',
-                              'Problem',
-                              'Solution',
-                              'Resolution'
-                            ] as const
-                          ).map((value) => ({
-                            value,
-                            label: frameTypeText(value) ?? ''
-                          }))}
-                          value={frame.frameType}
-                          onChange={(value) => {
-                            updateStoryboardFrameType(
-                              props.id,
-                              frameIdx,
-                              value as
-                                | 'Context'
-                                | 'Problem'
-                                | 'Solution'
-                                | 'Resolution'
-                            );
-                          }}
-                        />
-                        <Textarea
-                          label="Description"
-                          description="Describe the contents and visuals of the frame to directly guide image generation."
-                          autosize
-                          minRows={3}
-                          maxRows={8}
-                          disabled={regenerating || loadingMap[frameIdx]}
-                          value={descriptions[frameIdx]}
-                          onChange={(e) => {
-                            setDescriptions(
-                              descriptions.map((d, i) =>
-                                i === frameIdx ? e.target.value : d
-                              )
-                            );
-                          }}
-                          onBlur={() => {
-                            if (descriptions[frameIdx] !== frame.description) {
-                              updateStoryboardDescription(
-                                props.id,
-                                frameIdx,
-                                descriptions[frameIdx]
-                              );
-                            }
-                          }}
-                        />
-                        <Textarea
-                          label="Caption"
-                          description="Text that appears below the image."
-                          autosize
-                          minRows={2}
-                          maxRows={8}
-                          rows={2}
-                          value={captions[frameIdx]}
-                          onChange={(e) => {
-                            setCaptions(
-                              captions.map((c, i) =>
-                                i === frameIdx ? e.target.value : c
-                              )
-                            );
-                          }}
-                          onBlur={() => {
-                            if (captions[frameIdx] !== frame.caption) {
-                              updateStoryboardCaption(
-                                props.id,
-                                frameIdx,
-                                captions[frameIdx]
-                              );
-                            }
-                          }}
-                        />
-                        <div className="flex gap-2 mt-4">
-                          <Button
-                            size="compact-sm"
-                            onClick={async () => {
-                              if (loadingMap[frameIdx]) return;
+                  <div className="mt-4 flex flex-col gap-2">
+                    <Input
+                      placeholder="What did the AI get wrong?"
+                      disabled={regenerating || loadingMap[frameIdx]}
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter') {
+                          const correction = e.currentTarget.value;
+                          if (!correction) return;
+                          
+                          // 1. Show loading state
+                          setLoadingMap(loadingMap.map((reg, i) => i === frameIdx ? true : reg));
+                          
+                          // 2. Append their correction to the existing description
+                          const newDescription = `${descriptions[frameIdx]}. USER CORRECTION: ${correction}`;
+                          updateStoryboardDescription(props.id, frameIdx, newDescription);
+                          
+                          // 3. Regenerate just this image
+                          await regenerateStoryboardImage(props.id, frameIdx);
+                          
+                          // 4. Log the RQ2 study event
+                          addStudyEvent({
+                            initiator: 'user',
+                            type: 'USER_CORRECTED_SCENE',
+                            count: 1,
+                            data: { frameIdx, originalText: descriptions[frameIdx], correction }
+                          });
 
-                              setLoadingMap(
-                                loadingMap.map((regenerating, i) =>
-                                  i === frameIdx ? true : regenerating
-                                )
-                              );
-                              await regenerateStoryboardImage(
-                                props.id,
-                                frameIdx
-                              );
-                              setLoadingMap(
-                                loadingMap.map((regenerating, i) =>
-                                  i === frameIdx ? false : regenerating
-                                )
-                              );
-
-                              addStudyEvent({
-                                initiator: 'user',
-                                type: 'SINGLE_IMAGE_REGENERATE_STORYBOARD_FRAMES',
-                                count: 1,
-                                data: {}
-                              });
-                            }}
-                          >
-                            Regenerate image
-                          </Button>
-                          <Button
-                            size="compact-sm"
-                            onClick={async () => regenerateAllImages()}
-                          >
-                            Regenerate all images
-                          </Button>
-                        </div>
-                      </div>
-
-                      <Divider my="md" />
-
-                      <div>
-                        <Button
-                          size="compact-sm"
-                          color="red"
-                          leftSection={<Trash2 className="size-4" />}
-                          onClick={() => {
-                            if (
-                              confirm(
-                                'Are you sure you want to delete this frame?'
-                              )
-                            ) {
-                              deleteStoryboardFrame(props.id, frameIdx);
-
-                              addStudyEvent({
-                                initiator: 'user',
-                                type: 'DELETE_STORYBOARD_FRAMES',
-                                count: 1,
-                                data: {}
-                              });
-                            }
-                          }}
-                        >
-                          Delete frame
-                        </Button>
-                      </div>
-                    </Popover.Dropdown>
-                  </Popover>
+                          // 5. Turn off loading
+                          setLoadingMap(loadingMap.map((reg, i) => i === frameIdx ? false : reg));
+                          e.currentTarget.value = ''; // clear input
+                        }
+                      }}
+                      size="md"
+                      radius="md"
+                    />
+                    <p className="text-xs text-gray-400 text-center">Press Enter to fix this scene</p>
+                  </div>
                 </div>
               </div>
 
@@ -667,7 +512,12 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 </Tooltip>
               )}
 
-              <p>{captions[frameIdx]}</p>
+              {/* Scrollable Caption Box */}
+              <div className="overflow-y-auto nowheel nodrag max-h-32 pr-2 mt-2 bg-slate-50 p-2 rounded-md border border-slate-100">
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {captions[frameIdx]}
+                </p>
+              </div>
               {frameIdx === 0 && (
                 <button
                   className="hide-in-screenshot absolute top-0 -left-3 h-full flex items-center px-1 hover:bg-slate-100 -translate-x-1/2 rounded-sm"
