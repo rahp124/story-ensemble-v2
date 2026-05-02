@@ -83,6 +83,14 @@ export type StoryboardNodeData = NodeData & {
       id: string;
       image?: string;
       imageOutOfSync?: boolean;
+      auditLog?: {
+        timestamp: string;
+        stepIndex: number;
+        userInputs: Record<string, string>;
+        aiImagePrompt: string;
+        aiCaption: string;
+        anchorImageUsed: boolean;
+      };
     })[];
     artStyle: StylePreset;
   };

@@ -6,6 +6,170 @@ import {
 } from '@/types';
 import { z } from 'zod';
 
+export function generateDynamicFramePrompt(
+  frameIndex: number,
+  answers: Record<string, string>
+): string {
+  switch (frameIndex) {
+    case 0: {
+      // Scene 1: Initial Context - Warm Up answers
+      const location = answers['wu-1-campus-location'] || 'on campus';
+      const priority = answers['wu-2-priority'] || 'their priorities';
+      return `Scene 1 - Initial Context: A college student is at ${location}, thinking about lunch. Their main priority is ${priority}. Illustrate the moment they begin contemplating their food options. Show the character in this location, looking slightly uncertain or thoughtful. The mood should feel like the beginning of a decision journey. Include environmental details that reflect the campus location. Digital art, realistic lighting.`;
+    }
+
+    case 1: {
+      // Scene 2: Friction / Problem - Scene 1 answers
+      const hungerLevel = answers['s1-1-hunger-level'] || 'moderately';
+      const firstOption = answers['s1-2-first-option'] || 'various options';
+      const contextDetail = answers['s1-3-context-detail'] || '';
+      return `Scene 2 - Facing Friction: The student is ${hungerLevel} hungry and initially thinks about ${firstOption}. ${contextDetail}. Now they face the decision stress of actually choosing. Illustrate the character looking at their options (phone, looking around, thinking deeply). Show signs of decision fatigue - perhaps standing in front of multiple food venues, or scrolling on a phone. The mood should convey mild frustration, overwhelm, or analysis paralysis. Digital art with natural lighting. Realistic human expressions.`;
+    }
+
+    case 2: {
+      // Scene 3: Specific Choice - Branching based on Scene 2 answer
+      const easiestOption = answers['s2-1-easiest-option'] || 'their chosen option';
+      
+      if (easiestOption === 'Delivery app') {
+        const scrollTime = answers['s3d-1-scroll-time'] || 'scrolling';
+        const orderDriver = answers['s3d-2-order-driver'] || 'an option';
+        return `Scene 3 - Delivery App Path: The student chose the delivery app as their best option. They are ${scrollTime}, going through endless restaurant choices. They're motivated by ${orderDriver}. Illustrate the character sitting comfortably somewhere on campus (dorm, library, student center) with their phone in hand, eyes on screen, showing the glow of the app interface. Show their face - concentrated, slightly hopeful. The scene should feel like a private moment. Digital art, warm indoor lighting.`;
+      } else if (easiestOption === 'Dining hall') {
+        const diningExperience = answers['s3n-1-dining-experience'] || 'typical dining hall experience';
+        const satisfaction = answers['s3n-2-dining-satisfaction'] || '3';
+        const experienceList = diningExperience ? diningExperience.split('||').join(', ') : '';
+        return `Scene 3 - Dining Hall Path: The student chose the dining hall. They encounter: ${experienceList}. Their satisfaction level is ${satisfaction}/5. Illustrate the character either in a long line at the dining hall, standing in front of food options, or walking through the dining space. The mood matches their satisfaction level - if low, show frustration or resignation; if high, show contentment. Show other students, food service workers, busy atmosphere. Digital art, fluorescent lighting.`;
+      } else if (easiestOption === 'Cook at home') {
+        const homeChoice = answers['s3h-1-home-choice'] || 'their food choice';
+        const feeling = answers['s3h-2-home-feeling'] || '';
+        return `Scene 3 - Home Path: The student chose to cook at home (${homeChoice}). ${feeling}. Illustrate the character in their dorm kitchen or shared kitchen space, actively ${homeChoice.toLowerCase()}. Show them engaged, relaxed, or contemplative depending on the feeling. Include kitchen details - appliances, ingredients, countertop. The mood should feel more personal and controlled than other options. Digital art, warm home lighting.`;
+      } else {
+        // Generic home/cafe option
+        return `Scene 3 - Alternate Path: The student chose ${easiestOption}. Illustrate them taking action on this choice - active, committed, moving forward with their decision. Show the environment and their body language reflecting comfort with this choice. Digital art, natural lighting.`;
+      }
+    }
+
+    case 3: {
+      // Scene 4: Resolution / Solution - Scene 3 answers
+      const idealFix = answers['s4-1-ideal-fix'] || 'an ideal solution';
+      const feature = answers['s4-2-must-have-feature'] || 'a helpful feature';
+      const confidence = answers['s4-3-confidence'] || '3';
+      return `Scene 4 - Ideal Solution: The student's perfect solution is: ${idealFix}. The must-have feature they need is: ${feature}. They are ${confidence}/5 confident this would improve their daily campus food decisions. Illustrate a hopeful, satisfying resolution where the character is successfully using this solution. Show them happy, relieved, satisfied - the moment after they've made a good choice. The scene should feel bright, optimistic, resolved. Include visual elements that suggest their ideal solution (app interface, convenient location, quick service, etc.). Digital art, uplifting lighting, vibrant colors.`;
+    }
+
+    default:
+      return `Generate a vivid, detailed storyboard frame based on the user's journey through their decision-making process. Digital art, professional quality, realistic human expressions.`;
+  }
+}
+
+export function generateNextFramePrompt(
+  currentStep: number,
+  answers: Record<string, string>,
+  anchorImage?: string
+): string {
+  switch (currentStep) {
+    case 1: {
+      const hunger = answers['s1-1-hunger-level'] || 'moderately hungry';
+      const firstOption = answers['s1-2-first-option'] || 'thinking about food options';
+      const context = answers['s1-3-context-detail'] || '';
+      return `Scene 1 - Context: The user is ${hunger}/5 hungry and first thinks about: ${firstOption}. ${context}. Generate an image showing the character in this initial decision moment. ${
+        anchorImage
+          ? 'CRITICAL: Maintain exact character consistency using the provided anchor image. Do not change their appearance, clothing, or hairstyle.'
+          : ''
+      }`;
+    }
+
+    case 2: {
+      const easiestOption = answers['s2-1-easiest-option'] || 'various food options';
+      const friction = answers['s2-2-biggest-friction'] || '';
+      const stressNote = answers['s2-3-problem-note'] || '';
+      const frictionList = friction ? friction.split('||').join(', ') : '';
+      return `Scene 2 - Problem: The user considers ${easiestOption}. Friction points: ${frictionList}. ${stressNote}. Generate an image showing the character facing this decision stress. ${
+        anchorImage
+          ? 'CRITICAL: Maintain exact character consistency using the provided anchor image. Do not change their appearance, clothing, or hairstyle.'
+          : ''
+      }`;
+    }
+
+    case 3: {
+      const easiestOption = answers['s2-1-easiest-option'] || 'their chosen option';
+      
+      // Branching logic based on Scene 2 choice
+      if (easiestOption === 'Delivery app') {
+        const scrollTime = answers['s3d-1-scroll-time'] || 'some time';
+        const orderDriver = answers['s3d-2-order-driver'] || 'various factors';
+        return `Scene 3 - Delivery Path: The user has decided to go with ${easiestOption}. They spend ${scrollTime} scrolling and are motivated by ${orderDriver}. Generate an image of them acting out this choice (scrolling on phone, comparing options). ${
+          anchorImage
+            ? 'CRITICAL: Maintain exact character consistency using the provided anchor image. Do not change their appearance, clothing, or hairstyle.'
+            : ''
+        }`;
+      } else if (easiestOption === 'Dining hall') {
+        const experience = answers['s3n-1-dining-experience'] || '';
+        const satisfaction = answers['s3n-2-dining-satisfaction'] || '';
+        const experienceList = experience ? experience.split('||').join(', ') : '';
+        return `Scene 3 - Dining Hall Path: The user has decided to go with ${easiestOption}. Their experience: ${experienceList}. Satisfaction level: ${satisfaction}/5. Generate an image of them acting out this choice (at dining hall, choosing food). ${
+          anchorImage
+            ? 'CRITICAL: Maintain exact character consistency using the provided anchor image. Do not change their appearance, clothing, or hairstyle.'
+            : ''
+        }`;
+      } else {
+        const homeChoice = answers['s3h-1-home-choice'] || 'eat at home';
+        const feeling = answers['s3h-2-home-feeling'] || '';
+        return `Scene 3 - Home Path: The user has decided to go with ${easiestOption}. They choose to ${homeChoice}. ${feeling}. Generate an image of them acting out this choice (at home, preparing food or snacking). ${
+          anchorImage
+            ? 'CRITICAL: Maintain exact character consistency using the provided anchor image. Do not change their appearance, clothing, or hairstyle.'
+            : ''
+        }`;
+      }
+    }
+
+    case 4: {
+      const idealFix = answers['s4-1-ideal-fix'] || 'a better solution';
+      const mustHaveFeature = answers['s4-2-must-have-feature'] || '';
+      const confidence = answers['s4-3-confidence'] || '';
+      return `Scene 4 - Solution: The user envisions an ideal solution: ${idealFix}. Key feature: ${mustHaveFeature}. Confidence: ${confidence}/5. Generate an image showing the character successfully using this solution, looking satisfied and relieved. ${
+        anchorImage
+          ? 'CRITICAL: Maintain exact character consistency using the provided anchor image. Do not change their appearance, clothing, or hairstyle.'
+          : ''
+      }`;
+    }
+
+    default:
+      return `Generate a storyboard frame based on the user's journey. ${
+        anchorImage
+          ? 'CRITICAL: Maintain exact character consistency using the provided anchor image.'
+          : ''
+      }`;
+  }
+}
+
+export function generateNextFrameCaption(
+  currentStep: number,
+  answers: Record<string, string>
+): string {
+  switch (currentStep) {
+    case 1: {
+      const location = answers['wu-1-campus-location'] || 'campus';
+      const priority = answers['wu-2-priority'] || 'convenience';
+      return `Starting the lunch decision at ${location}, focused on ${priority.toLowerCase()}.`;
+    }
+    case 2: {
+      const firstOption = answers['s1-2-first-option'] || 'their first option';
+      return `They begin with ${firstOption.toLowerCase()}, but decision friction starts to build.`;
+    }
+    case 3: {
+      const path = answers['s2-1-easiest-option'] || 'their chosen path';
+      return `They commit to ${path.toLowerCase()} and move forward with that choice.`;
+    }
+    case 4: {
+      const idealFix = answers['s4-1-ideal-fix'] || 'a clearer, easier lunch flow';
+      return `A better experience emerges: ${idealFix}.`;
+    }
+    default:
+      return 'A new scene in the user’s decision journey.';
+  }
+}
+
 export async function generateStoryboardOutline(context: unknown) {
   const prompt = `
 You are an AI assistant tasked with creating a detailed storyboard outline for design thinking based on specific dimensions and their assigned values.
@@ -69,7 +233,8 @@ ${JSON.stringify(context)}
 
 export async function generateStoryboardImagePrompts(
   frames: FrameOutline[],
-  visualCharacterDescriptions: unknown
+  visualCharacterDescriptions: unknown,
+  userInterviewXml = ''
 ) {
   // Strip out any additional properties
   frames = frames.map((frame) => ({
@@ -81,10 +246,22 @@ export async function generateStoryboardImagePrompts(
   const prompt = `Given the outline for a storyboard with ${
     frames.length
   } frames, generate a list of image prompts for each frame.
+
+CRITICAL INSTRUCTION: You will receive a <user_interview> XML block.
+You MUST read it and base the full 4-frame storyboard strictly on the user's answers.
+Do not invent conflicting motivations, settings, or behaviors.
+If the interview includes specific constraints, they take priority over generic assumptions.
+
+CRITICAL INSTRUCTION: You are generating a storyboard frame. You MUST use the same character as the reference image provided to you. 
+The character must remain identical to the reference image in every frame. Do not change their hairstyle, face, or clothing.
+
+To ensure consistency, here is the textual identity of the character in the reference image (THIS IS THEIR UNIFORM. DO NOT DEVIATE):
+Visual Character Descriptions: """
+${JSON.stringify(visualCharacterDescriptions)}
+"""
   
 Each frame outline contains an image prompt and imageNegativePrompt used to generate visuals for the storyboard frame.
-The image prompt should be based on the frame description but focus on describing the visual elements.
-The image prompt should firstly describe the subject using rich adjectives. Additionally it should describe the setting, lighting, and any other relevant visual details.
+The image prompt should firstly reinforce the Character Description above, and then describe the new scene, setting, lighting, and action.
 Wrap terms in (term:weight) to adjust the importance of the term in the image. The weight should be a number between 0 and 1.
 Do not set the weight for random terms, only for essential terms required for the subject and action.
 The image prompts within a single outline should be consistent in style and tone to ensure cohesive visual narrative.
@@ -96,12 +273,12 @@ such as text or specific details that are not essential to the visual representa
 Disfigured, deformed hands, blurry, grainy, bad eyes, and similar negative prompts can be used to avoid unwanted results.
 Include the full name of people to ensure consistent characters across all frames.
 
-Frames: """
-${JSON.stringify(frames, null, 2)}
+User Interview XML: """
+${userInterviewXml || '<user_interview></user_interview>'}
 """
 
-Visual Character Descriptions: """
-${JSON.stringify(visualCharacterDescriptions)}
+Frames: """
+${JSON.stringify(frames, null, 2)}
 """`;
 
   const schema = z.object({

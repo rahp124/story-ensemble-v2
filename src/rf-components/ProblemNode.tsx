@@ -57,6 +57,7 @@ export default function ProblemNode(props: NodeProps<NodeData>) {
       nodeBackgroundClass={displayAttributes.backgroundClass}
       content={props.data.content}
       onRegenerateImage={() => generateProblemImage(props.id)}
+      showImageSection={false}
       dependenciesUpdatedText="Personas updated."
       dependentsUpdatedText="Solutions updated."
       bothUpdatedText="Personas & solutions updated."

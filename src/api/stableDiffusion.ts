@@ -24,12 +24,14 @@ export async function generateImage({
   prompt,
   negativePrompt,
   stylePreset = 'digital-art',
-  aspectRatio = '1:1'
+  aspectRatio = '1:1',
+  referenceImage
 }: {
   prompt: string;
   negativePrompt: string;
   stylePreset?: StylePreset;
   aspectRatio?: '1:1' | '3:2' | '16:9';
+  referenceImage?: string;
 }) {
   const stabilityKey = getStabilityAiKey();
   if (!stabilityKey) {
@@ -37,7 +39,8 @@ export async function generateImage({
     return await generateImageWithOpenAI({
       prompt,
       negativePrompt,
-      stylePreset
+      stylePreset,
+      referenceImage
     });
   }
 
@@ -49,6 +52,7 @@ export async function generateImage({
   formData.set('aspect_ratio', aspectRatio);
   formData.set('output_format', 'webp');
 
+  const start = performance.now();
   const response = await fetch(
     `https://api.stability.ai/v2beta/stable-image/generate/core`,
     {
@@ -60,8 +64,8 @@ export async function generateImage({
       }
     }
   );
-
   const { image } = await response.json();
+  console.log(`⏱ [TIMING] generateImage (StabilityAI): ${(performance.now() - start).toFixed(0)}ms`);
 
   return `data:image/webp;base64,${image}`;
 }

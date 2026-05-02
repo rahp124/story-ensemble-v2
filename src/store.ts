@@ -27,6 +27,7 @@ import {
   generateStoryboardOutline
 } from './api/storyboards';
 import { generateImage, StylePreset } from './api/stableDiffusion';
+import { generateImagePrompt, generateTextContent, generateImageWithOpenAI } from './api/openai';
 import { generateSolutions, regenerateSolutions } from './api/solutions';
 import {
   FrameOutline,
@@ -43,10 +44,7 @@ import { generatePersonas, regeneratePersonas } from './api/personas';
 import { nanoid } from 'nanoid';
 import { NodeType } from './rf-components';
 import { generateProblems, regenerateProblems } from './api/problems';
-import {
-  generateIllustrativeImage,
-  generateProblemIllustrativeImage
-} from './api/images';
+import { generateIllustrativeImage } from './api/images';
 import debounce from 'lodash/debounce';
 import { cloneDeep, merge, pick, uniqBy } from 'lodash';
 import { WritableDraft } from 'immer';
@@ -82,6 +80,31 @@ type StudyEvent = {
   data: any;
 };
 
+// Evaluation Phase Types
+type AppPhase = 'editor' | 'pre-survey' | 'evaluating' | 'final-storyboard';
+type EvalSubStep = 'content-intro' | 'content-q' | 'aesthetics-intro' | 'aesthetics-q';
+
+type EvaluationState = {
+  appPhase: AppPhase;
+  currentSceneIndex: number;
+  evalSubStep: EvalSubStep;
+  questionIndex: number;
+};
+
+export type FrameComputeResult = {
+  caption: string;
+  image: string;
+  prompt: string;
+  auditLog: {
+    timestamp: string;
+    stepIndex: number;
+    userInputs: Record<string, string>;
+    aiImagePrompt: string;
+    aiCaption: string;
+    anchorImageUsed: boolean;
+  };
+};
+
 type RFState = {
   nodes: Node[];
   setNodes: (nodes: Node[]) => void;
@@ -107,6 +130,13 @@ type RFState = {
   setIterateModalOpen: (open: boolean) => void;
   iterateModalTab: 'feedback' | 'regenerate' | 'edit' | null;
   setIterateModalTab: (tab: 'feedback' | 'regenerate' | 'edit' | null) => void;
+
+  /* Evaluation State Machine */
+  evaluation: EvaluationState;
+  initializeEvaluation: () => void;
+  beginEvaluation: () => void;
+  advanceEval: () => void;
+
 
   /* Personas */
   addEmptyPersonaNode: () => void;
@@ -203,7 +233,11 @@ type RFState = {
     context: string,
     personaIds: string[],
     problemIds: string[],
-    solutionIds: string[]
+    solutionIds: string[],
+    userInterviewXml?: string,
+    options?: {
+      autoGenerateImages?: boolean;
+    }
   ) => Promise<string[]>;
   generateMoreStoryboardNode: (
     instructions: string,
@@ -226,6 +260,10 @@ type RFState = {
     caption: string
   ) => void;
   updateStoryboardImage: (id: string, frameIdx: number, image: string) => void;
+  updateStoryboardResearchData: (
+    id: string,
+    researchData: Record<string, string>
+  ) => void;
   updateStoryboardFrameType: (
     id: string,
     frameIdx: number,
@@ -238,6 +276,23 @@ type RFState = {
 
   generateStoryboardImages: (id: string) => Promise<Promise<number>[]>;
   regenerateStoryboardImage: (id: string, frameIdx: number) => Promise<void>;
+  computeStoryboardFrame: (
+    nodeId: string,
+    frameIndex: number,
+    currentAnswers: Record<string, string>
+  ) => Promise<FrameComputeResult>;
+
+  writeComputedStoryboardFrame: (
+    nodeId: string,
+    frameIndex: number,
+    result: FrameComputeResult
+  ) => void;
+
+  generateSingleStoryboardFrame: (
+    nodeId: string,
+    frameIndex: number,
+    currentAnswers: Record<string, string>
+  ) => Promise<void>;
 
   pastStates: Partial<RFState>[];
   futureStates: Partial<RFState>[];
@@ -263,12 +318,27 @@ function partialize(state: RFState): Partial<RFState> {
   return {
     nodes: state.nodes,
     edges: state.edges,
-    studyEvents: state.studyEvents
+    studyEvents: state.studyEvents,
+    evaluation: state.evaluation
   };
 }
 
+
 let dimensionChangeTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let positionChangeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+const imagePromptCache = new Map<string, string>();
+
+function buildImagePromptCacheKey(
+  frameIndex: number,
+  answers: Record<string, string>,
+  context: string
+): string {
+  const sorted = Object.fromEntries(
+    Object.entries(answers).sort(([a], [b]) => a.localeCompare(b))
+  );
+  return `${frameIndex}:${JSON.stringify(sorted)}:${context}`;
+}
 
 const createStore: StateCreator<
   RFState,
@@ -307,6 +377,95 @@ const createStore: StateCreator<
 
     edges: [],
     setEdges: (edges) => set({ edges }),
+
+    /* Evaluation State Machine */
+    evaluation: {
+      appPhase: 'editor',
+      currentSceneIndex: 0,
+      evalSubStep: 'content-intro',
+      questionIndex: 0
+    },
+
+    initializeEvaluation: () => {
+      set((state) => {
+        state.evaluation = {
+          appPhase: 'pre-survey',
+          currentSceneIndex: 0,
+          evalSubStep: 'content-intro',
+          questionIndex: 0
+        };
+      });
+    },
+
+    beginEvaluation: () => {
+      set((state) => {
+        state.evaluation = {
+          appPhase: 'evaluating',
+          currentSceneIndex: 0,
+          evalSubStep: 'content-intro',
+          questionIndex: 0
+        };
+      });
+    },
+
+    advanceEval: () => {
+      set((state) => {
+        const evalState = state.evaluation;
+        const TOTAL_SCENES = 4;
+        const QUESTIONS_PER_SECTION = 3;
+
+        // Only proceed if in evaluating phase
+        if (evalState.appPhase !== 'evaluating') return;
+
+        const currentQuestionMax = QUESTIONS_PER_SECTION - 1;
+
+        switch (evalState.evalSubStep) {
+          case 'content-intro':
+            // Move from content-intro to content-q with questionIndex = 0
+            evalState.evalSubStep = 'content-q';
+            evalState.questionIndex = 0;
+            break;
+
+          case 'content-q':
+            if (evalState.questionIndex < currentQuestionMax) {
+              // Move to next question in content (0→1, 1→2)
+              evalState.questionIndex += 1;
+            } else {
+              // After content-q3, move to aesthetics-intro
+              evalState.evalSubStep = 'aesthetics-intro';
+              evalState.questionIndex = 0;
+            }
+            break;
+
+          case 'aesthetics-intro':
+            // Move from aesthetics-intro to aesthetics-q with questionIndex = 0
+            evalState.evalSubStep = 'aesthetics-q';
+            evalState.questionIndex = 0;
+            break;
+
+          case 'aesthetics-q':
+            if (evalState.questionIndex < currentQuestionMax) {
+              // Move to next question in aesthetics (0→1, 1→2)
+              evalState.questionIndex += 1;
+            } else {
+              // After aesthetics-q3, either go to next scene or finish
+              if (evalState.currentSceneIndex < TOTAL_SCENES - 1) {
+                // Move to next scene, start at content-intro
+                evalState.currentSceneIndex += 1;
+                evalState.evalSubStep = 'content-intro';
+                evalState.questionIndex = 0;
+              } else {
+                // All 4 scenes complete, move to final-storyboard
+                evalState.appPhase = 'final-storyboard';
+                evalState.currentSceneIndex = 0;
+                evalState.evalSubStep = 'content-intro';
+                evalState.questionIndex = 0;
+              }
+            }
+            break;
+        }
+      });
+    },
 
     onNodesChange: (changes: NodeChange[]) => {
       const isRemoveChange = changes.some(({ type }) => type === 'remove');
@@ -857,8 +1016,6 @@ const createStore: StateCreator<
         edges: [...get().edges, ...edges]
       });
 
-      nodes.forEach((node) => get().generateProblemImage(node.id));
-
       return nodes.map((node) => node.id);
     },
     generateMoreProblemNodes: async (instructions, problemIds) => {
@@ -901,8 +1058,6 @@ const createStore: StateCreator<
       get().takeSnapshot();
       set({ nodes: [...get().nodes, ...nodes] });
 
-      nodes.forEach((node) => get().generateProblemImage(node.id));
-
       return nodes.map((node) => node.id);
     },
     generateProblemImage: async (id: string) => {
@@ -911,20 +1066,11 @@ const createStore: StateCreator<
       );
       if (!node) return;
 
-      updateNode(id, (draft) => {
-        draft.data.image = '';
-      });
-
-      const image = await generateProblemIllustrativeImage(
-        `Illustrate problem: ${JSON.stringify(node.data.content)}
-        Visual character descriptions: ${JSON.stringify(
-          node.data.visualCharacterDescriptions
-        )}`
-      );
-
+      // Intentionally no image generation for Problem nodes.
+      // Keep textual/context data only to reduce API cost and latency.
       get().takeSnapshot();
       updateNode(id, (draft) => {
-        draft.data.image = image;
+        delete draft.data.image;
       });
     },
     regenerateProblemNodes: async (
@@ -1028,7 +1174,7 @@ const createStore: StateCreator<
         });
       }
 
-      return get().generateProblemImage(id);
+      return;
     },
 
     addEmptySolutionNode: () => {
@@ -1116,8 +1262,6 @@ const createStore: StateCreator<
         edges: [...get().edges, ...edges]
       });
 
-      nodes.forEach((node) => get().generateSolutionImage(node.id));
-
       return nodes.map((node) => node.id);
     },
     generateMoreSolutionNodes: async (instructions, solutionIds) => {
@@ -1162,8 +1306,6 @@ const createStore: StateCreator<
       set({
         nodes: [...get().nodes, ...nodes]
       });
-
-      nodes.forEach((node) => get().generateSolutionImage(node.id));
 
       return nodes.map((node) => node.id);
     },
@@ -1288,7 +1430,7 @@ const createStore: StateCreator<
         });
       }
 
-      return get().generateSolutionImage(id);
+      return;
     },
     generateSolutionImage: async (id) => {
       const node = get().nodes.find(
@@ -1296,20 +1438,11 @@ const createStore: StateCreator<
       );
       if (!node) return;
 
-      updateNode(id, (draft) => {
-        draft.data.image = '';
-      });
-
-      const image = await generateIllustrativeImage(
-        `Illustrate solution: ${JSON.stringify(node.data.content)}
-        Visual character descriptions: ${JSON.stringify(
-          node.data.visualCharacterDescriptions
-        )}`
-      );
-
+      // Intentionally no image generation for Solution nodes.
+      // Keep textual/context data only to reduce API cost and latency.
       get().takeSnapshot();
       updateNode(node.id, (draft) => {
-        draft.data.image = image;
+        delete draft.data.image;
       });
     },
 
@@ -1374,7 +1507,11 @@ const createStore: StateCreator<
       context: string,
       personaIds: string[],
       problemIds: string[],
-      solutionIds: string[]
+      solutionIds: string[],
+      userInterviewXml?: string,
+      options?: {
+        autoGenerateImages?: boolean;
+      }
     ) => {
       const personaNodes = get().nodes.filter(
         (node) => node.type === NodeType.Persona && personaIds.includes(node.id)
@@ -1428,7 +1565,9 @@ const createStore: StateCreator<
         type: NodeType.Storyboard,
         ...nodePositionAttribute,
         data: {
-          content: {},
+          content: userInterviewXml
+            ? { userInterviewXml }
+            : {},
           visualCharacterDescriptions,
           storyboard: {
             title: storyboardData.title,
@@ -1451,7 +1590,10 @@ const createStore: StateCreator<
         edges: [...get().edges, ...edges]
       });
 
-      get().generateStoryboardImages(node.id);
+      const shouldAutoGenerateImages = options?.autoGenerateImages ?? true;
+      if (shouldAutoGenerateImages) {
+        get().generateStoryboardImages(node.id);
+      }
 
       return [node.id];
     },
@@ -1599,6 +1741,27 @@ const createStore: StateCreator<
       const outline = storyboard.data.storyboard.outline;
       if (outline.length === 0) return [];
 
+      // 1. EXTRACTION: Find the connected Persona and get the Anchor Image
+      const personaIds = findDirectDependencies([id], get().edges).filter(
+        (depId) => depId.startsWith('persona-')
+      );
+      // If the persona isn't directly connected to the storyboard, trace it back through the problem
+      let anchorImage = '';
+      if (personaIds.length > 0) {
+        const personaNode = get().nodes.find(n => n.id === personaIds[0]);
+        anchorImage = personaNode?.data?.image || '';
+      } else {
+        // Fallback: Trace Storyboard -> Solution -> Problem -> Persona
+        const solutionIds = findDirectDependencies([id], get().edges).filter(depId => depId.startsWith('solution-'));
+        const problemIds = findDirectDependencies(solutionIds, get().edges).filter(depId => depId.startsWith('problem-'));
+        const deepPersonaIds = findDirectDependencies(problemIds, get().edges).filter(depId => depId.startsWith('persona-'));
+        
+        if (deepPersonaIds.length > 0) {
+           const personaNode = get().nodes.find(n => n.id === deepPersonaIds[0]);
+           anchorImage = personaNode?.data?.image || '';
+        }
+      }
+
       // Hack to display loader
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline = draft.data.storyboard.outline.map(
@@ -1611,13 +1774,15 @@ const createStore: StateCreator<
 
       const imagePrompts = await generateStoryboardImagePrompts(
         outline,
-        storyboard.data.visualCharacterDescriptions
+        storyboard.data.visualCharacterDescriptions,
+        storyboard.data.content.userInterviewXml
       );
 
       return imagePrompts.map(async (prompt, idx) => {
         const image = await generateImage({
           ...prompt,
-          stylePreset: storyboard.data.storyboard.artStyle
+          stylePreset: storyboard.data.storyboard.artStyle,
+          referenceImage: anchorImage !== '' ? anchorImage : undefined
         });
 
         get().takeSnapshot();
@@ -1638,9 +1803,20 @@ const createStore: StateCreator<
       const outline = storyboard.data.storyboard.outline;
       if (outline.length === 0) return;
 
+      const solutionIds = findDirectDependencies([id], get().edges).filter(depId => depId.startsWith('solution-'));
+      const problemIds = findDirectDependencies(solutionIds, get().edges).filter(depId => depId.startsWith('problem-'));
+      const personaIds = findDirectDependencies(problemIds, get().edges).filter(depId => depId.startsWith('persona-'));
+      
+      let anchorImage = '';
+      if (personaIds.length > 0) {
+         const personaNode = get().nodes.find(n => n.id === personaIds[0]);
+         anchorImage = personaNode?.data?.image || '';
+      }
+
       const imagePrompts = await generateStoryboardImagePrompts(
         outline,
-        storyboard.data.visualCharacterDescriptions
+        storyboard.data.visualCharacterDescriptions,
+        storyboard.data.content.userInterviewXml
       );
 
       await Promise.all(
@@ -1649,7 +1825,8 @@ const createStore: StateCreator<
 
           const image = await generateImage({
             ...prompt,
-            stylePreset: storyboard.data.storyboard.artStyle
+            stylePreset: storyboard.data.storyboard.artStyle,
+            referenceImage: anchorImage !== '' ? anchorImage : undefined
           });
 
           get().takeSnapshot();
@@ -1699,6 +1876,17 @@ const createStore: StateCreator<
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline[frameIndex].image = image;
         draft.data.storyboard.outline[frameIndex].imageOutOfSync = false;
+      });
+    },
+    updateStoryboardResearchData: (id, researchData) => {
+      get().takeSnapshot();
+      updateNode<StoryboardNodeData>(id, (draft) => {
+        draft.data.content = {
+          ...draft.data.content,
+          researchData: JSON.stringify(researchData),
+          finalResearchAnswers: JSON.stringify(researchData),
+          completedAt: new Date().toISOString()
+        };
       });
     },
     updateStoryboardFrameType: (id, frameIndex, frameType) => {
@@ -1780,6 +1968,129 @@ const createStore: StateCreator<
       updateNodes(findDirectDependencies([id], get().edges), (draft) => {
         draft.data.dependentsOutOfSync = true;
       });
+    },
+
+    async computeStoryboardFrame(nodeId, frameIndex, currentAnswers) {
+      const storyboard: Node<StoryboardNodeData> | undefined = get().nodes.find(
+        (node) => node.id === nodeId && node.type === NodeType.Storyboard
+      );
+      if (!storyboard) throw new Error(`Storyboard ${nodeId} not found`);
+
+      const outline = storyboard.data.storyboard.outline;
+      if (!outline[frameIndex]) throw new Error(`Frame index ${frameIndex} not found`);
+
+      // Extract anchor image from connected persona
+      const personaIds = findDirectDependencies([nodeId], get().edges).filter(
+        (depId) => depId.startsWith('persona-')
+      );
+      let anchorImage = '';
+      if (personaIds.length > 0) {
+        const personaNode = get().nodes.find((n) => n.id === personaIds[0]);
+        anchorImage = personaNode?.data?.image || '';
+      } else {
+        // Fallback: Trace Storyboard -> Solution -> Problem -> Persona
+        const solutionIds = findDirectDependencies([nodeId], get().edges).filter(
+          (depId) => depId.startsWith('solution-')
+        );
+        const problemIds = findDirectDependencies(solutionIds, get().edges).filter(
+          (depId) => depId.startsWith('problem-')
+        );
+        const deepPersonaIds = findDirectDependencies(problemIds, get().edges).filter(
+          (depId) => depId.startsWith('persona-')
+        );
+        if (deepPersonaIds.length > 0) {
+          const personaNode = get().nodes.find((n) => n.id === deepPersonaIds[0]);
+          anchorImage = personaNode?.data?.image || '';
+        }
+      }
+
+      if (!anchorImage) {
+        console.warn(
+          `⚠️ WARNING: No anchor image found for frame ${frameIndex + 1}! ` +
+          `Storyboard: ${nodeId}`
+        );
+      }
+
+      const solutionIds = findDirectDependencies([nodeId], get().edges).filter(
+        (depId) => depId.startsWith('solution-')
+      );
+      const solutionContext = solutionIds
+        .map((id) => get().nodes.find((n) => n.id === id))
+        .filter(Boolean)
+        .map((node) => JSON.stringify(node?.data?.content || {}))
+        .join('\n');
+
+      // Step 1: get imagePrompt — fast dedicated call, cached by input
+      const cacheKey = buildImagePromptCacheKey(frameIndex, currentAnswers, solutionContext);
+      let imagePrompt = imagePromptCache.get(cacheKey);
+      if (!imagePrompt) {
+        imagePrompt = await generateImagePrompt(frameIndex, currentAnswers, solutionContext);
+        imagePromptCache.set(cacheKey, imagePrompt);
+      }
+
+      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🎨 [PIPELINE: PARALLEL IMAGE + TEXT GEN]');
+      console.log(`Frame: ${frameIndex} | Anchor: ${!!anchorImage} | Cache hit: ${imagePromptCache.has(cacheKey)}`);
+      console.log('Image Prompt:', imagePrompt);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+      // Step 2: fire image gen + caption gen in parallel; write each to store as it resolves
+      let captionResolved = '';
+      let imageResolved = '';
+
+      await Promise.all([
+        generateImageWithOpenAI({
+          prompt: imagePrompt,
+          stylePreset: storyboard.data.storyboard.artStyle,
+          referenceImage: anchorImage !== '' ? anchorImage : undefined,
+          size: '1024x1024'
+        }).then((img) => {
+          imageResolved = img;
+          updateNode<StoryboardNodeData>(nodeId, (draft) => {
+            draft.data.storyboard.outline[frameIndex].image = img;
+          });
+        }),
+        generateTextContent(frameIndex, currentAnswers, solutionContext).then((cap) => {
+          captionResolved = cap;
+          updateNode<StoryboardNodeData>(nodeId, (draft) => {
+            draft.data.storyboard.outline[frameIndex].caption = cap;
+          });
+        })
+      ]);
+
+      return {
+        caption: captionResolved,
+        image: imageResolved,
+        prompt: imagePrompt,
+        auditLog: {
+          timestamp: new Date().toISOString(),
+          stepIndex: frameIndex,
+          userInputs: currentAnswers,
+          aiImagePrompt: imagePrompt,
+          aiCaption: captionResolved,
+          anchorImageUsed: !!anchorImage
+        }
+      };
+    },
+
+    writeComputedStoryboardFrame(nodeId, frameIndex, result) {
+      get().takeSnapshot();
+      updateNode<StoryboardNodeData>(nodeId, (draft) => {
+        draft.data.content = {
+          ...draft.data.content,
+          [`frame_${frameIndex + 1}_prompt`]: result.prompt,
+          [`frame_${frameIndex + 1}_caption`]: result.caption
+        };
+        draft.data.storyboard.outline[frameIndex].caption = result.caption;
+        draft.data.storyboard.outline[frameIndex].image = result.image;
+        draft.data.storyboard.outline[frameIndex].imageOutOfSync = false;
+        draft.data.storyboard.outline[frameIndex].auditLog = result.auditLog;
+      });
+    },
+
+    async generateSingleStoryboardFrame(nodeId, frameIndex, currentAnswers) {
+      const result = await get().computeStoryboardFrame(nodeId, frameIndex, currentAnswers);
+      get().writeComputedStoryboardFrame(nodeId, frameIndex, result);
     },
 
     pastStates: [],

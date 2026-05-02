@@ -238,6 +238,13 @@ export default function App() {
     a.remove();
   }
 
+  const handleStartOver = () => {
+    // 1. Wipe the AI's memory clean
+    useStore.setState({ nodes: [], edges: [] }); 
+    // 2. Bring the wizard back
+    setWizardOpened(true); 
+  };
+
   return (
     <div className="h-[100vh] w-[100vw]">
       <ReactFlow
@@ -267,6 +274,14 @@ export default function App() {
 
       {wizardOpened && (
         <StoryWizard onComplete={() => setWizardOpened(false)} />
+      )}
+      {!wizardOpened && (
+        <button 
+          onClick={handleStartOver}
+          className="fixed top-6 left-6 z-50 bg-white border border-gray-200 shadow-lg px-6 py-3 rounded-xl font-bold text-gray-800 hover:bg-gray-50 transition-all flex items-center gap-2"
+        >
+          <span>✨</span> Start New Story
+        </button>
       )}
       <DependentGenerationModal
         opened={dependentGenerationModalOpened}

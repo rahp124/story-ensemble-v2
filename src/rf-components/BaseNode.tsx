@@ -35,6 +35,7 @@ export interface BaseNodeProps<T extends Record<string, string>> {
   content: T;
 
   onRegenerateImage: () => Promise<void>;
+  showImageSection?: boolean;
 
   dependenciesUpdatedText?: string;
   dependentsUpdatedText?: string;
@@ -65,6 +66,7 @@ export default function BaseNode<T extends Record<string, string>>(
   }));
 
   const scrollViewport = useRef<HTMLDivElement>(null);
+  const showImageSection = props.showImageSection ?? true;
   const hasOverflowY = useCallback(() => {
     return (
       scrollViewport.current &&
@@ -151,23 +153,25 @@ export default function BaseNode<T extends Record<string, string>>(
           shadow="sm"
           radius="lg"
         >
-          <Card.Section withBorder className="h-[225px]">
-            <AspectRatio ratio={16 / 9} className="size-full">
-              {regenerating || image === '' ? (
-                <div className="size-full flex flex-col items-center justify-center gap-2">
-                  <Loader />
-                  <p>Generating illustrative image...</p>
-                </div>
-              ) : image === undefined ? (
-                <div className="size-full flex flex-col items-center justify-center gap-2">
-                  <ImageIcon className="size-[36px]" />
-                  <p>Update node to generate illustrative image</p>
-                </div>
-              ) : (
-                <img src={image} className="size-full object-cover" />
-              )}
-            </AspectRatio>
-          </Card.Section>
+          {showImageSection && (
+            <Card.Section withBorder className="h-[225px]">
+              <AspectRatio ratio={16 / 9} className="size-full">
+                {regenerating || image === '' ? (
+                  <div className="size-full flex flex-col items-center justify-center gap-2">
+                    <Loader />
+                    <p>Generating illustrative image...</p>
+                  </div>
+                ) : image === undefined ? (
+                  <div className="size-full flex flex-col items-center justify-center gap-2">
+                    <ImageIcon className="size-[36px]" />
+                    <p>Update node to generate illustrative image</p>
+                  </div>
+                ) : (
+                  <img src={image} className="size-full object-cover" />
+                )}
+              </AspectRatio>
+            </Card.Section>
+          )}
           <div
             className={`flex mt-4 mb-2 gap-4
             ${
