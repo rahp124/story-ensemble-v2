@@ -6,16 +6,16 @@ import { StoryboardNodeData } from '@/types';
 import {
   ActionIcon,
   AspectRatio,
-  Button,
+  //Button,
   Card,
   CloseButton,
-  Divider,
+  //Divider,
   FileButton,
   Input,
   Loader,
   Popover,
   Select,
-  Textarea,
+  //Textarea,
   Tooltip
 } from '@mantine/core';
 import {
@@ -24,14 +24,14 @@ import {
   Pencil,
   RefreshCwIcon,
   Settings,
-  Trash2
+  //Trash2
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   getNodesBounds,
   getViewportForBounds,
   NodeProps,
-  NodeResizer,
+  //NodeResizer,
   useReactFlow
 } from 'reactflow';
 import { NodeType, nodeTypeDisplayAttributes } from '.';
@@ -51,7 +51,7 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [captions, setCaptions] = useState<string[]>(
     storyboard.outline.map((frame) => frame.caption)
   );
-  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
+  //const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   const [storyboardSettingsOpen, setStoryboardSettingsOpen] = useState(false);
 
   useEffect(() => {
@@ -83,13 +83,13 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
 
     updateStoryboardTitle,
     updateStoryboardDescription,
-    updateStoryboardCaption,
-    updateStoryboardFrameType,
+    //updateStoryboardCaption,
+    //updateStoryboardFrameType,
     updateStoryboardImageStyle,
     updateStoryboardImage,
 
     addStoryboardFrame,
-    deleteStoryboardFrame,
+    //deleteStoryboardFrame,
 
     addStudyEvent
   } = useStore((state) => ({

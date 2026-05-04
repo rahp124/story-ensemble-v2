@@ -2,21 +2,20 @@ import ReactFlow, {
   Background,
   BackgroundVariant,
   Controls,
-  SelectionMode,
-  Panel,
   useReactFlow,
-  MiniMap,
-  ControlButton,
-  useKeyPress
+  //MiniMap,
+  //ControlButton,
+  //useKeyPress
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { displayConfigByNodeType, EdgeType, NodeType } from './rf-components';
+import { EdgeType, NodeType } from './rf-components';
 import { useCallback, useEffect, useState } from 'react';
-import { toSvg } from 'html-to-image';
-import SelectionToolbar from './components/SelectionToolbar';
+//import { toSvg } from 'html-to-image';
+//import SelectionToolbar from './components/SelectionToolbar';
 
 import { useStore } from './store';
+/*
 import {
   Camera,
   ClipboardList,
@@ -26,24 +25,25 @@ import {
   //  Undo,
   StickyNoteIcon,
 } from 'lucide-react';
+*/
 
-import { Button, Kbd, Menu, Tooltip } from '@mantine/core';
+//import { Button, Kbd, Menu, Tooltip } from '@mantine/core';
 import { useShallow } from 'zustand/react/shallow';
 import { ApiKeyModal } from './components/ApiKeyModal';
-import { TutorialModal } from './components/TutorialModal';
+//import { TutorialModal } from './components/TutorialModal';
 import PersonaNode from './rf-components/PersonaNode';
 import ProblemNode from './rf-components/ProblemNode';
 import SolutionNode from './rf-components/SolutionNode';
 import StoryboardNode from './rf-components/StoryboardNode';
 import { IterateModal } from './components/IterateModal';
-import { FirstGenerationModal } from './components/FirstGenerationModal';
+//import { FirstGenerationModal } from './components/FirstGenerationModal';
 import { DependentGenerationModal } from './components/DependentGenerationModal';
 import { StoryWizard } from './components/StoryWizard';
 import { GenerateMoreModal } from './components/GenerateMoreModal';
-import { findDirectDependencies } from './lib/graphHelper';
+//import { findDirectDependencies } from './lib/graphHelper';
 import CommentNode from './rf-components/CommentNode';
 import ProjectNode from './rf-components/ProjectNode';
-import { downloadObjectAsJson } from './lib/utils';
+//import { downloadObjectAsJson } from './lib/utils';
 import ContextEdge from './rf-components/ContextEdge';
 
 const nodeTypes = {
@@ -62,13 +62,13 @@ const edgeTypes = {
 export default function App() {
   const {
     nodes,
-    onNodesChange,
+    //onNodesChange,
     edges,
-    onEdgesChange,
-    onConnect,
-    onConnectStart,
-    onConnectEnd,
-    onSelectionChange,
+    //onEdgesChange,
+    //onConnect,
+    //onConnectStart,
+    //onConnectEnd,
+    //onSelectionChange,
 
     // undo,
     // redo,
@@ -76,8 +76,8 @@ export default function App() {
     selectedNodes,
     selectNodes,
 
-    setIterateModalOpen,
-    setIterateModalTab,
+    //setIterateModalOpen,
+    //setIterateModalTab,
 
     copy,
     paste,
@@ -88,7 +88,7 @@ export default function App() {
     addEmptyStoryboardNode,
     addCommentNode,
 
-    studyEvents,
+    //this used to be studyEvents and addStudyEvent, but I moved them to the store so that I can track events that happen in the modals as well (like dependent generation modal and iterate modal)
     addStudyEvent
   } = useStore(
     useShallow((state) => ({
@@ -179,27 +179,29 @@ export default function App() {
     addEmptyStoryboardNode()
   }, { preventDefault: true });
 
-
-  const [currentlySelecting, setCurrentlySelecting] = useState(false);
-  const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
+  //Thi sused to be currentlySelecting, setCurrentlySelecting
+  //const [currentlySelecting, setCurrentlySelecting] = useState(false);
+  //const showSelectionTooltip = selectedNodes.length > 0 && !currentlySelecting;
 
   const { fitView, screenToFlowPosition } = useReactFlow();
   const hydrated = useStore.persist.hasHydrated();
   useEffect(() => {
     if (hydrated) fitView();
   }, [fitView, hydrated]);
-
-  const [firstGenerationModalOpened, setFirstGenerationModalOpened] =
+  // used to be firstGenerationModalOpened, setFirstGenerationModalOpened
+  const [, setFirstGenerationModalOpened] =
     useState(false);
 
   const [dependentGenerationModalOpened, setDependentGenerationModalOpened] =
     useState(false);
-  const [dependentNodeToGenerate, setDependentNodeToGenerate] = useState<
+  // used to be dependentNodeToGenerate, setDependentNodeToGenerate
+  const [dependentNodeToGenerate] = useState<
     'Problem' | 'Solution' | 'Storyboard'
   >('Problem');
 
   const [generateMoreModalOpened, setGenerateMoreModalOpened] = useState(false);
-  const [generateMoreNodeToGenerate, setGenerateMoreNodeToGenerate] = useState<
+  // used to be generateMoreNodeToGenerate, setGenerateMoreNodeToGenerate
+  const [generateMoreNodeToGenerate] = useState<
     'Persona' | 'Problem' | 'Solution' | 'Storyboard'
   >('Persona');
   const [wizardOpened, setWizardOpened] = useState(nodes.length === 0);
@@ -215,9 +217,9 @@ export default function App() {
     updateCenterPosition();
   }, [updateCenterPosition]);
 
-  const panActivationKeyCode = 'Space';
-  const isPanning = useKeyPress(panActivationKeyCode);
-
+  //const panActivationKeyCode = 'Space';
+  //const isPanning = useKeyPress(panActivationKeyCode);
+  /*
   async function downloadImage() {
     fitView();
 
@@ -237,6 +239,7 @@ export default function App() {
     a.click();
     a.remove();
   }
+  */
 
   const handleStartOver = () => {
     // 1. Wipe the AI's memory clean
