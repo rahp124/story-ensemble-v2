@@ -26,8 +26,9 @@ import {
   generateStoryboardImagePrompts,
   generateStoryboardOutline
 } from './api/storyboards';
-import { generateImage, StylePreset } from './api/stableDiffusion';
-import { generateImagePrompt, generateTextContent, generateImageWithOpenAI } from './api/openai';
+import { StylePreset } from './api/stableDiffusion';
+import { generateImagePrompt, generateStoryboardTitle, generateTextContent } from './api/openai';
+import { generateStoryboardImage } from './api/images';
 import { generateSolutions, regenerateSolutions } from './api/solutions';
 import {
   FrameOutline,
@@ -143,8 +144,12 @@ type RFState = {
   generatePersonaNodes: (
     context: string,
     numberOfNodes?: number,
-    dependencies?: string[]
+    dependencies?: string[],
+    options?: { skipAutoImage?: boolean }
   ) => Promise<string[]>;
+
+  startWarmUpPrefetch: () => void;
+  consumeWarmUpPrefetch: () => WarmUpPrefetch | null;
   generateMorePersonaNodes: (
     instructions: string,
     personaIds: string[]
@@ -239,6 +244,11 @@ type RFState = {
       autoGenerateImages?: boolean;
     }
   ) => Promise<string[]>;
+  createBlankStoryboardNode: (
+    personaIds: string[],
+    problemIds: string[],
+    solutionIds: string[]
+  ) => string;
   generateMoreStoryboardNode: (
     instructions: string,
     storyboardIds: string[]
@@ -249,6 +259,10 @@ type RFState = {
     setSolutionsOutOfSync?: boolean
   ) => Promise<void>;
   updateStoryboardTitle: (id: string, title: string) => void;
+  generateAndSetStoryboardTitle: (
+    id: string,
+    answers: Record<string, string>
+  ) => Promise<void>;
   updateStoryboardDescription: (
     id: string,
     frameIdx: number,
@@ -276,10 +290,17 @@ type RFState = {
 
   generateStoryboardImages: (id: string) => Promise<Promise<number>[]>;
   regenerateStoryboardImage: (id: string, frameIdx: number) => Promise<void>;
+  preCacheImagePrompt: (
+    nodeId: string,
+    frameIndex: number,
+    answers: Record<string, string>
+  ) => void;
+
   computeStoryboardFrame: (
     nodeId: string,
     frameIndex: number,
-    currentAnswers: Record<string, string>
+    currentAnswers: Record<string, string>,
+    options?: { awaitImage?: boolean; imageOnly?: boolean }
   ) => Promise<FrameComputeResult>;
 
   writeComputedStoryboardFrame: (
@@ -291,8 +312,11 @@ type RFState = {
   generateSingleStoryboardFrame: (
     nodeId: string,
     frameIndex: number,
-    currentAnswers: Record<string, string>
+    currentAnswers: Record<string, string>,
+    options?: { awaitImage?: boolean; imageOnly?: boolean }
   ) => Promise<void>;
+
+  invalidateFrameImageGen: (nodeId: string, frameIndex: number) => void;
 
   pastStates: Partial<RFState>[];
   futureStates: Partial<RFState>[];
@@ -328,6 +352,22 @@ let dimensionChangeTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let positionChangeTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 const imagePromptCache = new Map<string, string>();
+
+type WarmUpPrefetch = {
+  personaIdsPromise: Promise<string[]>;
+  personaIds: string[] | null;
+  imagePromise: Promise<void> | null;
+};
+let warmUpPrefetch: WarmUpPrefetch | null = null;
+// Tracks in-flight generateImagePrompt calls so computeStoryboardFrame can await
+// an already-started request rather than firing a duplicate one.
+const imagePromptInFlight = new Map<string, Promise<string>>();
+
+// Persona portrait promise — frame image gens await this if no anchor is in the store yet.
+let personaImageInFlight: Promise<string> | null = null;
+
+// Per-frame image gen sequence counter — latest-started gen wins when multiple race.
+const frameImageGenSeq = new Map<string, number>();
 
 function buildImagePromptCacheKey(
   frameIndex: number,
@@ -737,7 +777,8 @@ const createStore: StateCreator<
     generatePersonaNodes: async (
       context: string,
       numberOfNodes?: number,
-      dependencies?: string[]
+      dependencies?: string[],
+      options?: { skipAutoImage?: boolean }
     ) => {
       const center = get().centerPosition;
 
@@ -771,7 +812,9 @@ const createStore: StateCreator<
       get().takeSnapshot();
       set({ nodes: [...get().nodes, ...nodes] });
 
-      nodes.forEach((node) => get().generatePersonaImage(node.id));
+      if (!options?.skipAutoImage) {
+        nodes.forEach((node) => get().generatePersonaImage(node.id));
+      }
 
       return nodes.map((node) => node.id);
     },
@@ -920,17 +963,22 @@ const createStore: StateCreator<
         draft.data.image = '';
       });
 
-      const image = await generateIllustrativeImage(
+      personaImageInFlight = generateIllustrativeImage(
         `Illustrate persona: ${JSON.stringify(node.data.content)}
         Visual character descriptions: ${JSON.stringify(
           node.data.visualCharacterDescriptions
         )}`
-      );
-
-      get().takeSnapshot();
-      updateNode(node.id, (draft) => {
-        draft.data.image = image;
+      ).then((image) => {
+        get().takeSnapshot();
+        updateNode(node.id, (draft) => {
+          draft.data.image = image;
+        });
+        return image;
+      }).finally(() => {
+        personaImageInFlight = null;
       });
+
+      await personaImageInFlight;
     },
 
     addEmptyProblemNode: () => {
@@ -1503,6 +1551,53 @@ const createStore: StateCreator<
       get().takeSnapshot();
       set({ nodes: [...get().nodes, node] });
     },
+    createBlankStoryboardNode: (_personaIds, _problemIds, solutionIds) => {
+      const solutionNodes = get().nodes.filter(
+        (node) => node.type === NodeType.Solution && solutionIds.includes(node.id)
+      );
+
+      const nodePositionAttribute = calculateDependentNodePositionAttributes(
+        solutionNodes,
+        'bottom',
+        1,
+        { width: 1600, height: 600, gap: 0, margin: 150 }
+      )[0];
+
+      const frameTypes: FrameOutline['frameType'][] = [
+        'Context', 'Problem', 'Solution', 'Resolution'
+      ];
+
+      const node: Node<StoryboardNodeData> = {
+        id: `storyboard-${nanoid()}`,
+        type: NodeType.Storyboard,
+        ...nodePositionAttribute,
+        data: {
+          content: {},
+          visualCharacterDescriptions: [],
+          storyboard: {
+            title: '',
+            outline: frameTypes.map((frameType) => ({
+              id: nanoid(),
+              frameType,
+              description: '',
+              caption: '',
+              image: ''
+            })),
+            artStyle: 'digital-art'
+          }
+        }
+      };
+
+      const edges = solutionIds.map((sourceId) =>
+        createArrowEdge(sourceId, node.id)
+      );
+
+      get().takeSnapshot();
+      set({ nodes: [...get().nodes, node], edges: [...get().edges, ...edges] });
+
+      return node.id;
+    },
+
     generateStoryboardNode: async (
       context: string,
       personaIds: string[],
@@ -1779,7 +1874,7 @@ const createStore: StateCreator<
       );
 
       return imagePrompts.map(async (prompt, idx) => {
-        const image = await generateImage({
+        const image = await generateStoryboardImage({
           ...prompt,
           stylePreset: storyboard.data.storyboard.artStyle,
           referenceImage: anchorImage !== '' ? anchorImage : undefined
@@ -1823,7 +1918,7 @@ const createStore: StateCreator<
         imagePrompts.map(async (prompt, idx) => {
           if (idx !== frameIdx) return;
 
-          const image = await generateImage({
+          const image = await generateStoryboardImage({
             ...prompt,
             stylePreset: storyboard.data.storyboard.artStyle,
             referenceImage: anchorImage !== '' ? anchorImage : undefined
@@ -1848,6 +1943,29 @@ const createStore: StateCreator<
       // Update dependencies
       updateNodes(findDirectDependencies([id], get().edges), (draft) => {
         draft.data.dependentsOutOfSync = true;
+      });
+    },
+    generateAndSetStoryboardTitle: async (id, answers) => {
+      const storyboard: Node<StoryboardNodeData> | undefined = get().nodes.find(
+        (node) => node.id === id && node.type === NodeType.Storyboard
+      );
+      if (!storyboard) return;
+
+      const captions = storyboard.data.storyboard.outline.map((f) => f.caption ?? '');
+
+      const solutionIds = findDirectDependencies([id], get().edges).filter((depId) =>
+        depId.startsWith('solution-')
+      );
+      const solutionContext = solutionIds
+        .map((sid) => get().nodes.find((n) => n.id === sid))
+        .filter(Boolean)
+        .map((node) => JSON.stringify(node?.data?.content || {}))
+        .join('\n');
+
+      const title = await generateStoryboardTitle(answers, captions, solutionContext);
+
+      updateNode<StoryboardNodeData>(id, (draft) => {
+        draft.data.storyboard.title = title;
       });
     },
     updateStoryboardDescription: (id, frameIndex, description) => {
@@ -1970,7 +2088,66 @@ const createStore: StateCreator<
       });
     },
 
-    async computeStoryboardFrame(nodeId, frameIndex, currentAnswers) {
+    startWarmUpPrefetch() {
+      // Reset graph and begin background persona generation as soon as Q2 is answered
+      set({ nodes: [], edges: [] });
+
+      const contextString = 'College student deciding on campus lunch';
+      const projectNodeId = get().addProjectNode({ designContext: contextString });
+
+      const personaIdsPromise = get().generatePersonaNodes(
+        contextString, 1, [projectNodeId], { skipAutoImage: true }
+      );
+
+      warmUpPrefetch = { personaIdsPromise, personaIds: null, imagePromise: null };
+
+      personaIdsPromise
+        .then((personaIds) => {
+          if (!warmUpPrefetch) return;
+          warmUpPrefetch.personaIds = personaIds;
+          if (personaIds[0]) {
+            warmUpPrefetch.imagePromise = get().generatePersonaImage(personaIds[0]);
+          }
+        })
+        .catch(() => {
+          warmUpPrefetch = null;
+        });
+    },
+
+    consumeWarmUpPrefetch() {
+      const p = warmUpPrefetch;
+      warmUpPrefetch = null;
+      return p;
+    },
+
+    preCacheImagePrompt(nodeId, frameIndex, answers) {
+      const solutionIds = findDirectDependencies([nodeId], get().edges).filter(
+        (depId) => depId.startsWith('solution-')
+      );
+      const solutionContext = solutionIds
+        .map((id) => get().nodes.find((n) => n.id === id))
+        .filter(Boolean)
+        .map((node) => JSON.stringify(node?.data?.content || {}))
+        .join('\n');
+
+      const key = buildImagePromptCacheKey(frameIndex, answers, solutionContext);
+      if (imagePromptCache.has(key) || imagePromptInFlight.has(key)) return;
+
+      const p = generateImagePrompt(frameIndex, answers, solutionContext)
+        .then((prompt) => {
+          imagePromptCache.set(key, prompt);
+          imagePromptInFlight.delete(key);
+          return prompt;
+        })
+        .catch(() => {
+          imagePromptInFlight.delete(key);
+          return '';
+        });
+
+      imagePromptInFlight.set(key, p);
+    },
+
+    async computeStoryboardFrame(nodeId, frameIndex, currentAnswers, options = {}) {
       const storyboard: Node<StoryboardNodeData> | undefined = get().nodes.find(
         (node) => node.id === nodeId && node.type === NodeType.Storyboard
       );
@@ -2020,12 +2197,19 @@ const createStore: StateCreator<
         .map((node) => JSON.stringify(node?.data?.content || {}))
         .join('\n');
 
-      // Step 1: get imagePrompt — fast dedicated call, cached by input
+      // Step 1: get imagePrompt — check cache, then in-flight pre-fetch, then generate
       const cacheKey = buildImagePromptCacheKey(frameIndex, currentAnswers, solutionContext);
       let imagePrompt = imagePromptCache.get(cacheKey);
       if (!imagePrompt) {
-        imagePrompt = await generateImagePrompt(frameIndex, currentAnswers, solutionContext);
-        imagePromptCache.set(cacheKey, imagePrompt);
+        const inFlight = imagePromptInFlight.get(cacheKey);
+        if (inFlight) {
+          await inFlight;
+          imagePrompt = imagePromptCache.get(cacheKey) ?? '';
+        }
+        if (!imagePrompt) {
+          imagePrompt = await generateImagePrompt(frameIndex, currentAnswers, solutionContext);
+          imagePromptCache.set(cacheKey, imagePrompt);
+        }
       }
 
       console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -2034,40 +2218,53 @@ const createStore: StateCreator<
       console.log('Image Prompt:', imagePrompt);
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-      // Step 2: fire image gen + caption gen in parallel; write each to store as it resolves
-      let captionResolved = '';
-      let imageResolved = '';
+      // Step 2a: await caption — unblocks the UI as soon as text is ready (~1.5s)
+      const caption = await generateTextContent(frameIndex, currentAnswers, solutionContext);
+      updateNode<StoryboardNodeData>(nodeId, (draft) => {
+        draft.data.storyboard.outline[frameIndex].caption = caption;
+      });
 
-      await Promise.all([
-        generateImageWithOpenAI({
+      // Step 2b: image gen — awaits persona portrait if not yet ready, then generates
+      const seqKey = `${nodeId}:${frameIndex}`;
+      const seq = (frameImageGenSeq.get(seqKey) ?? 0) + 1;
+      frameImageGenSeq.set(seqKey, seq);
+
+      const runImageGen = async (): Promise<string> => {
+        let anchor = anchorImage;
+        if (!anchor && personaImageInFlight) {
+          anchor = await personaImageInFlight;
+        }
+        return generateStoryboardImage({
           prompt: imagePrompt,
           stylePreset: storyboard.data.storyboard.artStyle,
-          referenceImage: anchorImage !== '' ? anchorImage : undefined,
+          referenceImage: anchor !== '' ? anchor : undefined,
           size: '1024x1024'
-        }).then((img) => {
-          imageResolved = img;
+        });
+      };
+
+      const imagePromise = runImageGen().then((img) => {
+        if (frameImageGenSeq.get(seqKey) === seq) {
           updateNode<StoryboardNodeData>(nodeId, (draft) => {
             draft.data.storyboard.outline[frameIndex].image = img;
           });
-        }),
-        generateTextContent(frameIndex, currentAnswers, solutionContext).then((cap) => {
-          captionResolved = cap;
-          updateNode<StoryboardNodeData>(nodeId, (draft) => {
-            draft.data.storyboard.outline[frameIndex].caption = cap;
-          });
-        })
-      ]);
+        }
+        return img;
+      });
+
+      if (options.awaitImage) {
+        await imagePromise;
+      }
 
       return {
-        caption: captionResolved,
-        image: imageResolved,
+        caption,
+        image: '',
         prompt: imagePrompt,
         auditLog: {
           timestamp: new Date().toISOString(),
           stepIndex: frameIndex,
           userInputs: currentAnswers,
           aiImagePrompt: imagePrompt,
-          aiCaption: captionResolved,
+          aiCaption: caption,
           anchorImageUsed: !!anchorImage
         }
       };
@@ -2082,15 +2279,27 @@ const createStore: StateCreator<
           [`frame_${frameIndex + 1}_caption`]: result.caption
         };
         draft.data.storyboard.outline[frameIndex].caption = result.caption;
-        draft.data.storyboard.outline[frameIndex].image = result.image;
+        if (result.image) draft.data.storyboard.outline[frameIndex].image = result.image;
         draft.data.storyboard.outline[frameIndex].imageOutOfSync = false;
         draft.data.storyboard.outline[frameIndex].auditLog = result.auditLog;
       });
     },
 
-    async generateSingleStoryboardFrame(nodeId, frameIndex, currentAnswers) {
-      const result = await get().computeStoryboardFrame(nodeId, frameIndex, currentAnswers);
+    async generateSingleStoryboardFrame(nodeId, frameIndex, currentAnswers, options) {
+      const result = await get().computeStoryboardFrame(nodeId, frameIndex, currentAnswers, options);
       get().writeComputedStoryboardFrame(nodeId, frameIndex, result);
+    },
+
+    invalidateFrameImageGen(nodeId, frameIndex) {
+      const seqKey = `${nodeId}:${frameIndex}`;
+      frameImageGenSeq.set(seqKey, (frameImageGenSeq.get(seqKey) ?? 0) + 1);
+      updateNode<StoryboardNodeData>(nodeId, (draft) => {
+        const frame = draft.data?.storyboard?.outline?.[frameIndex];
+        if (frame) {
+          frame.image = '';
+          frame.caption = '';
+        }
+      });
     },
 
     pastStates: [],

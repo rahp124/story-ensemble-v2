@@ -1,6 +1,50 @@
 import { z } from 'zod';
-import { generateStructured } from './openai';
+import { generateImageWithOpenAI, generateStructured } from './openai';
 import { generateImage } from './stableDiffusion';
+import { editImageWithFluxKontext, generateImageWithFlux } from './fal';
+import { resolveImageProvider } from '@/lib/envUtils';
+
+export async function generateStoryboardImage(opts: {
+  prompt: string;
+  negativePrompt?: string;
+  stylePreset?: string;
+  referenceImage?: string;
+  size?: '1024x1024' | '512x512';
+}): Promise<string> {
+  const provider = resolveImageProvider();
+
+  if (provider === 'fal') {
+    try {
+      if (opts.referenceImage) {
+        return await editImageWithFluxKontext({
+          prompt: opts.prompt,
+          referenceImage: opts.referenceImage,
+          negativePrompt: opts.negativePrompt,
+          stylePreset: opts.stylePreset
+        });
+      }
+      return await generateImageWithFlux({
+        prompt: opts.prompt,
+        negativePrompt: opts.negativePrompt,
+        stylePreset: opts.stylePreset
+      });
+    } catch (err) {
+      console.warn('[generateStoryboardImage] fal failed, falling back to OpenAI:', err);
+      return await generateImageWithOpenAI(opts);
+    }
+  }
+
+  if (provider === 'stability') {
+    return await generateImage({
+      prompt: opts.prompt,
+      negativePrompt: opts.negativePrompt ?? '',
+      stylePreset: opts.stylePreset as Parameters<typeof generateImage>[0]['stylePreset'],
+      referenceImage: opts.referenceImage
+    });
+  }
+
+  return await generateImageWithOpenAI(opts);
+}
 
 export async function generateProblemIllustrativeImage(problem: unknown) {
   const prompt = `Generate an image which depicts a problem and helps to build empathy.
@@ -12,7 +56,7 @@ ${JSON.stringify(problem)}
 
   const imagePrompt = await generateStructured(imagePromptSchema, prompt);
 
-  return await generateImage({ ...imagePrompt, aspectRatio: '16:9' });
+  return await generateStoryboardImage(imagePrompt);
 }
 
 const imagePromptPrompt = `Using following idea generate an image prompt and image negative prompt to generate an illustrative image which represents the key elements of the idea.
@@ -34,5 +78,5 @@ ${JSON.stringify(idea)}
 
   const imagePrompt = await generateStructured(imagePromptSchema, prompt);
 
-  return await generateImage({ ...imagePrompt, aspectRatio: '16:9' });
+  return await generateStoryboardImage(imagePrompt);
 }

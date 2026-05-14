@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Question, STORY_QUESTIONS } from '@/types/questionnaire';
+import { useStore } from '../store';
 
 export interface DynamicStoryWizardProps {
   onGenerateStoryboard: (answers: Record<string, string>) => void;
@@ -12,6 +13,17 @@ export function DynamicStoryWizard({
 }: DynamicStoryWizardProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
+  const prefetchFiredRef = useRef(false);
+  const { startWarmUpPrefetch } = useStore();
+
+  // Fire persona pre-fetch as soon as Q2 is answered — gives ~6s head start
+  useEffect(() => {
+    if (answers['q2-what-matters-most'] && !prefetchFiredRef.current) {
+      prefetchFiredRef.current = true;
+      startWarmUpPrefetch();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answers['q2-what-matters-most']]);
 
   const visibleQuestions = useMemo(() => {
     return STORY_QUESTIONS.filter((question) => {

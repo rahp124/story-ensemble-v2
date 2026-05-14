@@ -60,3 +60,33 @@ export async function validateStabilityAiKey(key: string) {
     return { error: 'INVALID_API_KEY' } as const;
   }
 }
+
+export function getFalKey() {
+  if (import.meta.env['VITE_FAL_KEY']) {
+    return import.meta.env['VITE_FAL_KEY'];
+  }
+
+  return sessionStorage.getItem('falKey') ?? '';
+}
+
+export function setFalKey(key: string) {
+  sessionStorage.setItem('falKey', key);
+}
+
+export type ImageProvider = 'fal' | 'openai' | 'stability' | 'auto';
+
+export function getImageProvider(): ImageProvider {
+  const explicit = import.meta.env['VITE_IMAGE_PROVIDER'] as string | undefined;
+  if (explicit === 'fal' || explicit === 'openai' || explicit === 'stability') {
+    return explicit;
+  }
+  return 'auto';
+}
+
+export function resolveImageProvider(): 'fal' | 'openai' | 'stability' {
+  const explicit = getImageProvider();
+  if (explicit !== 'auto') return explicit;
+  if (getFalKey()) return 'fal';
+  if (getStabilityAiKey()) return 'stability';
+  return 'openai';
+}

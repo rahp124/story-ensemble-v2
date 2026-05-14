@@ -183,17 +183,58 @@ Return JSON with:
 
 const imagePromptOnlySchema = z.object({ imagePrompt: z.string().min(1) });
 const captionOnlySchema = z.object({ caption: z.string().min(1) });
+const titleOnlySchema = z.object({ title: z.string().min(1) });
+
+export async function generateStoryboardTitle(
+  answers: Record<string, string>,
+  captions: string[],
+  context = ''
+): Promise<string> {
+  openai.apiKey = getOpenAiKey();
+  const response = await timed('generateStoryboardTitle (gpt-4o-mini)', () =>
+    openai.chat.completions
+      .create({
+        model: 'gpt-4o-mini',
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Output JSON with a single key "title". Value must be a short, punchy storyboard title (3 to 7 words, Title Case, no quotes, no trailing punctuation) that captures the persona\'s journey from problem to resolution. No markdown, no extra keys.'
+          },
+          {
+            role: 'user',
+            content: `Generate a title for this 4-frame storyboard.\n\nUser answers:\n${JSON.stringify(answers, null, 2)}\n\nFrame captions in order:\n${captions.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n\n${context ? `Solution context: ${context}\n\n` : ''}Return JSON: { "title": "..." }`
+          }
+        ]
+      })
+      .then((c) => c.choices[0].message.content)
+  );
+
+  return titleOnlySchema.parse(JSON.parse(response || '{}')).title;
+}
 
 function buildPacingInstruction(frameIndex: number, context: string): string {
+  const cascade =
+    'Cascade rule: the answers dictionary contains warm-up answers plus every prior scene\'s content and aesthetics (scene0_*, scene1_*, ...). Treat these as the canonical record of what has already happened. Preserve character clothing, posture, appearance, environment, lighting, and any custom details the user supplied in earlier panels. For any visual attribute, the most recent non-empty value across ALL prior scenes wins — never drop an earlier detail just because the most recent scene didn\'t mention it.';
+
   switch (frameIndex) {
     case 0:
       return 'Act 1 (Setup): Show the user in their current environment. Draw from warm-up answers (location, priority). Establish the baseline situation. Do NOT show any solution or resolution.';
     case 1:
-      return 'Act 2 (Conflict): The situation has deteriorated. Use "scene0_frustration" as the emotional core of this frame — visually show THAT specific frustration unfolding. The character\'s mindset (scene0_mindset) should be visible in their body language. Do NOT repeat the setup from frame 1. No solution.';
+      return `Act 2 (Conflict): The situation has deteriorated. Use "scene0_frustration" as the emotional core of this frame — visually show THAT specific frustration unfolding. The character's mindset (scene0_mindset) should be visible in their body language. ${cascade} Do NOT repeat the setup from frame 1. No solution.`;
     case 2:
-      return 'Act 3 (Action): The character is now actively trying to resolve the problem. Use "scene1_frustration" and "scene1_mindset" to show WHAT they attempted and HOW they feel about it. The struggle should still be visible — no clean resolution yet. Show a DIFFERENT location or action than the previous frames.';
+      return `Act 3 (Action): The character is now actively trying to resolve the problem. Use "scene1_frustration" and "scene1_mindset" to show WHAT they attempted and HOW they feel about it. ${cascade} The struggle should still be visible — no clean resolution yet. Show a DIFFERENT location or action than the previous frames.`;
     case 3:
-      return `Act 4 (Resolution): The character found a solution. Use "scene2_frustration" and "scene3_frustration" to understand what needed to change. ${context ? `Solution context: ${context}.` : ''} Show the character relieved and satisfied in a visually DISTINCT scene from all previous frames.`;
+      return `Act 4 (Resolution): The character found a solution.
+
+PRIMARY (highest priority — the user's own words win): if "scene2_frustration", "scene2_custom", "scene3_frustration", or "scene3_custom" describes a specific solution (e.g. a kiosk, an app, a device, a piece of furniture, an environmental change), THAT is the solution depicted in this frame — even when it diverges from the Solution context below. The user's words override the pre-generated solution context. Render the solution literally as described.
+
+SECONDARY (fallback only — use ONLY when the user's answers above do not describe a specific concrete solution): ${context ? `Solution context: ${context}.` : '(none provided)'}
+
+${cascade}
+
+Show the character relieved and satisfied, interacting with the solution defined by the rule above, in a visually DISTINCT scene from all previous frames.`;
     default:
       return 'Generate a coherent storyboard frame following narrative pacing.';
   }
@@ -261,17 +302,6 @@ export async function generateTextContent(
   return captionOnlySchema.parse(JSON.parse(response || '{}')).caption;
 }
 
-function dataUrlToFile(dataUrl: string, filename: string): File {
-  const [header, base64] = dataUrl.split(',');
-  const mime = header.match(/:(.*?);/)?.[1] ?? 'image/png';
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return new File([bytes], filename, { type: mime });
-}
-
 export async function generateImageWithOpenAI({
   prompt,
   negativePrompt = '',
@@ -293,31 +323,36 @@ export async function generateImageWithOpenAI({
 
   if (referenceImage) {
     try {
-      const imageFile = dataUrlToFile(referenceImage, 'reference.png');
-      const response = await timed('generateImageWithOpenAI/edit (gpt-image-2)', () =>
-        openai.images.edit({
-          model: 'gpt-image-2',
-          image: imageFile,
-          prompt: combinedPrompt,
-          n: 1,
-          size
-        })
-      );
-      return `data:image/png;base64,${response.data[0].b64_json}`;
+      const { b64_json } = await timed('generateImageWithOpenAI/edit (proxy → gpt-image-2)', async () => {
+        const resp = await fetch('/api/generate-edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: referenceImage, prompt: combinedPrompt, size, apiKey: getOpenAiKey() })
+        });
+        if (!resp.ok) {
+          const body = await resp.json().catch(() => ({})) as { error?: string };
+          throw new Error(`Proxy error ${resp.status}: ${body.error ?? 'unknown'}`);
+        }
+        return resp.json() as Promise<{ b64_json: string }>;
+      });
+      return `data:image/png;base64,${b64_json}`;
     } catch (err) {
-      // images/edits is blocked by CORS in browser environments — fall through to generate
-      console.warn('[generateImageWithOpenAI] edit endpoint failed, falling back to generate:', err);
+      console.warn('[generateImageWithOpenAI] proxy edit failed, falling back to generate:', err);
     }
   }
 
-  const response = await timed('generateImageWithOpenAI/generate (gpt-image-2)', () =>
+  const response = await timed('generateImageWithOpenAI/generate (gpt-image-1)', () =>
     openai.images.generate({
-      model: 'gpt-image-2',
+      model: 'gpt-image-1',
       prompt: combinedPrompt,
       n: 1,
       size
     })
   );
 
-  return `data:image/png;base64,${response.data[0].b64_json}`;
+  const first = response.data?.[0];
+  if (!first) throw new Error('OpenAI returned no image data');
+  if (first.b64_json) return `data:image/png;base64,${first.b64_json}`;
+  if (first.url) return first.url;
+  throw new Error('OpenAI returned image data with neither b64_json nor url');
 }

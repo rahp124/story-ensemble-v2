@@ -1,9 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useStore } from '../store';
 import { Loader } from '@mantine/core';
 import { DynamicStoryWizard } from './DynamicStoryWizard';
-import { formatInterviewForAI } from '@/lib/formatInterviewForAI';
-import { STORY_QUESTIONS } from '@/types/questionnaire';
 import { ContentPhase, SceneContent } from './ContentPhase';
 import { AestheticsPhase, SceneAesthetics } from './AestheticsPhase';
 
@@ -84,10 +82,19 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   const [wizardState, setWizardState] = useState<WizardState>(INITIAL_WIZARD_STATE);
   const [warmUpAnswers, setWarmUpAnswers] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isFirstFrameGenerating, setIsFirstFrameGenerating] = useState(false);
   const [isPreviewGenerating, setIsPreviewGenerating] = useState(false);
   const [viewedFrameIndex, setViewedFrameIndex] = useState(0);
   const [accuracyScore, setAccuracyScore] = useState(50);
   const [sbId, setSbId] = useState<string | null>(null);
+
+  // Speculative frame: fired when content phase completes, resolved before aesthetics "Continue"
+  const speculativeRef = useRef<{
+    frameIndex: number;
+    promise: Promise<void>;
+    resolved: boolean;
+    hasAesthetics: boolean; // true only when restarted after Preview Update with real aesthetics
+  } | null>(null);
 
   const {
     addProjectNode,
@@ -95,8 +102,12 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     generatePersonaImage,
     generateProblemNodes,
     generateSolutionNodes,
-    generateStoryboardNode,
+    createBlankStoryboardNode,
+    consumeWarmUpPrefetch,
+    preCacheImagePrompt,
     generateSingleStoryboardFrame,
+    generateAndSetStoryboardTitle,
+    invalidateFrameImageGen,
     nodes
   } = useStore();
 
@@ -115,14 +126,25 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   const handleDynamicSubmit = async (answers: Record<string, string>) => {
     setIsGenerating(true);
     try {
-      useStore.setState({ nodes: [], edges: [] });
-
       const contextString = 'College student deciding on campus lunch';
-      const designContextNodeId = addProjectNode({ designContext: contextString });
+      const prefetch = consumeWarmUpPrefetch();
 
-      const personaIds = await generatePersonaNodes(contextString, 1, [designContextNodeId]);
-      if (personaIds[0]) {
-        await generatePersonaImage(personaIds[0]);
+      let personaIds: string[];
+
+      if (prefetch) {
+        // Persona generation was pre-fetched while the user filled the questionnaire.
+        personaIds = prefetch.personaIds ?? await prefetch.personaIdsPromise;
+        // Image gen is already in flight from the prefetch; let it run in background
+        if (!prefetch.imagePromise && personaIds[0]) {
+          void generatePersonaImage(personaIds[0]);
+        }
+      } else {
+        // Fallback: no prefetch available — generate from scratch
+        useStore.setState({ nodes: [], edges: [] });
+        const designContextNodeId = addProjectNode({ designContext: contextString });
+        personaIds = await generatePersonaNodes(contextString, 1, [designContextNodeId]);
+        // Fire portrait gen in background — computeStoryboardFrame reads it from store when ready
+        if (personaIds[0]) void generatePersonaImage(personaIds[0]);
       }
 
       const problemIds = await generateProblemNodes(contextString, personaIds, true);
@@ -132,27 +154,26 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         true
       );
 
-      const interview = formatInterviewForAI(answers, STORY_QUESTIONS);
-      const storyboardIds = await generateStoryboardNode(
-        contextString,
-        personaIds,
-        problemIds,
-        ghostSolutionIds,
-        interview,
-        { autoGenerateImages: false }
-      );
+      const storyboardId = createBlankStoryboardNode(personaIds, problemIds, ghostSolutionIds);
 
-      const storyboardId = storyboardIds[0];
-      await generateSingleStoryboardFrame(storyboardId, 0, answers);
-
+      // Node chain done — drop the full-screen loader and enter the scene loop immediately
       setWarmUpAnswers(answers);
       setSbId(storyboardId);
       setWizardState(INITIAL_WIZARD_STATE);
       setViewedFrameIndex(0);
+      setIsGenerating(false);
+
+      // personaImagePromise runs in background — store picks up the portrait when ready
+      setIsFirstFrameGenerating(true);
+      try {
+        await generateSingleStoryboardFrame(storyboardId, 0, answers);
+      } finally {
+        setIsFirstFrameGenerating(false);
+      }
     } catch (error) {
       console.error(error);
-    } finally {
       setIsGenerating(false);
+      setIsFirstFrameGenerating(false);
     }
   };
 
@@ -170,14 +191,51 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   };
 
   const onContentSubmit = (content: SceneContent) => {
-    setWizardState(prev => {
-      const updated = [...prev.scenes];
-      updated[prev.sceneIndex] = { ...updated[prev.sceneIndex], content };
-      return { ...prev, scenes: updated, phase: 'aesthetics' };
-    });
+    const updatedScenes = scenes.map((s, i) =>
+      i === sceneIndex ? { ...s, content } : s
+    );
+    const updatedState: WizardState = { ...wizardState, scenes: updatedScenes, phase: 'aesthetics' };
+    setWizardState(updatedState);
+
+    // Speculatively generate the NEXT frame while the user works on aesthetics
+    if (sceneIndex < 3 && sbId) {
+      const nextIndex = sceneIndex + 1;
+      const captions = (storyboardFrames ?? []).slice(0, nextIndex).map(f => f.caption ?? '');
+      const ctx = buildFlatContext(warmUpAnswers, updatedState, nextIndex, true, captions);
+
+      // Register the image-prompt in-flight synchronously so computeStoryboardFrame
+      // below finds it in imagePromptInFlight and awaits the same request instead of
+      // firing a duplicate GPT call.
+      preCacheImagePrompt(sbId, nextIndex, ctx);
+
+      const p = generateSingleStoryboardFrame(sbId, nextIndex, ctx)
+        .then(() => {
+          if (speculativeRef.current?.frameIndex === nextIndex) {
+            speculativeRef.current.resolved = true;
+          }
+        })
+        .catch(err => {
+          console.warn('[speculative] frame generation failed, will regenerate on Continue:', err);
+          if (speculativeRef.current?.frameIndex === nextIndex) {
+            speculativeRef.current = null;
+          }
+        });
+
+      speculativeRef.current = { frameIndex: nextIndex, promise: p, resolved: false, hasAesthetics: false };
+    }
   };
 
   const onAestheticsChange = (field: keyof SceneAesthetics, value: string) => {
+    // When the user starts typing aesthetics, any in-flight speculative for the
+    // next frame was generated with stale (pre-aesthetics) context. Invalidate it
+    // so its image write is discarded on arrival, and drop the ref so the Continue
+    // handler regenerates fresh with the aesthetics included.
+    const spec = speculativeRef.current;
+    if (spec && sbId && spec.frameIndex === sceneIndex + 1 && !spec.hasAesthetics) {
+      invalidateFrameImageGen(sbId, spec.frameIndex);
+      speculativeRef.current = null;
+    }
+
     setWizardState(prev => {
       const updated = [...prev.scenes];
       updated[prev.sceneIndex] = {
@@ -190,7 +248,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
   const generateFrame = async (idx: number, ctx: Record<string, string>) => {
     if (!sbId) return;
-    await generateSingleStoryboardFrame(sbId, idx, ctx);
+    await generateSingleStoryboardFrame(sbId, idx, ctx, { awaitImage: true });
   };
 
   const onAestheticPreview = async (aesthetics: SceneAesthetics) => {
@@ -200,11 +258,46 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     const nextState = { ...wizardState, scenes: updatedScenes };
     setWizardState(nextState);
 
+    // Discard speculative — it was generated with the pre-preview caption.
+    // invalidateFrameImageGen bumps the seq (so any in-flight round-1 write is
+    // discarded on arrival) and clears any image/caption round 1 already wrote.
+    speculativeRef.current = null;
+    if (sceneIndex < 3 && sbId) {
+      invalidateFrameImageGen(sbId, sceneIndex + 1);
+    }
+
     setIsPreviewGenerating(true);
     try {
       const captions = (storyboardFrames ?? []).slice(0, sceneIndex).map(f => f.caption ?? '');
       const ctx = buildFlatContext(warmUpAnswers, nextState, sceneIndex, true, captions);
       await generateFrame(sceneIndex, ctx);
+
+      // Restart speculative for the next frame using the updated caption from this preview.
+      // Read directly from the store — the closure's storyboardFrames is stale here.
+      if (sceneIndex < 3 && sbId) {
+        const nextIndex = sceneIndex + 1;
+        const freshNode = useStore.getState().nodes.find(n => n.id === sbId);
+        const freshOutline = (freshNode?.data?.storyboard?.outline ?? []) as Array<{ caption: string }>;
+        const updatedCaptions = freshOutline.slice(0, nextIndex).map(f => f.caption ?? '');
+        const nextCtx = buildFlatContext(warmUpAnswers, nextState, nextIndex, true, updatedCaptions);
+
+        preCacheImagePrompt(sbId, nextIndex, nextCtx);
+
+        const p = generateSingleStoryboardFrame(sbId, nextIndex, nextCtx)
+          .then(() => {
+            if (speculativeRef.current?.frameIndex === nextIndex) {
+              speculativeRef.current.resolved = true;
+            }
+          })
+          .catch(err => {
+            console.warn('[speculative after preview] frame generation failed:', err);
+            if (speculativeRef.current?.frameIndex === nextIndex) {
+              speculativeRef.current = null;
+            }
+          });
+
+        speculativeRef.current = { frameIndex: nextIndex, promise: p, resolved: false, hasAesthetics: true };
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -219,21 +312,67 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     const updatedState = { ...wizardState, scenes: updatedScenes };
 
     if (sceneIndex === 3) {
+      if (sbId) {
+        const captions = (storyboardFrames ?? []).map((f) => f.caption ?? '');
+        const ctx = buildFlatContext(warmUpAnswers, updatedState, 3, true, captions);
+        void generateAndSetStoryboardTitle(sbId, ctx).catch((err) =>
+          console.error('[generateAndSetStoryboardTitle]', err)
+        );
+      }
       onComplete();
       return;
     }
 
     const nextIndex = sceneIndex + 1;
+    const spec = speculativeRef.current;
+    const hasSpec = spec !== null && spec.frameIndex === nextIndex;
+
+    const currentAesthetics = updatedState.scenes[sceneIndex].aesthetics;
+    const aestheticsEntered = !!(
+      currentAesthetics.character?.trim() ||
+      currentAesthetics.environment?.trim() ||
+      currentAesthetics.custom?.trim()
+    );
+
+    // Instant transition — speculative frame already finished with correct aesthetics context
+    if (hasSpec && spec.resolved && (!aestheticsEntered || spec.hasAesthetics)) {
+      speculativeRef.current = null;
+      setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
+      setViewedFrameIndex(nextIndex);
+      setAccuracyScore(50);
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      const captions = (storyboardFrames ?? []).slice(0, nextIndex).map(f => f.caption ?? '');
-      const ctx = buildFlatContext(warmUpAnswers, updatedState, nextIndex, false, captions);
-      await generateFrame(nextIndex, ctx);
+      if (hasSpec && (!aestheticsEntered || spec.hasAesthetics)) {
+        // In-flight speculative has correct context — wait for it
+        await spec.promise;
+
+        // If the speculative failed it cleared itself; fall back to generating now
+        if (speculativeRef.current === null) {
+          const captions = (storyboardFrames ?? []).slice(0, nextIndex).map(f => f.caption ?? '');
+          const ctx = buildFlatContext(warmUpAnswers, updatedState, nextIndex, false, captions);
+          await generateFrame(nextIndex, ctx);
+        }
+      } else {
+        // No speculative, or speculative lacks aesthetics — generate fresh with correct context.
+        // If a stale speculative is still in-flight, let it settle first so its store write
+        // doesn't stomp the correct result we're about to write.
+        if (hasSpec) await spec.promise.catch(() => {});
+        speculativeRef.current = null;
+        const captions = (storyboardFrames ?? []).slice(0, nextIndex).map(f => f.caption ?? '');
+        const ctx = buildFlatContext(warmUpAnswers, updatedState, nextIndex, false, captions);
+        await generateFrame(nextIndex, ctx);
+      }
+
+      speculativeRef.current = null;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
       setViewedFrameIndex(nextIndex);
       setAccuracyScore(50);
     } catch (error) {
       console.error(error);
+      speculativeRef.current = null;
     } finally {
       setIsGenerating(false);
     }
@@ -309,19 +448,47 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                   </>
                 )}
 
-                <div className="w-full aspect-square bg-gray-100 flex items-center justify-center">
-                  {viewedFrame?.image ? (
-                    <img
-                      src={viewedFrame.image}
-                      alt={`Scene ${viewedFrameIndex + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 text-gray-600">
-                      <Loader size="md" />
-                      <p className="text-xs">Loading scene...</p>
-                    </div>
-                  )}
+                <div className="w-full aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                  {(() => {
+                    const showSkeleton =
+                      isFirstFrameGenerating ||
+                      (isPreviewGenerating && viewedFrameIndex === sceneIndex);
+                    const skeletonLabel = isPreviewGenerating
+                      ? 'Regenerating scene…'
+                      : 'Painting your scene…';
+                    if (viewedFrame?.image && !showSkeleton) {
+                      return (
+                        <img
+                          src={viewedFrame.image}
+                          alt={`Scene ${viewedFrameIndex + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      );
+                    }
+                    if (showSkeleton) {
+                      return (
+                        <div className="w-full h-full relative bg-gradient-to-br from-gray-100 via-gray-200 to-gray-150">
+                          <div className="absolute inset-0 animate-pulse bg-gradient-to-tr from-blue-100/20 via-white/30 to-blue-100/20" />
+                          <div className="absolute inset-0 p-5 flex flex-col gap-3">
+                            <div className="flex-1 rounded-xl bg-gray-300/40 animate-pulse" />
+                            <div className="h-3 rounded bg-gray-300/50 animate-pulse w-4/5" />
+                            <div className="h-3 rounded bg-gray-300/40 animate-pulse w-3/5" />
+                          </div>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-xs font-medium text-gray-400 tracking-wide bg-white/60 px-3 py-1.5 rounded-full">
+                              {skeletonLabel}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="flex flex-col items-center gap-2 text-gray-600">
+                        <Loader size="md" />
+                        <p className="text-xs">Loading scene...</p>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {framesGenerated > 1 && (

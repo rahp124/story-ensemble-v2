@@ -12,5 +12,14 @@ export default defineConfig({
   },
   preview: {
     port: 5173
+  },
+  server: {
+    proxy: {
+      // Forward /api/* to the Vercel dev server when running `npm run dev` alongside `vercel dev`
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      }
+    }
   }
 });

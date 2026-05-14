@@ -261,28 +261,28 @@ export interface SceneContentSet {
 }
 
 export const SCENE_CONTENT_QUESTIONS: SceneContentSet[] = [
-	// Scene 0 — Setup
+	// Scene 0 — Context
 	{
-		familiarity: { id: 'sc0-familiarity', text: 'How familiar is this lunch situation to you?', type: 'single_choice', options: ['Every day', 'A few times a week', 'Occasionally', 'Rarely'] },
-		mindset:     { id: 'sc0-mindset',     text: 'What is your mindset right now?',              type: 'single_choice', options: ['Relaxed', 'In a hurry', 'Indecisive', 'Hungry and stressed'] },
-		frustration: { id: 'sc0-frustration', text: 'What feels most stressful in this moment?',   type: 'short_text' }
+		familiarity: { id: 'sc0-familiarity', text: 'How familiar does this situation feel to you? What would make it feel more realistic for you?', type: 'short_text' },
+		mindset:     { id: 'sc0-mindset',     text: 'How would you describe the environment around you when this happens? What\'s your mood in this moment?',  type: 'short_text' },
+		frustration: { id: 'sc0-frustration', text: 'What\'s on your mind at this moment in this situation?',   type: 'short_text' }
 	},
-	// Scene 1 — Conflict
+	// Scene 1 — Problem/Conflict
 	{
-		familiarity: { id: 'sc1-familiarity', text: 'How often do you face this food decision problem?', type: 'single_choice', options: ['Daily', 'Often', 'Sometimes', 'Rarely'] },
-		mindset:     { id: 'sc1-mindset',     text: 'How do you feel when you hit this friction?',       type: 'single_choice', options: ['Annoyed', 'Resigned', 'Overwhelmed', 'Creative'] },
-		frustration: { id: 'sc1-frustration', text: 'Describe what makes this particularly hard:',       type: 'short_text' }
+		familiarity: { id: 'sc1-familiarity', text: 'How familiar does this situation feel to you? What would make it feel more realistic for you?', type: 'short_text' },
+		mindset:     { id: 'sc1-mindset',     text: 'What\'s on your mind at this moment in this situation?', type: 'short_text' },
+		frustration: { id: 'sc1-frustration', text: 'When does this start to feel problematic? What part makes it most frustrating or worse?', type: 'short_text' }
 	},
-	// Scene 2 — Action / Response (mid-action, no final choice made yet)
+	// Scene 2 — Action / Response
 	{
-		familiarity: { id: 'sc2-familiarity', text: 'Does this scene match how you usually respond to this situation?', type: 'single_choice', options: ['Yes, exactly', 'Mostly yes', 'Not really', 'Hard to say'] },
-		mindset:     { id: 'sc2-mindset',     text: 'What emotion best captures the character right now?',             type: 'single_choice', options: ['Stressed', 'Resigned', 'Determined', 'Overwhelmed'] },
-		frustration: { id: 'sc2-frustration', text: 'What still has not been resolved in this scene?',                type: 'short_text' }
+		familiarity: { id: 'sc2-familiarity', text: 'What would make this situation feel more realistic for you?', type: 'short_text' },
+		mindset:     { id: 'sc2-mindset',     text: 'What best describes your mindset right now?', type: 'short_text' },
+		frustration: { id: 'sc2-frustration', text: 'What part of this situation feels like progress? What would make it even better?', type: 'short_text' }
 	},
 	// Scene 3 — Resolution
 	{
-		familiarity: { id: 'sc3-familiarity', text: 'How often does this kind of solution work for you?', type: 'single_choice', options: ['Always', 'Mostly', 'Sometimes', 'Rarely'] },
-		mindset:     { id: 'sc3-mindset',     text: 'How do you feel about this outcome?',               type: 'single_choice', options: ['Satisfied', 'Neutral', 'Disappointed', 'Hopeful for better'] },
-		frustration: { id: 'sc3-frustration', text: 'What would need to change for this to feel perfect?', type: 'short_text' }
+		familiarity: { id: 'sc3-familiarity', text: 'What would make this outcome feel more realistic for you?', type: 'short_text' },
+		mindset:     { id: 'sc3-mindset',     text: 'How do you feel about how this situation was resolved?', type: 'short_text' },
+		frustration: { id: 'sc3-frustration', text: 'What part of this feels like a good solution? What could make it even better?', type: 'short_text' }
 	}
 ];
