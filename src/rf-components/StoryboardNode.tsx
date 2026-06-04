@@ -1,5 +1,6 @@
 import NotificationDot from '@/components/NotificationDot';
 import { RefreshImageIcon } from '@/components/RefreshImageIcon';
+import SketchFrameRenderer from '@/components/SketchFrameRenderer';
 import TargetHandle from '@/components/TargetHandle';
 import { useStore } from '@/store';
 import { StoryboardNodeData } from '@/types';
@@ -41,6 +42,41 @@ import { toJpeg } from 'html-to-image';
 
 const displayAttributes = nodeTypeDisplayAttributes(NodeType.Storyboard);
 
+/**
+ * Compute the effective render mode for a frame.
+ * Provides backward compatibility for frames without explicit renderMode.
+ *
+ * Rules:
+ * 1. If renderMode is explicitly set, use it (but validate it's safe)
+ * 2. If image exists, default to "image"
+ * 3. If sketch exists and no image, use "sketch"
+ * 4. Default to "image" for existing storyboards
+ */
+function getEffectiveRenderMode(
+  frame: {
+    renderMode?: string;
+    image?: string;
+    sketch?: any;
+  }
+): 'sketch' | 'image' {
+  // If explicitly set, use it
+  if (frame.renderMode === 'sketch' || frame.renderMode === 'image') {
+    return frame.renderMode;
+  }
+
+  // Safe defaults for old data
+  if (frame.image) {
+    return 'image';
+  }
+
+  if (frame.sketch) {
+    return 'sketch';
+  }
+
+  // Final fallback to image mode for existing storyboards
+  return 'image';
+}
+
 export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const { storyboard, outOfSync } = props.data;
 
@@ -48,16 +84,12 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const [descriptions, setDescriptions] = useState<string[]>(
     storyboard.outline.map((frame) => frame.description)
   );
-  const [captions, setCaptions] = useState<string[]>(
-    storyboard.outline.map((frame) => frame.caption)
-  );
   //const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   const [storyboardSettingsOpen, setStoryboardSettingsOpen] = useState(false);
 
   useEffect(() => {
     setTitle(storyboard.title);
     setDescriptions(storyboard.outline.map((frame) => frame.description));
-    setCaptions(storyboard.outline.map((frame) => frame.caption));
   }, [storyboard.title, storyboard.outline]);
 
   const [loadingMap, setLoadingMap] = useState<boolean[]>(
@@ -445,77 +477,90 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
                 </div>
               </div>
 
-              {/* don't show tooltip if a frame doesn't have a generated image */}
-              {frame.image === undefined ? (
-                <div
-                  className={`border-2 rounded-sm ${frameTypeBorder(
-                    frame.frameType
-                  )}`}
-                >
-                  <AspectRatio ratio={1}>
-                    {regenerating ||
-                    loadingMap[frameIdx] ||
-                    frame.image === '' ? (
-                      <div className="size-full flex items-center justify-center">
-                        <Loader />
+              {/* Sketch mode or image rendering */}
+              {(() => {
+                const effectiveRenderMode = getEffectiveRenderMode(frame);
+                const shouldShowSketch = effectiveRenderMode === 'sketch' && frame.sketch;
+                const shouldShowImage = effectiveRenderMode === 'image';
+
+                if (shouldShowSketch && frame.sketch) {
+                  return (
+                    <div
+                      className={`border-2 rounded-sm ${frameTypeBorder(
+                        frame.frameType
+                      )}`}
+                    >
+                      <SketchFrameRenderer frame={frame.sketch} />
+                    </div>
+                  );
+                }
+
+                if (shouldShowImage) {
+                  return (
+                    // show tooltip containing detailed description of a frame when a frame has a generated image
+                    <Tooltip
+                      multiline
+                      w={300}
+                      withArrow
+                      transitionProps={{ duration: 150 }}
+                      label={frame.description}
+                      events={{ hover: true, focus: true, touch: true }}
+                    >
+                      <div
+                        className={`border-2 rounded-sm ${frameTypeBorder(
+                          frame.frameType
+                        )}`}
+                      >
+                        <AspectRatio ratio={1}>
+                          {regenerating ||
+                          loadingMap[frameIdx] ||
+                          frame.image === '' ? (
+                            <div className="size-full flex items-center justify-center">
+                              <Loader />
+                            </div>
+                          ) : frame.image === undefined ? (
+                            <div className="size-full flex items-center justify-center">
+                              <p className="text-center">
+                                This frame has no image.
+                                <br />
+                                Click the <Pencil className="inline size-4" /> icon
+                                to generate one.
+                              </p>
+                            </div>
+                          ) : (
+                            <img src={frame.image} />
+                          )}
+                        </AspectRatio>
                       </div>
-                    ) : frame.image === undefined ? (
-                      <div className="size-full flex items-center justify-center">
-                        <p className="text-center">
-                          This frame has no image.
-                          <br />
-                          Click the <Pencil className="inline size-4" /> icon to
-                          generate one.
-                        </p>
-                      </div>
-                    ) : (
-                      <img src={frame.image} />
-                    )}
-                  </AspectRatio>
-                </div>
-              ) : (
-                // show tooltip containing detailed description of a frame when a frame has a generated image
-                <Tooltip
-                  multiline
-                  w={300}
-                  withArrow
-                  transitionProps={{ duration: 150 }}
-                  label={frame.description}
-                  events={{ hover: true, focus: true, touch: true }}
-                >
+                    </Tooltip>
+                  );
+                }
+
+                // Fallback: show placeholder
+                return (
                   <div
                     className={`border-2 rounded-sm ${frameTypeBorder(
                       frame.frameType
                     )}`}
                   >
                     <AspectRatio ratio={1}>
-                      {regenerating ||
-                      loadingMap[frameIdx] ||
-                      frame.image === '' ? (
-                        <div className="size-full flex items-center justify-center">
-                          <Loader />
-                        </div>
-                      ) : frame.image === undefined ? (
-                        <div className="size-full flex items-center justify-center">
-                          <p className="text-center">
-                            This frame has no image.
-                            <br />
-                            Click the <Pencil className="inline size-4" /> icon
-                            to generate one.
-                          </p>
-                        </div>
-                      ) : (
-                        <img src={frame.image} />
-                      )}
+                      <div className="size-full flex items-center justify-center">
+                        <p className="text-center">
+                          This frame has no image or sketch.
+                          <br />
+                          Click the <Pencil className="inline size-4" /> icon to
+                          generate one.
+                        </p>
+                      </div>
                     </AspectRatio>
                   </div>
-                </Tooltip>
-              )}
+                );
+              })()}
 
               {/* Scrollable Caption Box */}
               <div className="overflow-y-auto nowheel nodrag max-h-32 pr-2 mt-2 bg-slate-50 p-2 rounded-md border border-slate-100">
                 <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {captions[frameIdx]}
+                  {frame.caption}
                 </p>
               </div>
               {frameIdx === 0 && (
@@ -562,20 +607,20 @@ export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
 }
 
 function frameTypeText(
-  frameType: 'Context' | 'Problem' | 'Solution' | 'Resolution'
+  frameType: 'Context' | 'Problem' | 'Action' | 'Resolution'
 ) {
   if (frameType === 'Context') return 'Context 👤';
   if (frameType === 'Problem') return 'Problem 🚨';
-  if (frameType === 'Solution') return 'Solution 💡';
+  if (frameType === 'Action') return 'Action 🎬';
   if (frameType === 'Resolution') return 'Resolution 🎉';
 }
 
 function frameTypeBorder(
-  frameType: 'Context' | 'Problem' | 'Solution' | 'Resolution'
+  frameType: 'Context' | 'Problem' | 'Action' | 'Resolution'
 ) {
   if (frameType === 'Context') return 'border-yellow-500';
   if (frameType === 'Problem') return 'border-red-500';
-  if (frameType === 'Solution') return 'border-blue-500';
+  if (frameType === 'Action') return 'border-blue-500';
   if (frameType === 'Resolution') return 'border-green-500';
 }
 

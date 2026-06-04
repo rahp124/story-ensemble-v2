@@ -94,163 +94,179 @@ export const SCENE_QUESTION_MAP: {
 } = {
 	warm_up: [
 		{
-			id: 'wu-1-campus-location',
-			text: 'Where on campus are you when deciding what to eat?',
-			type: 'single_choice',
-			options: ['Dorm', 'Library', 'Classroom building', 'Student center', 'Outside']
+			id: 'wu-1-mindset',
+			text: "What best describes your mindset at that moment?",
+			type: 'short_text'
 		},
 		{
-			id: 'wu-2-priority',
-			text: 'What matters most right now?',
-			type: 'single_choice',
-			options: ['Speed', 'Price', 'Healthy option', 'Taste', 'Comfort']
-		}
+			id: 'wu-2-before',
+			text: "What was happening right before this moment?",
+			type: 'short_text'
+		},
+		{
+			id: 'wu-3-what-were-you-trying',
+			text: "What were you trying to accomplish in your last experience?",
+			type: 'short_text'
+		},
+		{
+			id: 'wu-4-familiarity',
+			text: "How familiar does this visualized image feel to your experience? What stands out as similar and different from your experience?",
+			type: 'short_text'
+		},
+        
 	],
 	scene_1_context: [
 		{
-			id: 's1-1-hunger-level',
-			text: 'How hungry would you be?',
-			type: 'scale',
-			options: ['1', '2', '3', '4', '5']
-		},
-		{
-			id: 's1-2-first-option',
-			text: 'What is the first option that comes to mind?',
-			type: 'single_choice',
-			options: ['Dining hall', 'Delivery app', 'Cook at home', 'Snack and wait']
-		},
-		{
-			id: 's1-3-context-detail',
-			text: 'Describe your situation in one line (time pressure, weather, mood, etc.).',
+			id: 's1-1-mindset',
+			text: "What best describes your mindset at that moment?",
 			type: 'short_text'
-		}
+		},
+		{
+			id: 's1-2-before',
+			text: "What was happening right before this moment?",
+			type: 'short_text'
+		},
+		{
+			id: 's1-3-what-were-you-trying',
+			text: "What were you trying to accomplish in your last experience?",
+			type: 'short_text'
+		},
+		{
+			id: 's1-4-familiarity',
+			text: "How familiar does this visualized image feel to your experience? What stands out as similar and different from your experience?",
+			type: 'short_text'
+		},
+        
 	],
 	scene_2_problem: [
 		{
-			id: 's2-1-easiest-option',
-			text: 'Which option feels easiest?',
-			type: 'single_choice',
-			options: ['Dining hall', 'Delivery app', 'Cook at home', 'Cafe/grab-and-go']
-		},
-		{
-			id: 's2-2-biggest-friction',
-			text: 'What is the biggest friction point right now?',
-			type: 'multiple_choice',
-			options: [
-				'Long lines',
-				'High prices',
-				'Too many choices',
-				'Unclear wait times',
-				'Not enough healthy options'
-			]
-		},
-		{
-			id: 's2-3-problem-note',
-			text: 'What makes this decision stressful?',
+			id: 's2-1-what-made-it-difficult',
+			text: "What made it more difficult for you to accomplish what you wanted?",
 			type: 'short_text'
-		}
+		},
+		{
+			id: 's2-2-where-did-it-start',
+			text: "Where did this experience begin to feel inconvenient or problematic?",
+			type: 'short_text'
+		},
+		{
+			id: 's2-3-most-frustrating',
+			text: "What was most frustrating about this experience?",
+			type: 'short_text'
+		},
+		{
+			id: 's2-4-mindset',
+			text: "What best describes your mindset at that moment?",
+			type: 'short_text'
+		},
+		{
+			id: 's2-5-familiarity',
+			text: "How familiar does this visualized image feel to your experience? What stands out as similar and what stands out as different from your experience?",
+			type: 'short_text'
+		},
+        
 	],
 	scene_3_delivery: [
 		{
-			id: 's3d-1-scroll-time',
-			text: 'If you open a delivery app, how long do you usually scroll?',
-			type: 'single_choice',
-			options: ['Under 2 minutes', '2-5 minutes', '5-10 minutes', 'Over 10 minutes']
-		},
-		{
-			id: 's3d-2-order-driver',
-			text: 'What finally pushes you to place an order?',
-			type: 'single_choice',
-			options: ['Discount', 'Fast ETA', 'Familiar restaurant', 'Friend recommendation']
-		},
-		{
-			id: 's3-ideal-fix',
-			text: 'What would an ideal solution look like for this moment?',
+			id: 's3-1-better-what',
+			text: "Was there something that made this situation better for you? What was it, or what could it have been?",
 			type: 'short_text'
 		},
 		{
-			id: 's3-must-have-feature',
-			text: 'Which feature would help most?',
-			type: 'single_choice',
-			options: [
-				'Real-time line/wait prediction',
-				'Personalized meal recommendations',
-				'Budget + nutrition filter',
-				'Faster checkout/order flow'
-			]
-		}
+			id: 's3-2-familiarity-solution',
+			text: "How familiar does this visualized image feel to your experience? How well would this solution address your problem?",
+			type: 'short_text'
+		},
+		{
+			id: 's3-3-alternatives',
+			text: "What alternatives would you consider for addressing the problem?",
+			type: 'short_text'
+		},
+		{
+			id: 's3-4-needed-info',
+			text: "What information would you need before you felt you could address this problem?",
+			type: 'short_text'
+		},
+		{
+			id: 's3-5-what-else-change',
+			text: "What else would you change in order for you to better accomplish what you want?",
+			type: 'short_text'
+		},
+        
 	],
 	scene_3_home: [
 		{
-			id: 's3h-1-home-choice',
-			text: 'If you decide to eat at home, what do you do?',
-			type: 'single_choice',
-			options: ['Cook quickly', 'Heat leftovers', 'Skip meal', 'Snack only']
-		},
-		{
-			id: 's3h-2-home-feeling',
-			text: 'How do you feel about that choice?',
+			id: 's3h-1-better-what',
+			text: "Was there something that made this situation better for you? What was it, or what could it have been?",
 			type: 'short_text'
 		},
 		{
-			id: 's3-ideal-fix',
-			text: 'What would an ideal solution look like for this moment?',
+			id: 's3h-2-familiarity-solution',
+			text: "How familiar does this visualized image feel to your experience? How well would this solution address your problem?",
 			type: 'short_text'
 		},
 		{
-			id: 's3-must-have-feature',
-			text: 'Which feature would help most?',
-			type: 'single_choice',
-			options: [
-				'Real-time line/wait prediction',
-				'Personalized meal recommendations',
-				'Budget + nutrition filter',
-				'Faster checkout/order flow'
-			]
-		}
+			id: 's3h-3-alternatives',
+			text: "What alternatives would you consider for addressing the problem?",
+			type: 'short_text'
+		},
+		{
+			id: 's3h-4-needed-info',
+			text: "What information would you need before you felt you could address this problem?",
+			type: 'short_text'
+		},
+		{
+			id: 's3h-5-what-else-change',
+			text: "What else would you change in order for you to better accomplish what you want?",
+			type: 'short_text'
+		},
+        
 	],
 	scene_3_dining: [
 		{
-			id: 's3n-1-dining-experience',
-			text: 'If you go to the dining hall, what usually happens?',
-			type: 'multiple_choice',
-			options: [
-				'Line is long',
-				'Food is okay but repetitive',
-				'I find something quickly',
-				'I leave and choose something else'
-			]
-		},
-		{
-			id: 's3n-2-dining-satisfaction',
-			text: 'How satisfied are you after choosing the dining hall?',
-			type: 'scale',
-			options: ['1', '2', '3', '4', '5']
-		},
-		{
-			id: 's3-ideal-fix',
-			text: 'What would an ideal solution look like for this moment?',
+			id: 's3n-1-better-what',
+			text: "Was there something that made this situation better for you? What was it, or what could it have been?",
 			type: 'short_text'
 		},
 		{
-			id: 's3-must-have-feature',
-			text: 'Which feature would help most?',
-			type: 'single_choice',
-			options: [
-				'Real-time line/wait prediction',
-				'Personalized meal recommendations',
-				'Budget + nutrition filter',
-				'Faster checkout/order flow'
-			]
-		}
+			id: 's3n-2-familiarity-solution',
+			text: "How familiar does this visualized image feel to your experience? How well would this solution address your problem?",
+			type: 'short_text'
+		},
+		{
+			id: 's3n-3-alternatives',
+			text: "What alternatives would you consider for addressing the problem?",
+			type: 'short_text'
+		},
+		{
+			id: 's3n-4-needed-info',
+			text: "What information would you need before you felt you could address this problem?",
+			type: 'short_text'
+		},
+		{
+			id: 's3n-5-what-else-change',
+			text: "What else would you change in order for you to better accomplish what you want?",
+			type: 'short_text'
+		},
+        
 	],
 	scene_4_solution: [
 		{
-			id: 's4-reflection',
-			text: 'Looking at this solution, how confident are you that this would improve your daily campus food decisions?',
-			type: 'scale',
-			options: ['1', '2', '3', '4', '5']
-		}
+			id: 's4-1-realism',
+			text: "How realistic does this visualized image feel to your experience? What stands out as similar and different from your experience?",
+			type: 'short_text'
+		},
+		{
+			id: 's4-2-what-else-change',
+			text: "What else would you change in order for you to better accomplish what you want?",
+			type: 'short_text'
+		},
+		{
+			id: 's4-3-avoid',
+			text: "What do you need in order to avoid the problem in the future?",
+			type: 'short_text'
+		},
+
 	]
 };
 
@@ -263,26 +279,26 @@ export interface SceneContentSet {
 export const SCENE_CONTENT_QUESTIONS: SceneContentSet[] = [
 	// Scene 0 — Context
 	{
-		familiarity: { id: 'sc0-familiarity', text: 'How familiar does this situation feel to you? What would make it feel more realistic for you?', type: 'short_text' },
-		mindset:     { id: 'sc0-mindset',     text: 'How would you describe the environment around you when this happens? What\'s your mood in this moment?',  type: 'short_text' },
-		frustration: { id: 'sc0-frustration', text: 'What\'s on your mind at this moment in this situation?',   type: 'short_text' }
+		familiarity: { id: 'sc0-familiarity', text: 'How familiar does this visualized image feel to your experience? What stands out as similar and different from your experience?', type: 'short_text' },
+		mindset:     { id: 'sc0-mindset',     text: 'Briefly describe what this moment felt like for you.', type: 'short_text' },
+		frustration: { id: 'sc0-frustration', text: 'What was the main thing on your mind at this moment? Write a sentence describing your specific thought or feeling at this moment.', type: 'short_text' }
 	},
 	// Scene 1 — Problem/Conflict
 	{
-		familiarity: { id: 'sc1-familiarity', text: 'How familiar does this situation feel to you? What would make it feel more realistic for you?', type: 'short_text' },
-		mindset:     { id: 'sc1-mindset',     text: 'What\'s on your mind at this moment in this situation?', type: 'short_text' },
-		frustration: { id: 'sc1-frustration', text: 'When does this start to feel problematic? What part makes it most frustrating or worse?', type: 'short_text' }
+		familiarity: { id: 'sc1-familiarity', text: 'How familiar does this visualized image feel to your experience? What stands out as similar and different from your experience?', type: 'short_text' },
+		mindset:     { id: 'sc1-mindset',     text: 'Briefly describe what this moment felt like for you.', type: 'short_text' },
+		frustration: { id: 'sc1-frustration', text: 'What was the main thing on your mind at this moment? Write a sentence describing your specific thought or feeling at this moment.', type: 'short_text' }
 	},
 	// Scene 2 — Action / Response
 	{
-		familiarity: { id: 'sc2-familiarity', text: 'What would make this situation feel more realistic for you?', type: 'short_text' },
-		mindset:     { id: 'sc2-mindset',     text: 'What best describes your mindset right now?', type: 'short_text' },
-		frustration: { id: 'sc2-frustration', text: 'What part of this situation feels like progress? What would make it even better?', type: 'short_text' }
+		familiarity: { id: 'sc2-familiarity', text: 'How familiar does this visualized image feel to your experience? How well would this solution address your problem?', type: 'short_text' },
+		mindset:     { id: 'sc2-mindset',     text: 'Briefly describe what this moment felt like for you.', type: 'short_text' },
+		frustration: { id: 'sc2-frustration', text: 'What was the main thing on your mind at this moment? Write a sentence describing your specific thought or feeling at this moment.', type: 'short_text' }
 	},
 	// Scene 3 — Resolution
 	{
-		familiarity: { id: 'sc3-familiarity', text: 'What would make this outcome feel more realistic for you?', type: 'short_text' },
-		mindset:     { id: 'sc3-mindset',     text: 'How do you feel about how this situation was resolved?', type: 'short_text' },
-		frustration: { id: 'sc3-frustration', text: 'What part of this feels like a good solution? What could make it even better?', type: 'short_text' }
+		familiarity: { id: 'sc3-familiarity', text: 'How realistic does this visualized image feel to your experience? What stands out as similar and different from your experience?', type: 'short_text' },
+		mindset:     { id: 'sc3-mindset',     text: 'Briefly describe what this moment felt like for you.', type: 'short_text' },
+		frustration: { id: 'sc3-frustration', text: 'What was the main thing on your mind at this moment? Write a sentence describing your specific thought or feeling at this moment.', type: 'short_text' }
 	}
 ];

@@ -10,7 +10,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { EdgeType, NodeType } from './rf-components';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 //import { toSvg } from 'html-to-image';
 //import SelectionToolbar from './components/SelectionToolbar';
 
@@ -39,6 +39,7 @@ import { IterateModal } from './components/IterateModal';
 //import { FirstGenerationModal } from './components/FirstGenerationModal';
 import { DependentGenerationModal } from './components/DependentGenerationModal';
 import { StoryWizard } from './components/StoryWizard';
+import { UserLandingPage } from './components/UserLandingPage';
 import { GenerateMoreModal } from './components/GenerateMoreModal';
 //import { findDirectDependencies } from './lib/graphHelper';
 import CommentNode from './rf-components/CommentNode';
@@ -205,6 +206,34 @@ export default function App() {
     'Persona' | 'Problem' | 'Solution' | 'Storyboard'
   >('Persona');
   const [wizardOpened, setWizardOpened] = useState(nodes.length === 0);
+  const hasCompletedLanding = useStore((s) => s.hasCompletedLanding);
+
+  // ── Focus the final storyboard once the wizard finishes ───────────────────
+  // Initialised to true so the existing post-hydration fitView handles initial
+  // page loads (where the wizard isn't even opened) without double-fitting.
+  // Reset to false whenever the wizard reopens; the next close fires the focus.
+  const hasFocusedFinalStoryboardRef = useRef(true);
+  useEffect(() => {
+    if (wizardOpened) {
+      hasFocusedFinalStoryboardRef.current = false;
+    }
+  }, [wizardOpened]);
+  useEffect(() => {
+    if (wizardOpened) return;
+    if (hasFocusedFinalStoryboardRef.current) return;
+
+    const storyboardNodes = nodes.filter((n) => n.type === NodeType.Storyboard);
+    if (storyboardNodes.length === 0) {
+      fitView();
+      hasFocusedFinalStoryboardRef.current = true;
+      return;
+    }
+
+    const target = storyboardNodes[storyboardNodes.length - 1];
+    fitView({ nodes: [{ id: target.id }], padding: 0.2, duration: 600 });
+    console.log(`[Canvas] Focused final storyboard node: ${target.id}`);
+    hasFocusedFinalStoryboardRef.current = true;
+  }, [wizardOpened, nodes, fitView]);
 
   const updateCenterPosition = useCallback(() => {
     const centerPosition = screenToFlowPosition({
@@ -275,7 +304,10 @@ export default function App() {
         {/* DELETED: Panel, Controls, MiniMap, SelectionToolbar */}
       </ReactFlow>
 
-      {wizardOpened && (
+      {wizardOpened && !hasCompletedLanding && (
+        <UserLandingPage onComplete={() => { /* store flip drives re-render */ }} />
+      )}
+      {wizardOpened && hasCompletedLanding && (
         <StoryWizard onComplete={() => setWizardOpened(false)} />
       )}
       {!wizardOpened && (

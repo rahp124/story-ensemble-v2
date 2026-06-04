@@ -1,8 +1,14 @@
 import { z } from 'zod';
-import { generateImageWithOpenAI, generateStructured } from './openai';
+import {
+  generateImageWithOpenAI,
+  generateStructured,
+  generateDesignerContentCaption,
+  buildDesignerImageEditPrompt
+} from './openai';
 import { generateImage } from './stableDiffusion';
 import { editImageWithFluxKontext, generateImageWithFlux } from './fal';
 import { resolveImageProvider } from '@/lib/envUtils';
+import type { FrameOutline, DesignerAestheticNotes } from '@/types';
 
 export async function generateStoryboardImage(opts: {
   prompt: string;
@@ -79,4 +85,48 @@ ${JSON.stringify(idea)}
   const imagePrompt = await generateStructured(imagePromptSchema, prompt);
 
   return await generateStoryboardImage(imagePrompt);
+}
+
+export type DesignerSceneImageResult = {
+  image: string;
+  caption?: string;
+};
+
+export async function generateDesignerSceneImage(args: {
+  currentImage: string;
+  currentCaption: string;
+  frameType: FrameOutline['frameType'];
+  contentAnswers: Record<string, string>;
+  reflectionAnswers?: Record<string, string>;
+  aestheticNotes?: DesignerAestheticNotes;
+  stage: 'content' | 'aesthetic';
+}): Promise<DesignerSceneImageResult> {
+  const prompt = buildDesignerImageEditPrompt({
+    frameType: args.frameType,
+    stage: args.stage,
+    currentCaption: args.currentCaption,
+    contentAnswers: args.contentAnswers,
+    reflectionAnswers: args.reflectionAnswers,
+    aestheticNotes: args.aestheticNotes
+  });
+
+  const imagePromise = generateStoryboardImage({
+    prompt,
+    referenceImage: args.currentImage
+  });
+
+  if (args.stage === 'content') {
+    const [image, caption] = await Promise.all([
+      imagePromise,
+      generateDesignerContentCaption({
+        frameType: args.frameType,
+        currentCaption: args.currentCaption,
+        contentAnswers: args.contentAnswers
+      })
+    ]);
+    return { image, caption };
+  }
+
+  const image = await imagePromise;
+  return { image };
 }
