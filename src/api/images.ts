@@ -87,6 +87,20 @@ ${JSON.stringify(idea)}
   return await generateStoryboardImage(imagePrompt);
 }
 
+async function toDataUrl(input: string): Promise<string> {
+  if (!input) return input;
+  if (input.startsWith('data:')) return input;
+  const resp = await fetch(input);
+  if (!resp.ok) throw new Error(`toDataUrl: failed to fetch ${input} (${resp.status})`);
+  const blob = await resp.blob();
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
 export type DesignerSceneImageResult = {
   image: string;
   caption?: string;
@@ -110,9 +124,12 @@ export async function generateDesignerSceneImage(args: {
     aestheticNotes: args.aestheticNotes
   });
 
+  const refDataUrl = await toDataUrl(args.currentImage);
+  console.log(`[DesignerMode] preparing image edit (stage=${args.stage}, refIsDataUrl=${refDataUrl.startsWith('data:')})`);
+
   const imagePromise = generateStoryboardImage({
     prompt,
-    referenceImage: args.currentImage
+    referenceImage: refDataUrl
   });
 
   if (args.stage === 'content') {
