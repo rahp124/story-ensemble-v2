@@ -31,6 +31,7 @@ import { generateImagePrompt, generateStoryboardTitle, generateInitialSketchStor
 import { generateStoryboardImage } from './api/images';
 import { generateSolutions, regenerateSolutions } from './api/solutions';
 import { ENABLE_DESIGNER_STORYBOARD_MODE } from './lib/designerMode';
+import { DESIGNER_STORYBOARDS, type DesignerVariant } from './data/designerStoryboards';
 import {
   FrameOutline,
   NodeData,
@@ -276,6 +277,16 @@ type RFState = {
       aestheticNotes?: import('./types').DesignerAestheticNotes;
     }
   ) => void;
+
+  /* Admin setup — placeholder storyboard overrides (client-side only) */
+  adminSetupOpen: boolean;
+  setAdminSetupOpen: (open: boolean) => void;
+  adminStoryboardOverrides: Record<string, DesignerVariant>;
+  setAdminStoryboardOverride: (storyboardId: string, variant: DesignerVariant) => void;
+  clearAdminStoryboardOverride: (storyboardId: string) => void;
+  clearAllAdminStoryboardOverrides: () => void;
+  getEffectiveDesignerStoryboards: () => DesignerVariant[];
+
   generateMoreStoryboardNode: (
     instructions: string,
     storyboardIds: string[]
@@ -1690,6 +1701,30 @@ const createStore: StateCreator<
         };
         frame.updateHistory = [...(frame.updateHistory ?? []), entry];
       });
+    },
+
+    /* Admin setup — placeholder storyboard overrides (client-side only) */
+    adminSetupOpen: false,
+    setAdminSetupOpen: (open) => set({ adminSetupOpen: open }),
+    adminStoryboardOverrides: {},
+    setAdminStoryboardOverride: (storyboardId, variant) => {
+      set((state) => {
+        state.adminStoryboardOverrides[storyboardId] = variant;
+      });
+    },
+    clearAdminStoryboardOverride: (storyboardId) => {
+      set((state) => {
+        delete state.adminStoryboardOverrides[storyboardId];
+      });
+    },
+    clearAllAdminStoryboardOverrides: () => {
+      set((state) => {
+        state.adminStoryboardOverrides = {};
+      });
+    },
+    getEffectiveDesignerStoryboards: () => {
+      const overrides = get().adminStoryboardOverrides;
+      return DESIGNER_STORYBOARDS.map((variant) => overrides[variant.id] ?? variant);
     },
 
     createBlankStoryboardNode: (_personaIds, _problemIds, solutionIds) => {

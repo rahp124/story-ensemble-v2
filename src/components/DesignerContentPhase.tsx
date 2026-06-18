@@ -40,11 +40,13 @@ export function DesignerContentPhase({
   const contentQuestions = DESIGNER_CONTENT_QUESTIONS[frameType];
 
   const [step, setStep] = useState<'content' | 'reflection'>('content');
+  const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [contentAnswers, setContentAnswers] = useState<DesignerSceneAnswers>(initialContent ?? {});
   const [reflectionAnswers, setReflectionAnswers] = useState<DesignerSceneAnswers>(initialReflection ?? {});
 
   useEffect(() => {
     setStep('content');
+    setActiveQuestionIndex(0);
     setContentAnswers(initialContent ?? {});
     setReflectionAnswers(initialReflection ?? {});
   }, [sceneIndex]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -59,10 +61,30 @@ export function DesignerContentPhase({
     (q) => (reflectionAnswers[q.id] ?? '').trim().length > 0
   );
 
+  const activeQuestion = contentQuestions[activeQuestionIndex];
+  const isLastQuestion = activeQuestionIndex === contentQuestions.length - 1;
+  const currentAnswerFilled =
+    (contentAnswers[activeQuestion?.id] ?? '').trim().length > 0;
+
   const handleContentContinue = async () => {
     if (!allContentAnswered || isGenerating) return;
+    // Exactly one API call after the full content question set is completed.
     await onContentFinalized(contentAnswers);
     setStep('reflection');
+  };
+
+  const handleNextQuestion = () => {
+    if (isGenerating || !currentAnswerFilled) return;
+    if (isLastQuestion) {
+      void handleContentContinue();
+      return;
+    }
+    setActiveQuestionIndex((i) => Math.min(contentQuestions.length - 1, i + 1));
+  };
+
+  const handleBackQuestion = () => {
+    if (isGenerating || activeQuestionIndex === 0) return;
+    setActiveQuestionIndex((i) => Math.max(0, i - 1));
   };
 
   const handleReflectionContinue = () => {
@@ -85,42 +107,70 @@ export function DesignerContentPhase({
 
       {step === 'content' ? (
         <>
-          <div className="text-xs uppercase tracking-wide text-gray-500 mb-3">
-            Progress: {filledCount} of {contentQuestions.length} answered
+          {/* PROGRESS LABEL + BAR */}
+          <div className="mb-6">
+            <div className="text-sm font-medium text-gray-600 mb-2">
+              Progress: {filledCount} of {contentQuestions.length} answered
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out"
+                style={{ width: `${(filledCount / contentQuestions.length) * 100}%` }}
+              />
+            </div>
           </div>
-          <div className="flex-grow space-y-6 overflow-y-auto pr-1">
-            {contentQuestions.map((q) => (
-              <div key={q.id}>
-                <label className="block text-sm font-semibold text-gray-800 mb-1">
-                  {questionLabel(q, rewordAsImagined)}
-                </label>
-                <textarea
-                  value={contentAnswers[q.id] ?? ''}
-                  onChange={(e) =>
-                    setContentAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
-                  }
-                  disabled={isGenerating}
-                  className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none"
-                />
-              </div>
-            ))}
+
+          {/* ACTIVE QUESTION */}
+          <div className="flex-grow flex flex-col">
+            <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">
+              Question {activeQuestionIndex + 1}
+            </p>
+            <label className="block text-lg md:text-xl font-semibold text-gray-900 leading-snug mb-4">
+              {activeQuestion && questionLabel(activeQuestion, rewordAsImagined)}
+            </label>
+            <textarea
+              key={activeQuestion?.id}
+              value={contentAnswers[activeQuestion?.id] ?? ''}
+              onChange={(e) =>
+                setContentAnswers((prev) => ({ ...prev, [activeQuestion.id]: e.target.value }))
+              }
+              disabled={isGenerating}
+              placeholder="Type your answer here..."
+              autoFocus
+              className="w-full flex-grow border border-gray-300 rounded-xl p-4 text-base min-h-[180px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+            />
           </div>
 
           {isGenerating && (
             <div className="flex items-center gap-3 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <Loader size="sm" color="blue" />
-              <p className="text-sm font-medium text-blue-700">Updating this panel...</p>
+              <p className="text-sm font-medium text-blue-700">Updating scene...</p>
             </div>
           )}
 
-          <div className="pt-6 md:pt-8 mt-6 md:mt-8 border-t border-gray-100">
+          {/* NAVIGATION */}
+          <div className="pt-6 md:pt-8 mt-6 md:mt-8 border-t border-gray-100 flex items-center gap-3">
+            {activeQuestionIndex > 0 && (
+              <button
+                type="button"
+                onClick={handleBackQuestion}
+                disabled={isGenerating}
+                className="py-3 md:py-4 px-6 bg-white border border-gray-300 text-gray-700 font-bold rounded-xl transition-colors hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Back
+              </button>
+            )}
             <button
               type="button"
-              onClick={handleContentContinue}
-              disabled={!allContentAnswered || isGenerating}
-              className="w-full py-3 md:py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleNextQuestion}
+              disabled={!currentAnswerFilled || isGenerating}
+              className="flex-1 py-3 md:py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continue
+              {isGenerating
+                ? 'Updating scene...'
+                : isLastQuestion
+                ? 'Update Scene'
+                : 'Next Question'}
             </button>
           </div>
         </>

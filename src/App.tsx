@@ -40,6 +40,7 @@ import { IterateModal } from './components/IterateModal';
 import { DependentGenerationModal } from './components/DependentGenerationModal';
 import { StoryWizard } from './components/StoryWizard';
 import { UserLandingPage } from './components/UserLandingPage';
+import { AdminSetup } from './components/AdminSetup';
 import { GenerateMoreModal } from './components/GenerateMoreModal';
 //import { findDirectDependencies } from './lib/graphHelper';
 import CommentNode from './rf-components/CommentNode';
@@ -207,6 +208,8 @@ export default function App() {
   >('Persona');
   const [wizardOpened, setWizardOpened] = useState(nodes.length === 0);
   const hasCompletedLanding = useStore((s) => s.hasCompletedLanding);
+  const adminSetupOpen = useStore((s) => s.adminSetupOpen);
+  const setAdminSetupOpen = useStore((s) => s.setAdminSetupOpen);
 
   // ── Focus the final storyboard once the wizard finishes ───────────────────
   // Initialised to true so the existing post-hydration fitView handles initial
@@ -311,13 +314,22 @@ export default function App() {
         <StoryWizard onComplete={() => setWizardOpened(false)} />
       )}
       {!wizardOpened && (
-        <button 
-          onClick={handleStartOver}
-          className="fixed top-6 left-6 z-50 bg-white border border-gray-200 shadow-lg px-6 py-3 rounded-xl font-bold text-gray-800 hover:bg-gray-50 transition-all flex items-center gap-2"
-        >
-          <span>✨</span> Start New Story
-        </button>
+        <div className="fixed top-6 left-6 z-50 flex items-center gap-3">
+          <button
+            onClick={handleStartOver}
+            className="bg-white border border-gray-200 shadow-lg px-6 py-3 rounded-xl font-bold text-gray-800 hover:bg-gray-50 transition-all flex items-center gap-2"
+          >
+            <span>✨</span> Start New Story
+          </button>
+          <button
+            onClick={() => setAdminSetupOpen(true)}
+            className="bg-white border border-gray-200 shadow-lg px-5 py-3 rounded-xl font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            Admin Setup
+          </button>
+        </div>
       )}
+      {adminSetupOpen && <AdminSetup />}
       <DependentGenerationModal
         opened={dependentGenerationModalOpened}
         onClose={() => {

@@ -10,7 +10,8 @@ import { VisualStylePhase } from './VisualStylePhase';
 import SketchFrameRenderer from './SketchFrameRenderer';
 import { DesignerVariantPicker } from './DesignerVariantPicker';
 import { DesignerContentPhase, type DesignerSceneAnswers } from './DesignerContentPhase';
-import { type DesignerFrame } from '@/data/designerStoryboards';
+import { StudyProgressStepper } from './StudyProgressStepper';
+import { getDesignerVariant } from '@/data/designerStoryboards';
 import { generateDesignerSceneImage } from '@/api/images';
 import { ENABLE_DESIGNER_STORYBOARD_MODE } from '@/lib/designerMode';
 import { VisualStylePreferences } from '../types';
@@ -130,6 +131,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     createDesignerStoryboardNode,
     setDesignerStoryboardFramePick,
     applyDesignerSceneUpdate,
+    getEffectiveDesignerStoryboards,
     consumeWarmUpPrefetch,
     preCacheImagePrompt,
     generateSingleStoryboardFrame,
@@ -589,13 +591,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
   // ─── Designer storyboard mode handlers ────────────────────────────────────────
 
-  const DESIGNER_FRAME_ORDER: FrameOutline['frameType'][] = [
-    'Context',
-    'Problem',
-    'Action',
-    'Resolution'
-  ];
-
   const designerFrame = (
     storyboardFrames as Array<{
       frameType: FrameOutline['frameType'];
@@ -609,12 +604,22 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
   useEffect(() => {
     if (ENABLE_DESIGNER_STORYBOARD_MODE && phase === 'variant-select') {
-      console.log(`[DesignerMode] entering variant-select for scene ${sceneIndex} (${DESIGNER_FRAME_ORDER[sceneIndex]})`);
+      console.log('[DesignerMode] entering full storyboard variant-select');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, sceneIndex]);
 
-  const onDesignerPick = ({ variantId, frame }: { variantId: string; frame: DesignerFrame }) => {
+  const onDesignerPick = ({ variantId }: { variantId: string }) => {
+    // Use the effective storyboards (admin overrides applied) so the seeded node
+    // reflects any uploaded panels; fall back to the base manifest variant.
+    const variant =
+      getEffectiveDesignerStoryboards().find((v) => v.id === variantId) ??
+      getDesignerVariant(variantId);
+    if (!variant) {
+      console.warn(`[DesignerMode] unknown storyboard variant: ${variantId}`);
+      return;
+    }
+
     let id = sbId;
     if (id === null) {
       // Designer mode owns the canvas — wipe any persisted nodes/edges from a prior
@@ -626,10 +631,16 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       console.log(`[DesignerMode] created standalone storyboard node: ${id}`);
       console.log('[DesignerMode] skipping standard persona/problem/solution generation');
     }
-    console.log(`[DesignerMode] selected variant: ${variantId} for scene ${sceneIndex} (${frame.frameType})`);
-    setDesignerStoryboardFramePick(id, sceneIndex, frame);
-    setWizardState(prev => ({ ...prev, phase: 'content' }));
-    setViewedFrameIndex(sceneIndex);
+
+    // Seed all 4 panels from the chosen full storyboard variant.
+    console.log(`[DesignerMode] selected full storyboard variant: ${variantId}`);
+    variant.frames.forEach((frame, index) => {
+      setDesignerStoryboardFramePick(id!, index, frame);
+    });
+
+    // Begin the per-scene Content + Reflection loop at scene 0.
+    setWizardState(prev => ({ ...prev, phase: 'content', sceneIndex: 0 }));
+    setViewedFrameIndex(0);
   };
 
   const onDesignerContentFinalized = async (answers: DesignerSceneAnswers) => {
@@ -671,7 +682,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     }
 
     const nextIndex = sceneIndex + 1;
-    setWizardState(prev => ({ ...prev, sceneIndex: nextIndex, phase: 'variant-select' }));
+    setWizardState(prev => ({ ...prev, sceneIndex: nextIndex, phase: 'content' }));
     setViewedFrameIndex(nextIndex);
   };
 
@@ -723,8 +734,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     return (
       <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto">
         <DesignerVariantPicker
-          sceneIndex={sceneIndex}
-          frameType={DESIGNER_FRAME_ORDER[sceneIndex]}
+          rewordAsImagined={priorExperience === 'no'}
           onPick={onDesignerPick}
         />
       </div>
@@ -795,28 +805,36 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
         {phase !== 'error' && (
           <>
-        {/* PROGRESS BAR */}
-        <div className="w-full mb-6 md:mb-8">
-          <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-in-out"
-              style={{ width: `${phase === 'visual-style' ? 100 : phase === 'story-lock' ? 100 : Math.max(5, ((sceneIndex + (phase === 'aesthetics' ? 0.5 : 0)) / 4) * 100)}%` }}
+        {/* PROGRESS INDICATOR */}
+        {ENABLE_DESIGNER_STORYBOARD_MODE ? (
+          <div className="w-full mb-8 md:mb-10">
+            <StudyProgressStepper
+              phase={phase === 'aesthetics' ? 'aesthetics' : 'content'}
+              sceneIndex={sceneIndex}
+              totalScenes={4}
             />
           </div>
-          <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-            {phase === 'visual-style'
-              ? 'Visual Style Direction'
-              : phase === 'story-lock'
-              ? 'Story Complete — Ready to Lock'
-              : `Scene ${sceneIndex + 1} of 4 — ${
-                  phase === 'content'
-                    ? 'Content'
-                    : ENABLE_DESIGNER_STORYBOARD_MODE
-                    ? 'Visual Aesthetics'
-                    : 'Story reflection'
-                }`}
-          </span>
-        </div>
+        ) : (
+          <div className="w-full mb-6 md:mb-8">
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-in-out"
+                style={{ width: `${phase === 'visual-style' ? 100 : phase === 'story-lock' ? 100 : Math.max(5, ((sceneIndex + (phase === 'aesthetics' ? 0.5 : 0)) / 4) * 100)}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+              {phase === 'visual-style'
+                ? 'Visual Style Direction'
+                : phase === 'story-lock'
+                ? 'Story Complete — Ready to Lock'
+                : `Scene ${sceneIndex + 1} of 4 — ${
+                    phase === 'content'
+                      ? 'Content'
+                      : 'Story reflection'
+                  }`}
+            </span>
+          </div>
+        )}
 
         {isGenerating && !ENABLE_DESIGNER_STORYBOARD_MODE ? (
           <div className="bg-white rounded-xl shadow-lg p-8 md:p-12">

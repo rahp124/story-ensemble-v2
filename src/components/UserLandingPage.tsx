@@ -10,6 +10,7 @@ export function UserLandingPage({ onComplete }: UserLandingPageProps) {
   const priorExperience = useStore((s) => s.priorExperience);
   const setPriorExperience = useStore((s) => s.setPriorExperience);
   const setHasCompletedLanding = useStore((s) => s.setHasCompletedLanding);
+  const setAdminSetupOpen = useStore((s) => s.setAdminSetupOpen);
 
   const [consent, setConsent] = useState(false);
   const [experienceSummary, setExperienceSummary] = useState('');
@@ -26,7 +27,16 @@ export function UserLandingPage({ onComplete }: UserLandingPageProps) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-blue-50">
       <div className="min-h-full flex items-center justify-center p-4 py-10 sm:py-14">
-        <div className="w-full max-w-3xl bg-white rounded-3xl shadow-xl ring-1 ring-slate-200/60 p-6 sm:p-10 md:p-14">
+        <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-xl ring-1 ring-slate-200/60 p-6 sm:p-10 md:p-14">
+
+          {/* Admin entry */}
+          <button
+            type="button"
+            onClick={() => setAdminSetupOpen(true)}
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 text-xs font-semibold text-slate-500 hover:text-blue-600 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
+          >
+            Admin Setup
+          </button>
 
           {/* Header */}
           <div className="text-center">
