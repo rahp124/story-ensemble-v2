@@ -27,8 +27,6 @@ You'll be asked 3 questions about visual composition, style, color palette, and 
       storyboardImage={storyboardImage}
       title={sceneTitle}
       caption={sceneCaption}
-      accuracy={accuracy}
-      onAccuracyChange={setAccuracy}
     >
       <div className="flex flex-col gap-4 h-full">
         <h3 className="text-lg font-semibold text-gray-900">

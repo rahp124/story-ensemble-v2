@@ -109,7 +109,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   const [isFirstFrameGenerating, setIsFirstFrameGenerating] = useState(false);
   const [isPreviewGenerating, setIsPreviewGenerating] = useState(false);
   const [viewedFrameIndex, setViewedFrameIndex] = useState(0);
-  const [accuracyScore, setAccuracyScore] = useState(50);
   const [sbId, setSbId] = useState<string | null>(null);
   const [sketchGenerationError, setSketchGenerationError] = useState<string | null>(null);
 
@@ -285,7 +284,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
       setViewedFrameIndex(nextIndex);
-      setAccuracyScore(50);
       return;
     }
 
@@ -396,7 +394,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       const nextIndex = sceneIndex + 1;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'aesthetics' });
       setViewedFrameIndex(nextIndex);
-      setAccuracyScore(50);
       return;
     }
 
@@ -430,7 +427,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       speculativeRef.current = null;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
       setViewedFrameIndex(nextIndex);
-      setAccuracyScore(50);
       return;
     }
 
@@ -460,7 +456,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       speculativeRef.current = null;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
       setViewedFrameIndex(nextIndex);
-      setAccuracyScore(50);
     } catch (error) {
       console.error(error);
       speculativeRef.current = null;
@@ -542,7 +537,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       const nextIndex = sceneIndex + 1;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
       setViewedFrameIndex(nextIndex);
-      setAccuracyScore(50);
     } catch (error) {
       console.error(error);
     } finally {
@@ -858,7 +852,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
 
-            {/* LEFT: IMAGE + CAPTION + ACCURACY */}
+            {/* LEFT: IMAGE + CAPTION */}
             <div className="lg:col-span-5 flex flex-col gap-4 md:gap-6">
 
               {/* IMAGE CAROUSEL */}
@@ -964,29 +958,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                 </p>
               </div>
 
-              {/* ACCURACY SLIDER — only for current scene */}
-              {viewedFrameIndex === sceneIndex && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5">
-                  <label className="block text-sm font-semibold text-gray-800 mb-4">
-                    How accurate is this scene to what you imagined?
-                  </label>
-                  <div className="flex items-center gap-3 md:gap-4">
-                    <span className="text-xs font-medium text-gray-500 whitespace-nowrap">Not Very</span>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={accuracyScore}
-                      onChange={(e) => setAccuracyScore(parseInt(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                    />
-                    <span className="text-xs font-medium text-gray-500 whitespace-nowrap">Very</span>
-                  </div>
-                  <div className="text-center mt-2">
-                    <span className="text-xs text-gray-500">{accuracyScore}%</span>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* RIGHT: CONTENT OR AESTHETICS PHASE */}
