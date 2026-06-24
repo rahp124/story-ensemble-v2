@@ -16,7 +16,6 @@ export function ContentQuestionScreen({
   questionIndex
 }: ContentQuestionScreenProps) {
   const advanceEval = useStore((state) => state.advanceEval);
-  const [accuracy, setAccuracy] = useState(50);
   const [answer, setAnswer] = useState('');
 
   // Question templates (customize as needed)
@@ -47,8 +46,6 @@ export function ContentQuestionScreen({
       storyboardImage={storyboardImage}
       title={currentQ.title}
       caption={`Scene ${sceneIndex + 1} - Question ${questionIndex + 1} of 3`}
-      accuracy={accuracy}
-      onAccuracyChange={setAccuracy}
     >
       <div className="flex flex-col gap-4 h-full">
         <div className="flex-1 overflow-y-auto">

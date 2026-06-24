@@ -1,6 +1,5 @@
 import { EvalLayout } from '../EvalLayout';
 import { useStore } from '@/store';
-import { useState } from 'react';
 
 interface ContentIntroScreenProps {
   sceneIndex: number;
@@ -12,7 +11,6 @@ interface ContentIntroScreenProps {
  */
 export function ContentIntroScreen({ sceneIndex }: ContentIntroScreenProps) {
   const advanceEval = useStore((state) => state.advanceEval);
-  const [accuracy, setAccuracy] = useState(50);
 
   const sceneTitle = `Scene ${sceneIndex + 1}: Content Evaluation`;
   const sceneCaption = `In this phase, you'll evaluate the content accuracy of Scene ${sceneIndex + 1}. 
@@ -27,8 +25,6 @@ You'll be asked 3 questions about how well the storyboard represents the intende
       storyboardImage={storyboardImage}
       title={sceneTitle}
       caption={sceneCaption}
-      accuracy={accuracy}
-      onAccuracyChange={setAccuracy}
     >
       <div className="flex flex-col gap-4 h-full">
         <h3 className="text-lg font-semibold text-gray-900">

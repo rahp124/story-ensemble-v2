@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Environment variables and API keys
+.env
+.env.development
+.env.production
