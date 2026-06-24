@@ -29,6 +29,7 @@ interface AestheticsPhaseProps {
   isGenerating: boolean;
   isLastScene: boolean;
   mode?: 'sketch' | 'aesthetic';
+  continueLabel?: string;
 }
 
 export function AestheticsPhase({
@@ -43,6 +44,7 @@ export function AestheticsPhase({
   isGenerating,
   isLastScene,
   mode,
+  continueLabel,
 }: AestheticsPhaseProps) {
   if (mode === 'sketch') {
     return (
@@ -71,6 +73,7 @@ export function AestheticsPhase({
       isLastScene={isLastScene}
       content={content}
       onContentChange={onContentChange}
+      continueLabel={continueLabel}
     />
   );
 }
@@ -131,6 +134,7 @@ interface AestheticPolishPhaseProps {
   onContinue: (aesthetics: SceneAesthetics) => void;
   isGenerating: boolean;
   isLastScene: boolean;
+  continueLabel?: string;
 }
 
 function AestheticPolishPhase({
@@ -141,6 +145,7 @@ function AestheticPolishPhase({
   onContinue,
   isGenerating,
   isLastScene,
+  continueLabel,
   content: _content,
   onContentChange: _onContentChange,
 }: AestheticPolishPhaseProps & { content?: Record<string,string|undefined>; onContentChange?: (field:string,value:string)=>void }) {
@@ -185,7 +190,7 @@ function AestheticPolishPhase({
         >
           Preview Update
         </button>
-        <button type="button" onClick={() => onContinue(aesthetics)} disabled={isGenerating} className="w-full py-3 md:py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{isLastScene ? 'Finish & Reveal Full Story' : 'Continue'}</button>
+        <button type="button" onClick={() => onContinue(aesthetics)} disabled={isGenerating} className="w-full py-3 md:py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{continueLabel ?? (isLastScene ? 'Finish & Reveal Full Story' : 'Continue')}</button>
       </div>
     </div>
   );

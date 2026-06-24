@@ -1,6 +1,5 @@
 import { EvalLayout } from '../EvalLayout';
 import { useStore } from '@/store';
-import { useState } from 'react';
 
 interface AestheticsIntroScreenProps {
   sceneIndex: number;
@@ -12,7 +11,6 @@ interface AestheticsIntroScreenProps {
  */
 export function AestheticsIntroScreen({ sceneIndex }: AestheticsIntroScreenProps) {
   const advanceEval = useStore((state) => state.advanceEval);
-  const [accuracy, setAccuracy] = useState(50);
 
   const sceneTitle = `Scene ${sceneIndex + 1}: Aesthetics Evaluation`;
   const sceneCaption = `In this phase, you'll evaluate the visual aesthetics of Scene ${sceneIndex + 1}. 

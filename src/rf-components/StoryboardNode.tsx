@@ -77,6 +77,11 @@ function getEffectiveRenderMode(
   return 'image';
 }
 
+/**
+ * Legacy React Flow node renderer for storyboards on the canvas.
+ * The main user flow now uses StoryboardEditorPage instead; this component
+ * remains for reference or if React Flow is re-mounted later.
+ */
 export default function StoryboardNode(props: NodeProps<StoryboardNodeData>) {
   const { storyboard, outOfSync } = props.data;
 

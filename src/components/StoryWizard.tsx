@@ -254,6 +254,20 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     });
   };
 
+  const onContentDebugSubmit = (content: SceneContent) => {
+    const updatedScenes = scenes.map((s, i) =>
+      i === sceneIndex ? { ...s, content } : s
+    );
+    const updatedState: WizardState = { ...wizardState, scenes: updatedScenes };
+    if (sceneIndex < 3) {
+      const nextIndex = sceneIndex + 1;
+      setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
+      setViewedFrameIndex(nextIndex);
+      return;
+    }
+    setWizardState({ ...updatedState, phase: 'story-lock', sceneIndex: 0 });
+  };
+
   const onContentSubmit = (content: SceneContent) => {
     const updatedScenes = scenes.map((s, i) =>
       i === sceneIndex ? { ...s, content } : s
@@ -993,6 +1007,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                   content={scenes[sceneIndex].content}
                   onChange={onContentChange}
                   onSubmit={onContentSubmit}
+                  onDebugSubmit={onContentDebugSubmit}
                 />
               ) : (
                 <AestheticsPhase

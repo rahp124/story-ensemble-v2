@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { SCENE_QUESTION_MAP, SceneQuestion } from '@/types/questionnaire';
 import { QuestionField } from './QuestionField';
 
@@ -9,15 +10,37 @@ interface ContentPhaseProps {
   content: SceneContent;
   onChange: (field: keyof SceneContent, value: string) => void;
   onSubmit: (content: SceneContent) => void;
+  /** Debug: advance without validation or image generation (PgUp). */
+  onDebugSubmit?: (content: SceneContent) => void;
 }
 
 const SCENE_TITLES = ['The Setup', 'The Challenge', 'The Response', 'The Reflection'];
 
-export function ContentPhase({ sceneIndex, content, onChange, onSubmit }: ContentPhaseProps) {
+export function ContentPhase({
+  sceneIndex,
+  content,
+  onChange,
+  onSubmit,
+  onDebugSubmit
+}: ContentPhaseProps) {
   const [step, setStep] = useState<'generation' | 'reflection'>('generation');
   useEffect(() => {
     setStep('generation');
   }, [sceneIndex]);
+
+  useHotkeys(
+    'pageup',
+    (e) => {
+      e.preventDefault();
+      if (step === 'generation') {
+        setStep('reflection');
+      } else if (onDebugSubmit) {
+        onDebugSubmit(content);
+      }
+    },
+    { preventDefault: true, enableOnFormTags: true },
+    [step, content, onDebugSubmit]
+  );
   // Map sceneIndex to the generation question key in SCENE_QUESTION_MAP
   // Map panels to the user's desired flow:
   // Panel 1 (sceneIndex 0) -> warm_up (Context)
