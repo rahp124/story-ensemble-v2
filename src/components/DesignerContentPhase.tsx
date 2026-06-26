@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { Loader } from '@mantine/core';
 import type { FrameOutline } from '@/types';
 import {
@@ -91,6 +92,38 @@ export function DesignerContentPhase({
     if (!reflectionAnswered) return;
     onReflectionFinalized(reflectionAnswers);
   };
+
+  // Debug shortcut: skip validation and image API; advance one Continue step.
+  useHotkeys(
+    'pageup',
+    (e) => {
+      e.preventDefault();
+      if (isGenerating) return;
+      if (step === 'content') {
+        if (!isLastQuestion) {
+          setActiveQuestionIndex((i) =>
+            Math.min(contentQuestions.length - 1, i + 1)
+          );
+        } else {
+          setStep('reflection');
+        }
+      } else {
+        onReflectionFinalized(reflectionAnswers);
+      }
+    },
+    {
+      preventDefault: true,
+      enableOnFormTags: true
+    },
+    [
+      step,
+      isGenerating,
+      isLastQuestion,
+      contentQuestions.length,
+      reflectionAnswers,
+      onReflectionFinalized
+    ]
+  );
 
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 min-h-[500px] flex flex-col">

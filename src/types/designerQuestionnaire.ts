@@ -15,10 +15,8 @@ export const DESIGNER_CONTENT_QUESTIONS: Record<DesignerQuestionFrameType, Desig
     { id: 'ctx-familiarity',   text: 'How familiar does this visualized image feel to your experience? What stands out as similar and different from your experience?' }
   ],
   Problem: [
-    { id: 'prob-difficult',    text: 'What made it more difficult for you to accomplish what you wanted?' },
-    { id: 'prob-began',        text: 'Where did this experience begin to feel inconvenient or problematic?' },
-    { id: 'prob-first-try',    text: 'When things felt most difficult, what did you do or try to do first?' },
-    { id: 'prob-pushed',       text: 'Did you eventually push through an issue, step away, ask for help, or something else?' },
+    { id: 'prob-difficult',    text: 'What made it more difficult for you to accomplish what you wanted?Where did this experience begin to feel inconvenient or problematic?' },
+    { id: 'prob-first-try',    text: 'When things felt most difficult, what did you do or try to do first? Did you eventually push through an issue, step away, ask for help, or something else?' },
     { id: 'prob-frustrating',  text: 'What was most frustrating about this experience?' },
     { id: 'prob-mindset',      text: 'What best describes your mindset at that moment?' },
     { id: 'prob-familiarity',  text: 'How familiar does this visualized image feel to your experience? What stands out as similar and different from your experience?' }
@@ -27,8 +25,7 @@ export const DESIGNER_CONTENT_QUESTIONS: Record<DesignerQuestionFrameType, Desig
     { id: 'act-better',        text: 'Was there something that made this situation better for you? What was it, or what could it have been?' },
     { id: 'act-familiarity',   text: 'How familiar does this visualized image feel to your experience? How well would this solution address your problem?' },
     { id: 'act-alternatives',  text: 'What alternatives would you consider for addressing the problem?' },
-    { id: 'act-needed-info',   text: 'What information would you need before you felt you could address this problem?' },
-    { id: 'act-trust',         text: 'Who or what would you trust most to help you with this? What makes you trust them?' },
+    { id: 'act-trust',         text: 'Who or what information would you trust most to help you with this? What makes you trust them?' },
     { id: 'act-change',        text: 'What else would you change in order for you to better accomplish what you want?' }
   ],
   Resolution: [
