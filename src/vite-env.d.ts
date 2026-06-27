@@ -1,5 +1,10 @@
 /// <reference types="vite/client" />
 
+declare module '*.yaml?raw' {
+  const content: string;
+  export default content;
+}
+
 interface ImportMetaEnv {
   readonly VITE_OPENAI_API_KEY: string;
   readonly VITE_STABILITY_API_KEY: string;

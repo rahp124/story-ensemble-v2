@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useStore } from '../store';
 import {
   DESIGNER_STORYBOARDS,
+  getDefaultFrameCaption,
   type DesignerVariant,
   type DesignerFrame
 } from '@/data/designerStoryboards';
@@ -17,8 +18,6 @@ const FRAME_LABEL: Record<FrameType, string> = {
   Action: 'Action panel',
   Resolution: 'Resolution panel'
 };
-
-const defaultCaption = (frameType: FrameType) => `Uploaded ${frameType} panel`;
 
 type PanelDraft = { url: string | null; caption: string };
 type VariantDraft = { replace: boolean; panels: Record<FrameType, PanelDraft> };
@@ -84,7 +83,21 @@ export function AdminSetup() {
   };
 
   const toggleReplace = (variantId: string, checked: boolean) => {
-    updateDraft(variantId, (d) => ({ ...d, replace: checked }));
+    updateDraft(variantId, (d) => {
+      if (!checked) {
+        return { ...d, replace: false };
+      }
+      const effective = effectiveById[variantId];
+      const panels = emptyPanels();
+      FRAME_ORDER.forEach((frameType) => {
+        const frame = effective?.frames.find((f) => f.frameType === frameType);
+        panels[frameType] = {
+          url: null,
+          caption: frame?.caption ?? getDefaultFrameCaption(variantId, frameType)
+        };
+      });
+      return { ...d, replace: true, panels };
+    });
     setErrors((prev) => {
       const next = { ...prev };
       delete next[variantId];
@@ -146,7 +159,8 @@ export function AdminSetup() {
         const frames: DesignerFrame[] = FRAME_ORDER.map((frameType) => ({
           frameType,
           image: draft.panels[frameType].url as string,
-          caption: draft.panels[frameType].caption.trim() || defaultCaption(frameType)
+          caption: draft.panels[frameType].caption.trim() ||
+            getDefaultFrameCaption(variant.id, frameType)
         }));
         const overridden: DesignerVariant = {
           id: variant.id,
@@ -279,9 +293,12 @@ export function AdminSetup() {
                         return (
                           <div key={frameType} className="flex flex-col">
                             <PreviewThumb src={frame?.image} alt={`${variant.title} — ${frameType}`} />
-                            <span className="mt-1 text-[11px] font-medium text-slate-500">
+                            <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-blue-600">
                               {frameType}
                             </span>
+                            <p className="mt-1 text-xs text-slate-700 leading-snug">
+                              {frame?.caption ?? getDefaultFrameCaption(variant.id, frameType)}
+                            </p>
                           </div>
                         );
                       })}
@@ -314,7 +331,7 @@ export function AdminSetup() {
                                 type="text"
                                 value={panel.caption}
                                 onChange={(e) => handleCaption(variant.id, frameType, e.target.value)}
-                                placeholder={defaultCaption(frameType)}
+                                placeholder={getDefaultFrameCaption(variant.id, frameType)}
                                 className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none"
                               />
                             </div>

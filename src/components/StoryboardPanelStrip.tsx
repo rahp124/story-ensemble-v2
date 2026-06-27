@@ -102,7 +102,7 @@ function CaptionField({
   if (!editable) {
     if (!value) return null;
     return (
-      <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap break-words">
+      <p className="text-sm text-gray-800 mt-2 whitespace-pre-wrap break-words leading-relaxed">
         {value}
       </p>
     );

@@ -141,6 +141,8 @@ type RFState = {
   setPriorExperience: (v: 'yes' | 'no' | null) => void;
   hasCompletedLanding: boolean;
   setHasCompletedLanding: (v: boolean) => void;
+  hasCompletedOverview: boolean;
+  setHasCompletedOverview: (v: boolean) => void;
 
   /* Evaluation State Machine */
   evaluation: EvaluationState;
@@ -753,6 +755,8 @@ const createStore: StateCreator<
     setPriorExperience: (v) => set({ priorExperience: v }),
     hasCompletedLanding: false,
     setHasCompletedLanding: (v) => set({ hasCompletedLanding: v }),
+    hasCompletedOverview: false,
+    setHasCompletedOverview: (v) => set({ hasCompletedOverview: v }),
 
     addCommentNode: (comment = '') => {
       const center = get().centerPosition;
