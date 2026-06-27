@@ -703,6 +703,47 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   };
 
   const onDesignerPanelGenerateFinalized = async (answers: DesignerSceneAnswers) => {
+<<<<<<< HEAD
+    if (!sbId || !designerFrame) return;
+    console.log(`[DesignerMode] panel generate frame ${sceneIndex} (${designerFrame.frameType})`);
+    setIsGenerating(true);
+    try {
+      const prevImage =
+        sceneIndex > 0
+          ? (storyboardFrames?.[sceneIndex - 1]?.image?.trim() ?? '')
+          : '';
+      const prevCaption =
+        sceneIndex > 0
+          ? (storyboardFrames?.[sceneIndex - 1]?.caption?.trim() ?? '')
+          : '';
+
+      const { image, caption } = await generateDesignerSceneImage({
+        currentImage: '',
+        currentCaption: '',
+        referenceImage: prevImage || undefined,
+        referenceCaption: prevCaption || undefined,
+        frameType: designerFrame.frameType,
+        contentAnswers: answers,
+        stage: 'content',
+        createFromScratch: true
+      });
+      applyDesignerSceneUpdate(sbId, sceneIndex, {
+        stage: 'content',
+        image,
+        caption,
+        contentAnswers: answers
+      });
+      setWizardState((prev) => ({ ...prev, phase: 'content' }));
+    } catch (err) {
+      console.error('[designer panel generate]', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const onDesignerContentFinalized = async (answers: DesignerSceneAnswers) => {
+=======
+>>>>>>> f5be281 (generate own frame flow)
     if (!sbId || !designerFrame) return;
     console.log(`[DesignerMode] panel generate frame ${sceneIndex} (${designerFrame.frameType})`);
     setIsGenerating(true);
@@ -743,20 +784,23 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   const onDesignerContentFinalized = async (answers: DesignerSceneAnswers) => {
     if (!sbId || !designerFrame) return;
     console.log(`[DesignerMode] content update frame ${sceneIndex} (${designerFrame.frameType})`);
+    const mergedAnswers = useGeneratedPanelsFlow
+      ? { ...designerFrame.contentAnswers, ...answers }
+      : answers;
     setIsGenerating(true);
     try {
       const { image, caption } = await generateDesignerSceneImage({
         currentImage: designerFrame.image ?? '',
         currentCaption: designerFrame.caption ?? '',
         frameType: designerFrame.frameType,
-        contentAnswers: answers,
+        contentAnswers: mergedAnswers,
         stage: 'content'
       });
       applyDesignerSceneUpdate(sbId, sceneIndex, {
         stage: 'content',
         image,
         caption,
-        contentAnswers: answers
+        contentAnswers: mergedAnswers
       });
     } catch (err) {
       console.error('[designer content update]', err);
@@ -839,7 +883,10 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto">
         <DesignerVariantPicker
           frameType={frameType}
+<<<<<<< HEAD
           pickMode={isInitialPick ? 'storyboard' : 'panel'}
+=======
+>>>>>>> f5be281 (generate own frame flow)
           seededVariantId={isInitialPick ? undefined : selectedVariantId ?? undefined}
           rewordAsImagined={priorExperience === 'no'}
           onPick={isInitialPick ? onDesignerPick : onDesignerPanelPick}
@@ -1114,6 +1161,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                     sceneIndex={sceneIndex}
                     frameType={designerFrame.frameType}
                     rewordAsImagined={priorExperience === 'no'}
+<<<<<<< HEAD
                     questionSet={
                       phase === 'panel-generate'
                         ? 'generation'
@@ -1122,6 +1170,10 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                           : 'all'
                     }
                     skipReflection={phase === 'panel-generate'}
+=======
+                    questionSet={phase === 'panel-generate' ? 'generation' : 'content'}
+                    isFinalContentRound={phase === 'content'}
+>>>>>>> f5be281 (generate own frame flow)
                     initialContent={designerFrame.contentAnswers}
                     initialReflection={designerFrame.reflectionAnswers}
                     isGenerating={isGenerating}
@@ -1131,9 +1183,13 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                         ? onDesignerPanelGenerateFinalized
                         : onDesignerContentFinalized
                     }
+<<<<<<< HEAD
                     onReflectionFinalized={
                       phase === 'content' ? onDesignerReflectionFinalized : undefined
                     }
+=======
+                    onReflectionFinalized={onDesignerReflectionFinalized}
+>>>>>>> f5be281 (generate own frame flow)
                   />
                 ) : (
                   <AestheticsPhase

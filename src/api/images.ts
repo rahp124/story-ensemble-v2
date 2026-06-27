@@ -163,7 +163,11 @@ export async function generateDesignerSceneImage(args: {
 
   const imagePromise = generateStoryboardImage({
     prompt,
+<<<<<<< HEAD
     applyNoText: createFromScratch,
+=======
+    applyNoText: createFromScratch || args.stage === 'content',
+>>>>>>> f5be281 (generate own frame flow)
     ...(refDataUrl ? { referenceImage: refDataUrl } : {})
   });
 

@@ -5,20 +5,16 @@ import type { FrameOutline } from '@/types';
 
 const NEW_IDEA_ID = 'new-idea';
 
-type PickMode = 'storyboard' | 'panel';
-
 interface DesignerVariantPickerProps {
   /** When true, the participant is imagining the situation rather than recalling it. */
   rewordAsImagined?: boolean;
   /** Which frame type to display on each card. */
   frameType?: FrameOutline['frameType'];
-  /** storyboard = initial Context pick (all variants); panel = single seeded variant. */
-  pickMode?: PickMode;
-  /** Variant chosen at Context — used in panel mode only. */
+  /** Variant chosen at Context — used when picking later scenes. */
   seededVariantId?: string;
-  /** Called once the participant commits to a full storyboard variant. */
+  /** Called once the participant commits to a variant. */
   onPick: (args: { variantId: string }) => void;
-  /** Optional escape hatch — build a storyboard from scratch instead of picking one. */
+  /** Optional escape hatch — build a panel from scratch instead of picking one. */
   onStartFromScratch?: () => void;
 }
 
@@ -91,15 +87,11 @@ function SelectableFrameCard({
 
 function NewIdeaCard({
   selected,
-  onSelect,
-  pickMode
+  onSelect
 }: {
   selected: boolean;
   onSelect: () => void;
-  pickMode: PickMode;
 }) {
-  const isPanel = pickMode === 'panel';
-
   return (
     <button
       type="button"
@@ -117,21 +109,17 @@ function NewIdeaCard({
         New
       </span>
       <h3 className="mt-2 text-sm font-semibold text-gray-900">
-        {isPanel ? 'Generate a new panel' : 'Generate a new idea'}
+        Generate a new panel
       </h3>
       <p className="mt-1 text-sm text-gray-600 leading-relaxed">
-        {isPanel
-          ? 'Start with a blank panel for this scene.'
-          : 'Start with a blank storyboard and build your own narrative.'}
+        Start with a blank panel for this scene.
       </p>
     </button>
   );
 }
 
 export function DesignerVariantPicker({
-  rewordAsImagined,
   frameType = 'Context',
-  pickMode = 'storyboard',
   seededVariantId,
   onPick,
   onStartFromScratch
@@ -145,12 +133,12 @@ export function DesignerVariantPicker({
     [getEffectiveDesignerStoryboards, adminStoryboardOverrides]
   );
 
-  const isPanelMode = pickMode === 'panel';
+  const hasSeededVariant = !!seededVariantId;
   const seededVariant = seededVariantId
     ? storyboards.find((v) => v.id === seededVariantId)
     : undefined;
 
-  const defaultSelectedId = isPanelMode
+  const defaultSelectedId = hasSeededVariant
     ? (seededVariantId ?? NEW_IDEA_ID)
     : (storyboards[0]?.id ?? NEW_IDEA_ID);
 
@@ -158,34 +146,18 @@ export function DesignerVariantPicker({
 
   useEffect(() => {
     setSelectedId(defaultSelectedId);
-  }, [defaultSelectedId, frameType, pickMode, seededVariantId]);
+  }, [defaultSelectedId, frameType, seededVariantId]);
 
   const selectedVariant = storyboards.find((v) => v.id === selectedId);
   const isNewIdea = selectedId === NEW_IDEA_ID;
 
   const frameLabel = frameType === 'Action' ? 'Action / Solution' : frameType;
 
-  const eyebrow = isPanelMode ? 'Choose a panel' : 'Choose a storyboard';
-
-  const prompt = isPanelMode
-    ? `Review the next panel for your story`
-  : rewordAsImagined
-    ? 'Which storyboard would feel most realistic for you?'
-    : 'Which storyboard most closely reflects your experience?';
-
   const continueLabel = isNewIdea
-    ? isPanelMode
-      ? 'Generate a new panel'
-      : 'Generate a new idea'
-    : isPanelMode
-      ? `Continue with this ${frameLabel} panel`
-      : `${selectedVariant?.title ?? 'This storyboard'} most closely reflects my experience`;
+    ? 'Generate a new panel'
+    : `Continue with this ${frameLabel} panel`;
 
-  const continueDisabled = isNewIdea
-    ? !onStartFromScratch
-    : isPanelMode
-      ? !seededVariant
-      : !selectedVariant;
+  const continueDisabled = isNewIdea ? !onStartFromScratch : !selectedVariant;
 
   const handleContinue = () => {
     if (isNewIdea) {
@@ -196,7 +168,7 @@ export function DesignerVariantPicker({
       }
       return;
     }
-    if (isPanelMode && seededVariant) {
+    if (hasSeededVariant && seededVariant) {
       onPick({ variantId: seededVariant.id });
       return;
     }
@@ -206,6 +178,7 @@ export function DesignerVariantPicker({
   };
 
   if (storyboards.length === 0) {
+  if (storyboards.length === 0) {
     return (
       <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center p-6 text-gray-500">
         No storyboards available.
@@ -213,7 +186,7 @@ export function DesignerVariantPicker({
     );
   }
 
-  if (isPanelMode && !seededVariant) {
+  if (hasSeededVariant && !seededVariant) {
     return (
       <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center p-6 text-gray-500">
         No seeded storyboard found. Please restart from the beginning.
@@ -221,7 +194,7 @@ export function DesignerVariantPicker({
     );
   }
 
-  const gridClass = isPanelMode
+  const gridClass = hasSeededVariant
     ? 'grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto'
     : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4';
 
@@ -229,15 +202,15 @@ export function DesignerVariantPicker({
     <div className="min-h-screen w-full bg-gray-50 flex flex-col items-center p-6">
       <div className="max-w-6xl w-full">
         <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2 text-center">
-          {eyebrow}
+          Choose a panel
         </p>
         <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mb-8 text-center">
-          {prompt}
+          Which panel most closely matches your experience?
         </h1>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
           <div className={gridClass}>
-            {isPanelMode && seededVariant ? (
+            {hasSeededVariant && seededVariant ? (
               <SelectableFrameCard
                 variant={seededVariant}
                 frameType={frameType}
@@ -258,11 +231,18 @@ export function DesignerVariantPicker({
             <NewIdeaCard
               selected={isNewIdea}
               onSelect={() => setSelectedId(NEW_IDEA_ID)}
-              pickMode={pickMode}
             />
           </div>
         </div>
 
+        <button
+          type="button"
+          onClick={handleContinue}
+          disabled={continueDisabled}
+          className="mt-6 inline-flex items-center justify-center w-full py-3 px-4 bg-blue-600 text-white text-base font-semibold rounded-xl hover:bg-blue-700 transition disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
+        >
+          {continueLabel}
+        </button>
         <button
           type="button"
           onClick={handleContinue}
