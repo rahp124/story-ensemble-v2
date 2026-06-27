@@ -1,0 +1,40 @@
+adminSetup: Admin Setup
+
+header:
+  eyebrow: Overview
+  title: Here's what you'll do
+
+features:
+  - icon: "📖"
+    title: See illustrated scenes
+    description: A short visual story unfolds, one frame at a time.
+  - icon: "💭"
+    title: Reflect on your experience
+    description: Share what feels true — or what would, if it were you.
+  - icon: "🎨"
+    title: Make it more accurate
+    description: Adjust the visuals so the scenes match your reality.
+
+topic:
+  label: Topic
+  defaultTopic: using the recreation gym on campus
+
+priorExperience:
+  legend: "Have you had a previous experience with {{topic}}?"
+  helper: Either is fine — your answer just helps frame what comes next.
+  options:
+    - value: yes
+      title: Yes, I've experienced this
+      description: I have firsthand context with this topic.
+    - value: no
+      title: No, but I can imagine it
+      description: I'll picture myself in this context.
+
+experienceSummary:
+  label: Briefly describe your experience
+  optional: (optional)
+  placeholder: 1-2 sentences about your experience
+  helper:
+
+continueButton: Continue
+continueDisabledHint: Pick an answer to continue.
