@@ -3,34 +3,57 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { Loader } from '@mantine/core';
 import type { FrameOutline } from '@/types';
 import {
-  DESIGNER_CONTENT_QUESTIONS,
   DESIGNER_REFLECTION_QUESTIONS,
+  getDesignerAllContentQuestions,
+  getDesignerContentOnlyQuestions,
+  getDesignerGenerationQuestions,
   rewordForImaginedExperience,
   type DesignerContentQuestion
 } from '@/types/designerQuestionnaire';
 
 export type DesignerSceneAnswers = Record<string, string>;
 
+type QuestionSet = 'all' | 'generation' | 'content';
+
 interface DesignerContentPhaseProps {
   sceneIndex: number;
   frameType: FrameOutline['frameType'];
   rewordAsImagined: boolean;
+  questionSet?: QuestionSet;
+  skipReflection?: boolean;
+  subtitle?: string;
   initialContent?: DesignerSceneAnswers;
   initialReflection?: DesignerSceneAnswers;
   isGenerating: boolean;
   isLastScene: boolean;
   onContentFinalized: (answers: DesignerSceneAnswers) => Promise<void> | void;
-  onReflectionFinalized: (answers: DesignerSceneAnswers) => void;
+  onReflectionFinalized?: (answers: DesignerSceneAnswers) => void;
 }
 
 function questionLabel(q: DesignerContentQuestion, reword: boolean): string {
   return reword ? rewordForImaginedExperience(q.text) : q.text;
 }
 
+function resolveQuestions(
+  frameType: FrameOutline['frameType'],
+  questionSet: QuestionSet
+): DesignerContentQuestion[] {
+  if (questionSet === 'generation') {
+    return getDesignerGenerationQuestions(frameType);
+  }
+  if (questionSet === 'content') {
+    return getDesignerContentOnlyQuestions(frameType);
+  }
+  return getDesignerAllContentQuestions(frameType);
+}
+
 export function DesignerContentPhase({
   sceneIndex,
   frameType,
   rewordAsImagined,
+  questionSet = 'all',
+  skipReflection = false,
+  subtitle,
   initialContent,
   initialReflection,
   isGenerating,
@@ -38,7 +61,10 @@ export function DesignerContentPhase({
   onContentFinalized,
   onReflectionFinalized
 }: DesignerContentPhaseProps) {
-  const contentQuestions = DESIGNER_CONTENT_QUESTIONS[frameType];
+  const contentQuestions = useMemo(
+    () => resolveQuestions(frameType, questionSet),
+    [frameType, questionSet]
+  );
 
   const [step, setStep] = useState<'content' | 'reflection'>('content');
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
@@ -50,13 +76,14 @@ export function DesignerContentPhase({
     setActiveQuestionIndex(0);
     setContentAnswers(initialContent ?? {});
     setReflectionAnswers(initialReflection ?? {});
-  }, [sceneIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sceneIndex, questionSet]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filledCount = useMemo(
     () => contentQuestions.filter((q) => (contentAnswers[q.id] ?? '').trim().length > 0).length,
     [contentQuestions, contentAnswers]
   );
-  const allContentAnswered = filledCount === contentQuestions.length;
+  const allContentAnswered =
+    contentQuestions.length > 0 && filledCount === contentQuestions.length;
 
   const reflectionAnswered = DESIGNER_REFLECTION_QUESTIONS.every(
     (q) => (reflectionAnswers[q.id] ?? '').trim().length > 0
@@ -67,11 +94,17 @@ export function DesignerContentPhase({
   const currentAnswerFilled =
     (contentAnswers[activeQuestion?.id] ?? '').trim().length > 0;
 
+  const defaultContentSubtitle =
+    questionSet === 'generation'
+      ? 'Answer these questions to create a new panel image for this scene.'
+      : 'Tell us about what you see in this scene. Your answers will update the panel image.';
+
   const handleContentContinue = async () => {
     if (!allContentAnswered || isGenerating) return;
-    // Exactly one API call after the full content question set is completed.
     await onContentFinalized(contentAnswers);
-    setStep('reflection');
+    if (!skipReflection) {
+      setStep('reflection');
+    }
   };
 
   const handleNextQuestion = () => {
@@ -89,11 +122,19 @@ export function DesignerContentPhase({
   };
 
   const handleReflectionContinue = () => {
-    if (!reflectionAnswered) return;
+    if (!reflectionAnswered || !onReflectionFinalized) return;
     onReflectionFinalized(reflectionAnswers);
   };
 
-  // Debug shortcut: skip validation and image API; advance one Continue step.
+  const finalizeLabel =
+    questionSet === 'generation'
+      ? isGenerating
+        ? 'Generating panel...'
+        : 'Generate Panel'
+      : isGenerating
+        ? 'Updating scene...'
+        : 'Update Scene';
+
   useHotkeys(
     'pageup',
     (e) => {
@@ -104,11 +145,13 @@ export function DesignerContentPhase({
           setActiveQuestionIndex((i) =>
             Math.min(contentQuestions.length - 1, i + 1)
           );
+        } else if (skipReflection) {
+          void handleContentContinue();
         } else {
           setStep('reflection');
         }
       } else {
-        onReflectionFinalized(reflectionAnswers);
+        onReflectionFinalized?.(reflectionAnswers);
       }
     },
     {
@@ -119,6 +162,7 @@ export function DesignerContentPhase({
       step,
       isGenerating,
       isLastQuestion,
+      skipReflection,
       contentQuestions.length,
       reflectionAnswers,
       onReflectionFinalized
@@ -133,14 +177,13 @@ export function DesignerContentPhase({
         </h2>
         <p className="text-sm text-gray-500 mt-1">
           {step === 'content'
-            ? 'Tell us about what you see in this scene. Your answers will update the panel image.'
+            ? (subtitle ?? defaultContentSubtitle)
             : 'A quick reflection on this scene. These answers do not change the image yet.'}
         </p>
       </div>
 
       {step === 'content' ? (
         <>
-          {/* PROGRESS LABEL + BAR */}
           <div className="mb-6">
             <div className="text-sm font-medium text-gray-600 mb-2">
               Progress: {filledCount} of {contentQuestions.length} answered
@@ -148,12 +191,11 @@ export function DesignerContentPhase({
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out"
-                style={{ width: `${(filledCount / contentQuestions.length) * 100}%` }}
+                style={{ width: `${contentQuestions.length ? (filledCount / contentQuestions.length) * 100 : 0}%` }}
               />
             </div>
           </div>
 
-          {/* ACTIVE QUESTION */}
           <div className="flex-grow flex flex-col">
             <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">
               Question {activeQuestionIndex + 1}
@@ -177,11 +219,12 @@ export function DesignerContentPhase({
           {isGenerating && (
             <div className="flex items-center gap-3 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <Loader size="sm" color="blue" />
-              <p className="text-sm font-medium text-blue-700">Updating scene...</p>
+              <p className="text-sm font-medium text-blue-700">
+                {questionSet === 'generation' ? 'Generating panel...' : 'Updating scene...'}
+              </p>
             </div>
           )}
 
-          {/* NAVIGATION */}
           <div className="pt-6 md:pt-8 mt-6 md:mt-8 border-t border-gray-100 flex items-center gap-3">
             {activeQuestionIndex > 0 && (
               <button
@@ -200,9 +243,9 @@ export function DesignerContentPhase({
               className="flex-1 py-3 md:py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating
-                ? 'Updating scene...'
+                ? finalizeLabel
                 : isLastQuestion
-                ? 'Update Scene'
+                ? finalizeLabel
                 : 'Next Question'}
             </button>
           </div>

@@ -10,46 +10,58 @@ import { editImageWithFluxKontext, generateImageWithFlux } from './fal';
 import { resolveImageProvider } from '@/lib/envUtils';
 import type { FrameOutline, DesignerAestheticNotes } from '@/types';
 
+const NO_TEXT_IN_IMAGE =
+  'Do not render any text, words, letters, numbers, labels, captions, signs with readable writing, speech bubbles, or UI chrome inside the image.';
+const NO_TEXT_NEGATIVE =
+  'text, words, letters, numbers, typography, captions, labels, speech bubbles, watermarks';
+
 export async function generateStoryboardImage(opts: {
   prompt: string;
   negativePrompt?: string;
   stylePreset?: string;
   referenceImage?: string;
   size?: '1024x1024' | '512x512';
+  applyNoText?: boolean;
 }): Promise<string> {
+  const shouldApplyNoText = !opts.referenceImage || opts.applyNoText === true;
+  const prompt = shouldApplyNoText ? `${opts.prompt}\n\n${NO_TEXT_IN_IMAGE}` : opts.prompt;
+  const negativePrompt = shouldApplyNoText
+    ? [opts.negativePrompt, NO_TEXT_NEGATIVE].filter(Boolean).join(', ')
+    : opts.negativePrompt;
+
   const provider = resolveImageProvider();
 
   if (provider === 'fal') {
     try {
       if (opts.referenceImage) {
         return await editImageWithFluxKontext({
-          prompt: opts.prompt,
+          prompt,
           referenceImage: opts.referenceImage,
-          negativePrompt: opts.negativePrompt,
+          negativePrompt,
           stylePreset: opts.stylePreset
         });
       }
       return await generateImageWithFlux({
-        prompt: opts.prompt,
-        negativePrompt: opts.negativePrompt,
+        prompt,
+        negativePrompt,
         stylePreset: opts.stylePreset
       });
     } catch (err) {
       console.warn('[generateStoryboardImage] fal failed, falling back to OpenAI:', err);
-      return await generateImageWithOpenAI(opts);
+      return await generateImageWithOpenAI({ ...opts, prompt, negativePrompt });
     }
   }
 
   if (provider === 'stability') {
     return await generateImage({
-      prompt: opts.prompt,
-      negativePrompt: opts.negativePrompt ?? '',
+      prompt,
+      negativePrompt: negativePrompt ?? '',
       stylePreset: opts.stylePreset as Parameters<typeof generateImage>[0]['stylePreset'],
       referenceImage: opts.referenceImage
     });
   }
 
-  return await generateImageWithOpenAI(opts);
+  return await generateImageWithOpenAI({ ...opts, prompt, negativePrompt });
 }
 
 export async function generateProblemIllustrativeImage(problem: unknown) {
@@ -114,22 +126,45 @@ export async function generateDesignerSceneImage(args: {
   reflectionAnswers?: Record<string, string>;
   aestheticNotes?: DesignerAestheticNotes;
   stage: 'content' | 'aesthetic';
+  createFromScratch?: boolean;
+  referenceImage?: string;
+  referenceCaption?: string;
 }): Promise<DesignerSceneImageResult> {
+  const createFromScratch =
+    args.createFromScratch ?? (!args.currentImage.trim() && args.stage === 'content');
+
+  const hasPriorPanelReference = !!args.referenceImage?.trim();
+
   const prompt = buildDesignerImageEditPrompt({
     frameType: args.frameType,
     stage: args.stage,
     currentCaption: args.currentCaption,
     contentAnswers: args.contentAnswers,
     reflectionAnswers: args.reflectionAnswers,
-    aestheticNotes: args.aestheticNotes
+    aestheticNotes: args.aestheticNotes,
+    createFromScratch,
+    hasPriorPanelReference,
+    referenceCaption: args.referenceCaption
   });
 
-  const refDataUrl = await toDataUrl(args.currentImage);
-  console.log(`[DesignerMode] preparing image edit (stage=${args.stage}, refIsDataUrl=${refDataUrl.startsWith('data:')})`);
+  const refSource =
+    !createFromScratch && args.currentImage.trim()
+      ? args.currentImage
+      : (args.referenceImage?.trim() ?? '');
+  const refDataUrl = refSource ? await toDataUrl(refSource) : '';
+  const modeLabel = createFromScratch
+    ? hasPriorPanelReference
+      ? 'create+anchor'
+      : 'create'
+    : 'edit';
+  console.log(
+    `[DesignerMode] preparing image ${modeLabel} (stage=${args.stage}, refIsDataUrl=${refDataUrl.startsWith('data:')})`
+  );
 
   const imagePromise = generateStoryboardImage({
     prompt,
-    referenceImage: refDataUrl
+    applyNoText: createFromScratch,
+    ...(refDataUrl ? { referenceImage: refDataUrl } : {})
   });
 
   if (args.stage === 'content') {

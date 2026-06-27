@@ -190,7 +190,7 @@ function AestheticPolishPhase({
         >
           Update
         </button>
-        <button type="button" onClick={() => onContinue(aesthetics)} disabled={isGenerating} className="w-full py-3 md:py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{continueLabel ?? (isLastScene ? 'Finish & Reveal Full Story' : 'Continue Without More Updates')}</button>
+        <button type="button" onClick={() => onContinue(aesthetics)} disabled={isGenerating} className="w-full py-3 md:py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{continueLabel ?? (isLastScene ? 'Finish & Reveal Full Story' : 'Looks good to me!')}</button>
       </div>
     </div>
   );

@@ -749,7 +749,7 @@ const createStore: StateCreator<
     iterateModalTab: null,
     setIterateModalTab: (tab) => set({ iterateModalTab: tab }),
 
-    designTopic: 'campus lunch decisions',
+    designTopic: 'using the recreation gym on campus',
     setDesignTopic: (topic) => set({ designTopic: topic }),
     priorExperience: null,
     setPriorExperience: (v) => set({ priorExperience: v }),

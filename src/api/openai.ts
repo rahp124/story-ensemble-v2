@@ -1029,18 +1029,70 @@ Requirements:
   return result.caption;
 }
 
+type DesignerFrameType = 'Context' | 'Problem' | 'Action' | 'Resolution';
+
+export function getDesignerFrameCompositionDirective(frameType: DesignerFrameType): string {
+  switch (frameType) {
+    case 'Context':
+      return 'Composition: make the setting the main visual anchor and place the character inside or near that environment.';
+    case 'Problem':
+      return 'Composition: emphasize blockage, uncertainty, or friction without changing the story role of this frame.';
+    case 'Action':
+      return 'Composition: emphasize a concrete attempt, pathway, or workaround in progress without inventing a new narrative.';
+    case 'Resolution':
+      return 'Composition: emphasize a clear, satisfied outcome with visible success while preserving narrative continuity.';
+    default:
+      return 'Composition: render a clear storyboard panel appropriate for this frame type.';
+  }
+}
+
+function buildDesignerContentCompositionTail(
+  frameType: DesignerFrameType,
+  mode: 'create' | 'edit'
+): string {
+  const frameDirective = getDesignerFrameCompositionDirective(frameType);
+  if (mode === 'create') {
+    return [
+      'Create a clear, readable storyboard illustration that reflects the participant\'s answers and fits the frame type.',
+      frameDirective,
+      'Focus on composition, lighting, mood, and key visual elements that tell the story for this frame type.'
+    ].join(' ');
+  }
+  return [
+    'Content edit: update the visible scene so it reflects the participant\'s answers, keeping the original composition and frame type.',
+    frameDirective
+  ].join(' ');
+}
+
 export function buildDesignerImageEditPrompt(args: {
-  frameType: 'Context' | 'Problem' | 'Action' | 'Resolution';
+  frameType: DesignerFrameType;
   stage: 'content' | 'aesthetic';
   currentCaption: string;
   contentAnswers: Record<string, string>;
   reflectionAnswers?: Record<string, string>;
   aestheticNotes?: { character?: string; environment?: string; custom?: string };
+  createFromScratch?: boolean;
+  hasPriorPanelReference?: boolean;
+  referenceCaption?: string;
 }): string {
   const blocks: string[] = [];
 
-  blocks.push(`Edit this storyboard panel (frame type: ${args.frameType}) to better match the participant's perspective.`);
-  blocks.push(`Current caption: "${args.currentCaption}"`);
+  if (args.createFromScratch) {
+    blocks.push(`Generate a new storyboard panel (frame type: ${args.frameType}) from the participant's responses.`);
+    if (args.hasPriorPanelReference) {
+      blocks.push(
+        'Use the attached reference image only for visual continuity (character appearance, art style, setting). Depict the new frame type and scene from the participant\'s answers; do not copy the prior panel composition unchanged.'
+      );
+      if (args.referenceCaption?.trim()) {
+        blocks.push(`Prior panel caption (for narrative continuity only): "${args.referenceCaption.trim()}"`);
+      }
+    }
+  } else {
+    blocks.push(`Edit this storyboard panel (frame type: ${args.frameType}) to better match the participant's perspective.`);
+    if (args.currentCaption.trim()) {
+      blocks.push(`Current caption: "${args.currentCaption}"`);
+    }
+  }
 
   const trimmedContent = Object.fromEntries(
     Object.entries(args.contentAnswers).filter(([, v]) => (v ?? '').trim().length > 0)
@@ -1068,8 +1120,10 @@ export function buildDesignerImageEditPrompt(args: {
     }
 
     blocks.push('Aesthetic-only edit: adjust visual style, lighting, character, and environment as described. DO NOT change the story, action, or who/what is in the scene.');
+  } else if (args.createFromScratch) {
+    blocks.push(buildDesignerContentCompositionTail(args.frameType, 'create'));
   } else {
-    blocks.push('Content edit: update the visible scene so it reflects the participant\'s answers, keeping the original composition and frame type.');
+    blocks.push(buildDesignerContentCompositionTail(args.frameType, 'edit'));
   }
 
   return blocks.join('\n\n');
