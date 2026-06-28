@@ -178,7 +178,6 @@ export function DesignerVariantPicker({
   };
 
   if (storyboards.length === 0) {
-  if (storyboards.length === 0) {
     return (
       <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center p-6 text-gray-500">
         No storyboards available.
