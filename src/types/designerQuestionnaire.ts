@@ -38,13 +38,8 @@ export const DESIGNER_CONTENT_QUESTIONS: Record<DesignerQuestionFrameType, Desig
 };
 
 export const DESIGNER_REFLECTION_QUESTIONS: Omit<DesignerContentQuestion, 'phase'>[] = [
-<<<<<<< HEAD
-  { id: 'reflect-felt',    text: 'Briefly describe what this moment felt like for you.' },
-  { id: 'reflect-mind',    text: 'What was the main thing on your mind at this moment? Write a sentence describing your specific thought or feeling at this moment.' }
-=======
-  { id: 'reflect-felt',    text: 'Write one word that best describes how you’re feeling at this moment:' },
+  { id: 'reflect-felt',    text: 'Write one word that best describes how you\'re feeling at this moment:' },
   { id: 'reflect-mind',    text: 'Write a sentence describing the main thing on your mind at this moment:' }
->>>>>>> f5be281 (generate own frame flow)
 ];
 
 export function getDesignerAllContentQuestions(
@@ -68,6 +63,6 @@ export function getDesignerContentOnlyQuestions(
 export function rewordForImaginedExperience(text: string): string {
   return text
     .replace(/your last experience/gi, 'this situation')
-    .replace(/what were you trying/gi, 'what would you be trying')
-    .replace(/what was happening/gi, 'what would likely be happening');
+    .replace(/what were you trying/gi, 'What would you be trying')
+    .replace(/what was happening/gi, 'What would likely be happening');
 }

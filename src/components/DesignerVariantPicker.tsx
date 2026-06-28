@@ -242,14 +242,6 @@ export function DesignerVariantPicker({
         >
           {continueLabel}
         </button>
-        <button
-          type="button"
-          onClick={handleContinue}
-          disabled={continueDisabled}
-          className="mt-6 inline-flex items-center justify-center w-full py-3 px-4 bg-blue-600 text-white text-base font-semibold rounded-xl hover:bg-blue-700 transition disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
-        >
-          {continueLabel}
-        </button>
       </div>
     </div>
   );
