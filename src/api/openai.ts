@@ -246,11 +246,13 @@ export async function generateImagePrompt(
   const pacing = buildPacingInstruction(frameIndex, context);
   const sceneKey = `scene${frameIndex}`;
   const currentCharAdjust = answers[`${sceneKey}_char_adjust`] ?? '';
+  const currentActionAdjust = answers[`${sceneKey}_action_adjust`] ?? '';
   const currentEnvAdjust = answers[`${sceneKey}_env_adjust`] ?? '';
   const currentCustom = answers[`${sceneKey}_custom`] ?? '';
 
   const overrideInstruction = [
     currentCharAdjust ? `character adjustment: ${currentCharAdjust}` : '',
+    currentActionAdjust ? `action adjustment: ${currentActionAdjust}` : '',
     currentEnvAdjust ? `environment adjustment: ${currentEnvAdjust}` : '',
     currentCustom ? `custom notes: ${currentCustom}` : ''
   ]
@@ -1070,7 +1072,7 @@ export function buildDesignerImageEditPrompt(args: {
   currentCaption: string;
   contentAnswers: Record<string, string>;
   reflectionAnswers?: Record<string, string>;
-  aestheticNotes?: { character?: string; environment?: string; custom?: string };
+  aestheticNotes?: { character?: string; action?: string; environment?: string; custom?: string };
   createFromScratch?: boolean;
   hasPriorPanelReference?: boolean;
   referenceCaption?: string;
@@ -1112,6 +1114,7 @@ export function buildDesignerImageEditPrompt(args: {
     const notes = args.aestheticNotes ?? {};
     const noteLines = [
       notes.character ? `Character adjustment: ${notes.character}` : '',
+      notes.action ? `Action adjustment: ${notes.action}` : '',
       notes.environment ? `Environment adjustment: ${notes.environment}` : '',
       notes.custom ? `Other directives: ${notes.custom}` : ''
     ].filter(Boolean);
@@ -1119,7 +1122,11 @@ export function buildDesignerImageEditPrompt(args: {
       blocks.push(`Aesthetic adjustments to apply:\n${noteLines.join('\n')}`);
     }
 
-    blocks.push('Aesthetic-only edit: adjust visual style, lighting, character, and environment as described. DO NOT change the story, action, or who/what is in the scene.');
+    if (notes.action?.trim()) {
+      blocks.push('Aesthetic-only edit: adjust visual style, lighting, character, environment, and action/pose as described. DO NOT change the story or who/what is in the scene beyond the action adjustment.');
+    } else {
+      blocks.push('Aesthetic-only edit: adjust visual style, lighting, character, and environment as described. DO NOT change the story, action, or who/what is in the scene.');
+    }
   } else if (args.createFromScratch) {
     blocks.push(buildDesignerContentCompositionTail(args.frameType, 'create'));
   } else {

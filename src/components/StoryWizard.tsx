@@ -59,6 +59,7 @@ function buildFlatContext(
     flat[`scene${i}_mindset`]     = content.mindset ?? '';
     flat[`scene${i}_frustration`] = content.frustration ?? '';
     flat[`scene${i}_char_adjust`] = aesthetics.character ?? '';
+    flat[`scene${i}_action_adjust`] = aesthetics.action ?? '';
     flat[`scene${i}_env_adjust`]  = aesthetics.environment ?? '';
     flat[`scene${i}_custom`]      = aesthetics.custom ?? '';
 
@@ -84,6 +85,7 @@ function buildFlatContext(
   if (includeCurrentAesthetics) {
     const a = state.scenes[sceneIndex].aesthetics;
     flat[`scene${sceneIndex}_char_adjust`] = a.character ?? '';
+    flat[`scene${sceneIndex}_action_adjust`] = a.action ?? '';
     flat[`scene${sceneIndex}_env_adjust`]  = a.environment ?? '';
     flat[`scene${sceneIndex}_custom`]      = a.custom ?? '';
   }
@@ -615,7 +617,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       caption: string;
       contentAnswers?: Record<string, string>;
       reflectionAnswers?: Record<string, string>;
-      aestheticNotes?: { character?: string; environment?: string; custom?: string };
+      aestheticNotes?: { character?: string; action?: string; environment?: string; custom?: string };
     }> | undefined
   )?.[sceneIndex];
 
