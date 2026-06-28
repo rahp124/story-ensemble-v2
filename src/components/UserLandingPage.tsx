@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { USER_LANDING_COPY } from '../content/onboardingCopy';
 
@@ -12,11 +12,21 @@ export function UserLandingPage({ onComplete }: UserLandingPageProps) {
 
   const [consent, setConsent] = useState(false);
 
+  useEffect(() => {
+    useStore.getState().clearStudyEvents();
+  }, []);
+
   const copy = USER_LANDING_COPY;
   const canBegin = consent;
 
   const handleBegin = () => {
     if (!canBegin) return;
+    useStore.getState().addStudyEvent({
+      initiator: 'user',
+      type: 'LANDING_BEGIN',
+      count: 1,
+      data: { consent: true }
+    });
     setHasCompletedLanding(true);
     onComplete();
   };

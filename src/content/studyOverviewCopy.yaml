@@ -25,10 +25,10 @@ priorExperience:
   options:
     - value: yes
       title: Yes, I've experienced this
-      description: I have firsthand context with this topic.
+      description: I will recall firsthand context with this topic.
     - value: no
-      title: No, but I can imagine it
-      description: I'll picture myself in this context.
+      title: No, but I'll picture myself in this context
+      description: I'll imagine the most realistic scenario for me.
 
 experienceSummary:
   label: Briefly describe your experience

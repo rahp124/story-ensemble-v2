@@ -113,9 +113,22 @@ async function toDataUrl(input: string): Promise<string> {
   });
 }
 
+export type DesignerSceneGenerationMeta = {
+  imagePrompt: string;
+  stage: 'content' | 'aesthetic';
+  frameType: FrameOutline['frameType'];
+  createFromScratch: boolean;
+  hasReferenceImage: boolean;
+  contentAnswers: Record<string, string>;
+  reflectionAnswers?: Record<string, string>;
+  aestheticNotes?: DesignerAestheticNotes;
+  referenceCaption?: string;
+};
+
 export type DesignerSceneImageResult = {
   image: string;
   caption?: string;
+  generation: DesignerSceneGenerationMeta;
 };
 
 export async function generateDesignerSceneImage(args: {
@@ -167,6 +180,19 @@ export async function generateDesignerSceneImage(args: {
     ...(refDataUrl ? { referenceImage: refDataUrl } : {})
   });
 
+  const hasReferenceImage = !!refDataUrl;
+  const generation: DesignerSceneGenerationMeta = {
+    imagePrompt: prompt,
+    stage: args.stage,
+    frameType: args.frameType,
+    createFromScratch,
+    hasReferenceImage,
+    contentAnswers: args.contentAnswers,
+    reflectionAnswers: args.reflectionAnswers,
+    aestheticNotes: args.aestheticNotes,
+    referenceCaption: args.referenceCaption
+  };
+
   if (args.stage === 'content') {
     const [image, caption] = await Promise.all([
       imagePromise,
@@ -176,9 +202,9 @@ export async function generateDesignerSceneImage(args: {
         contentAnswers: args.contentAnswers
       })
     ]);
-    return { image, caption };
+    return { image, caption, generation };
   }
 
   const image = await imagePromise;
-  return { image };
+  return { image, generation };
 }

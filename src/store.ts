@@ -76,6 +76,7 @@ const indexDbStorage: StateStorage = {
 };
 
 type StudyEvent = {
+  timestamp?: string;
   initiator: 'system' | 'user';
   type: string;
   count: number;
@@ -390,6 +391,7 @@ type RFState = {
 
   studyEvents: Array<StudyEvent>;
   addStudyEvent: (event: StudyEvent) => void;
+  clearStudyEvents: () => void;
 };
 
 function partialize(state: RFState): Partial<RFState> {
@@ -2274,6 +2276,23 @@ const createStore: StateCreator<
         });
 
         get().takeSnapshot();
+        const frame = outline[idx];
+        get().addStudyEvent({
+          initiator: 'system',
+          type: 'SYSTEM_REGENERATE_STORYBOARD_FRAME',
+          count: 1,
+          data: {
+            storyboardId: id,
+            frameIndex: idx,
+            frameType: frame.frameType,
+            caption: frame.caption ?? '',
+            imagePrompt: prompt.prompt,
+            negativePrompt: prompt.negativePrompt,
+            artStyle: storyboard.data.storyboard.artStyle,
+            anchorImageUsed: anchorImage !== ''
+          }
+        });
+
         updateNode<StoryboardNodeData>(id, (draft) => {
           draft.data.storyboard.outline[idx].image = image;
           draft.data.storyboard.outline[idx].imageOutOfSync = false;
@@ -2834,9 +2853,13 @@ const createStore: StateCreator<
     studyEvents: [],
     addStudyEvent: (event) => {
       set({
-        studyEvents: [...get().studyEvents, event]
+        studyEvents: [
+          ...get().studyEvents,
+          { ...event, timestamp: new Date().toISOString() }
+        ]
       });
-    }
+    },
+    clearStudyEvents: () => set({ studyEvents: [] })
   };
 };
 

@@ -39,7 +39,12 @@ export default function App() {
   const setAdminSetupOpen = useStore((s) => s.setAdminSetupOpen);
 
   const handleStartOver = () => {
-    useStore.setState({ nodes: [], edges: [] });
+    useStore.setState({
+      nodes: [],
+      edges: [],
+      hasCompletedLanding: false,
+      hasCompletedOverview: false
+    });
     setWizardOpened(true);
   };
 

@@ -23,6 +23,15 @@ export function StudyOverviewPage() {
 
   const handleContinue = () => {
     if (!canContinue) return;
+    useStore.getState().addStudyEvent({
+      initiator: 'user',
+      type: 'STUDY_OVERVIEW_COMPLETE',
+      count: 1,
+      data: {
+        priorExperience,
+        experienceSummary: experienceSummary.trim()
+      }
+    });
     setHasCompletedOverview(true);
   };
 
