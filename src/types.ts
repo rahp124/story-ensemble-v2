@@ -200,6 +200,7 @@ export type StoryboardOutline = z.infer<typeof storyboardOutlineSchema>;
 
 export type DesignerAestheticNotes = {
   character?: string;
+  action?: string;
   environment?: string;
   custom?: string;
 };

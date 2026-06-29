@@ -1,9 +1,11 @@
 import { StylePreset } from '@/api/stableDiffusion';
+import { buildStudyUsageExport, downloadStudyUsageData, studyUsageDownloadBasename } from '@/lib/studyUsageData';
 import { NodeType } from '@/rf-components';
 import { useStore } from '@/store';
 import { StoryboardNodeData } from '@/types';
 import {
   ActionIcon,
+  Button,
   CloseButton,
   Input,
   Popover,
@@ -52,23 +54,31 @@ export function StoryboardEditorPage() {
   const updateStoryboardTitle = useStore((s) => s.updateStoryboardTitle);
   const updateStoryboardCaption = useStore((s) => s.updateStoryboardCaption);
   const updateStoryboardImageStyle = useStore((s) => s.updateStoryboardImageStyle);
+  const generateStoryboardImages = useStore((s) => s.generateStoryboardImages);
   const addStudyEvent = useStore((s) => s.addStudyEvent);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [loadingMap, setLoadingMap] = useState<boolean[]>([]);
   const [aestheticFrameIndex, setAestheticFrameIndex] = useState<number | null>(
     null
   );
   const [expandCaptionsForCapture, setExpandCaptionsForCapture] = useState(false);
 
   const storyboard = node?.data.storyboard;
+  const someLoading = loadingMap.some((loading) => loading);
 
   useEffect(() => {
     if (storyboard?.title !== undefined) {
       setTitle(storyboard.title);
     }
   }, [storyboard?.title]);
+
+  useEffect(() => {
+    const len = storyboard?.outline.length ?? 0;
+    setLoadingMap(Array(len).fill(false));
+  }, [storyboard?.outline.length]);
 
   if (!node || !storyboard) {
     return (
@@ -91,11 +101,72 @@ export function StoryboardEditorPage() {
   };
 
   const handleCaptionChange = (frameIdx: number, caption: string) => {
+    addStudyEvent({
+      initiator: 'user',
+      type: 'EDIT_STORYBOARD_CAPTION',
+      count: 1,
+      data: { frameIndex: frameIdx, caption }
+    });
     updateStoryboardCaption(node.id, frameIdx, caption);
+  };
+
+  const handleFrameClick = (frameIndex: number) => {
+    addStudyEvent({
+      initiator: 'user',
+      type: 'OPEN_FRAME_AESTHETICS',
+      count: 1,
+      data: { frameIndex }
+    });
+    setAestheticFrameIndex(frameIndex);
+  };
+
+  const regenerateAllImages = () => {
+    if (someLoading) return;
+
+    setLoadingMap(Array(storyboard.outline.length).fill(true));
+
+    generateStoryboardImages(node.id).then((imagePromises) => {
+      imagePromises.forEach((imagePromise) => {
+        imagePromise.then((idx) => {
+          setLoadingMap((prev) =>
+            prev.map((loading, i) => (i === idx ? false : loading))
+          );
+        });
+      });
+    });
+
+    addStudyEvent({
+      initiator: 'user',
+      type: 'ALL_IMAGES_REGENERATE_STORYBOARD_FRAMES',
+      count: storyboard.outline.length,
+      data: {}
+    });
   };
 
   async function downloadStoryboard() {
     if (!cardRef.current) return;
+
+    addStudyEvent({
+      initiator: 'user',
+      type: 'DOWNLOAD_STORYBOARD',
+      count: 1,
+      data: {}
+    });
+
+    const state = useStore.getState();
+    const storyboards = state.nodes.filter(
+      (n): n is Node<StoryboardNodeData> => n.type === NodeType.Storyboard
+    );
+    const activeNode = storyboards[storyboards.length - 1];
+    let downloadBasename = 'storyboard';
+    if (activeNode) {
+      const exportData = buildStudyUsageExport(activeNode, state.studyEvents, {
+        designTopic: state.designTopic,
+        priorExperience: state.priorExperience
+      });
+      downloadBasename = studyUsageDownloadBasename(exportData);
+      downloadStudyUsageData(exportData);
+    }
 
     flushSync(() => setExpandCaptionsForCapture(true));
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -117,7 +188,7 @@ export function StoryboardEditorPage() {
 
       const a = document.createElement('a');
       a.setAttribute('href', image);
-      a.setAttribute('download', 'storyboard.jpg');
+      a.setAttribute('download', `${downloadBasename}.jpg`);
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -157,12 +228,14 @@ export function StoryboardEditorPage() {
               width={350}
               withArrow
               shadow="md"
+              disabled={someLoading}
               opened={settingsOpen}
               onChange={setSettingsOpen}
             >
               <Popover.Target>
                 <ActionIcon
                   variant="subtle"
+                  disabled={someLoading}
                   onClick={() => setSettingsOpen((prev) => !prev)}
                 >
                   <Settings />
@@ -177,12 +250,29 @@ export function StoryboardEditorPage() {
                   label="Image style"
                   comboboxProps={{ withinPortal: false }}
                   allowDeselect={false}
+                  disabled={someLoading}
                   data={STYLE_PRESETS}
                   value={storyboard.artStyle}
                   onChange={(value) => {
+                    if (!value) return;
+                    addStudyEvent({
+                      initiator: 'user',
+                      type: 'EDIT_STORYBOARD_IMAGE_STYLE',
+                      count: 1,
+                      data: { artStyle: value }
+                    });
                     updateStoryboardImageStyle(node.id, value as StylePreset);
                   }}
                 />
+                <Button
+                  className="mt-4"
+                  fullWidth
+                  loading={someLoading}
+                  disabled={someLoading}
+                  onClick={regenerateAllImages}
+                >
+                  Re-generate
+                </Button>
               </Popover.Dropdown>
             </Popover>
             <Tooltip label="Download storyboard image">
@@ -209,8 +299,9 @@ export function StoryboardEditorPage() {
             title={storyboard.title || 'Storyboard'}
             editableCaptions
             expandCaptions={expandCaptionsForCapture}
+            loadingIndices={loadingMap}
             onCaptionChange={handleCaptionChange}
-            onFrameClick={setAestheticFrameIndex}
+            onFrameClick={handleFrameClick}
           />
         </div>
       </div>

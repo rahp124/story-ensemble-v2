@@ -5,6 +5,7 @@ import { IterateModal } from './components/IterateModal';
 import { DependentGenerationModal } from './components/DependentGenerationModal';
 import { StoryWizard } from './components/StoryWizard';
 import { UserLandingPage } from './components/UserLandingPage';
+import { StudyOverviewPage } from './components/StudyOverviewPage';
 import { AdminSetup } from './components/AdminSetup';
 import { GenerateMoreModal } from './components/GenerateMoreModal';
 import { StoryboardEditorPage } from './components/StoryboardEditorPage';
@@ -33,11 +34,17 @@ export default function App() {
 
   const [wizardOpened, setWizardOpened] = useState(nodes.length === 0);
   const hasCompletedLanding = useStore((s) => s.hasCompletedLanding);
+  const hasCompletedOverview = useStore((s) => s.hasCompletedOverview);
   const adminSetupOpen = useStore((s) => s.adminSetupOpen);
   const setAdminSetupOpen = useStore((s) => s.setAdminSetupOpen);
 
   const handleStartOver = () => {
-    useStore.setState({ nodes: [], edges: [] });
+    useStore.setState({
+      nodes: [],
+      edges: [],
+      hasCompletedLanding: false,
+      hasCompletedOverview: false
+    });
     setWizardOpened(true);
   };
 
@@ -46,7 +53,10 @@ export default function App() {
       {wizardOpened && !hasCompletedLanding && (
         <UserLandingPage onComplete={() => { /* store flip drives re-render */ }} />
       )}
-      {wizardOpened && hasCompletedLanding && (
+      {wizardOpened && hasCompletedLanding && !hasCompletedOverview && (
+        <StudyOverviewPage />
+      )}
+      {wizardOpened && hasCompletedLanding && hasCompletedOverview && (
         <StoryWizard onComplete={() => setWizardOpened(false)} />
       )}
       {!wizardOpened && (

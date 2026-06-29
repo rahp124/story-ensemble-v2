@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { SCENE_QUESTION_MAP, SceneQuestion } from '@/types/questionnaire';
 import { QuestionField } from './QuestionField';
+import type { WizardPhaseTheme } from '@/lib/wizardPhaseTheme';
+import { panelCardBorderStyle, panelCardStyle } from '@/lib/wizardPhaseTheme';
 
 export type SceneContent = Record<string, string | undefined>;
 
 interface ContentPhaseProps {
   sceneIndex: number;
   content: SceneContent;
+  phaseTheme?: WizardPhaseTheme;
   onChange: (field: keyof SceneContent, value: string) => void;
   onSubmit: (content: SceneContent) => void;
   /** Debug: advance without validation or image generation (PgUp). */
@@ -19,6 +22,7 @@ const SCENE_TITLES = ['The Setup', 'The Challenge', 'The Response', 'The Reflect
 export function ContentPhase({
   sceneIndex,
   content,
+  phaseTheme = 'content',
   onChange,
   onSubmit,
   onDebugSubmit
@@ -73,7 +77,10 @@ export function ContentPhase({
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 min-h-[500px] flex flex-col">
+    <div
+      className="rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 min-h-[500px] flex flex-col"
+      style={{ ...panelCardStyle(phaseTheme), ...panelCardBorderStyle(phaseTheme) }}
+    >
       <div className="mb-6">
         <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
           {SCENE_TITLES[sceneIndex]}

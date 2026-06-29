@@ -1,8 +1,11 @@
 import { Loader } from '@mantine/core';
 import SketchRefinementForm from './SketchRefinementForm';
+import type { WizardPhaseTheme } from '@/lib/wizardPhaseTheme';
+import { panelCardBorderStyle, panelCardStyle } from '@/lib/wizardPhaseTheme';
 
 export type SceneAesthetics = {
   character?: string;
+  action?: string;
   environment?: string;
   custom?: string;
 };
@@ -28,6 +31,7 @@ interface AestheticsPhaseProps {
   onContinue?: (aesthetics: SceneAesthetics | SceneSketchRefinement) => void;
   isGenerating: boolean;
   isLastScene: boolean;
+  phaseTheme?: WizardPhaseTheme;
   mode?: 'sketch' | 'aesthetic';
   continueLabel?: string;
 }
@@ -43,6 +47,7 @@ export function AestheticsPhase({
   onContinue,
   isGenerating,
   isLastScene,
+  phaseTheme = 'aesthetics',
   mode,
   continueLabel,
 }: AestheticsPhaseProps) {
@@ -50,6 +55,7 @@ export function AestheticsPhase({
     return (
       <SketchRefinePhase
         sceneIndex={sceneIndex}
+        phaseTheme={phaseTheme}
         refinement={sketchRefinement || {}}
         onChange={onChange as (field: keyof SceneSketchRefinement, value: string) => void}
         onPreview={onPreview as (data: SceneSketchRefinement) => void}
@@ -65,6 +71,7 @@ export function AestheticsPhase({
   return (
     <AestheticPolishPhase
       sceneIndex={sceneIndex}
+      phaseTheme={phaseTheme}
       aesthetics={aesthetics}
       onChange={onChange as (field: keyof SceneAesthetics, value: string) => void}
       onPreview={onPreview as (aesthetics: SceneAesthetics) => void}
@@ -84,6 +91,7 @@ export function AestheticsPhase({
 
 interface SketchRefinePhaseProps {
   sceneIndex: number;
+  phaseTheme: WizardPhaseTheme;
   refinement: SceneSketchRefinement;
   onChange: (field: keyof SceneSketchRefinement, value: string) => void;
   onPreview: (data: SceneSketchRefinement) => void;
@@ -94,6 +102,7 @@ interface SketchRefinePhaseProps {
 
 function SketchRefinePhase({
   sceneIndex: _sceneIndex,
+  phaseTheme,
   refinement,
   onChange,
   onPreview,
@@ -109,6 +118,7 @@ function SketchRefinePhase({
 
   return (
     <SketchRefinementForm
+      phaseTheme={phaseTheme}
       refinement={refinement}
       onChange={onChange}
       onPreview={onPreview}
@@ -128,6 +138,7 @@ function SketchRefinePhase({
 
 interface AestheticPolishPhaseProps {
   sceneIndex: number;
+  phaseTheme: WizardPhaseTheme;
   aesthetics: SceneAesthetics;
   onChange: (field: keyof SceneAesthetics, value: string) => void;
   onPreview: (aesthetics: SceneAesthetics) => void;
@@ -139,6 +150,7 @@ interface AestheticPolishPhaseProps {
 
 function AestheticPolishPhase({
   sceneIndex,
+  phaseTheme,
   aesthetics,
   onChange,
   onPreview,
@@ -150,7 +162,10 @@ function AestheticPolishPhase({
   onContentChange: _onContentChange,
 }: AestheticPolishPhaseProps & { content?: Record<string,string|undefined>; onContentChange?: (field:string,value:string)=>void }) {
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 min-h-[500px] flex flex-col">
+    <div
+      className="rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 min-h-[500px] flex flex-col"
+      style={{ ...panelCardStyle(phaseTheme), ...panelCardBorderStyle(phaseTheme) }}
+    >
       <div className="mb-6">
         <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Scene {sceneIndex + 1} - Visual Aesthetics</h2>
         <p className="text-sm text-gray-500 mt-1">Describe visual adjustments for this panel. Use Preview Update to regenerate the current panel before continuing.</p>
@@ -160,17 +175,22 @@ function AestheticPolishPhase({
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-1">Character adjustment</label>
           <p className="text-xs text-gray-500 mb-2">Describe how the character should look or feel differently.</p>
-          <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" value={aesthetics.character ?? ''} onChange={(e)=>onChange('character', e.target.value)} disabled={isGenerating} />
+          <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" placeholder="Optional" value={aesthetics.character ?? ''} onChange={(e)=>onChange('character', e.target.value)} disabled={isGenerating} />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-1">Action adjustment</label>
+          <p className="text-xs text-gray-500 mb-2">Describe how the character's pose, gesture, or activity should differ.</p>
+          <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" placeholder="Optional" value={aesthetics.action ?? ''} onChange={(e)=>onChange('action', e.target.value)} disabled={isGenerating} />
         </div>
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-1">Environment adjustment</label>
           <p className="text-xs text-gray-500 mb-2">Adjust background, lighting, or setting details.</p>
-          <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" value={aesthetics.environment ?? ''} onChange={(e)=>onChange('environment', e.target.value)} disabled={isGenerating} />
+          <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" placeholder="Optional" value={aesthetics.environment ?? ''} onChange={(e)=>onChange('environment', e.target.value)} disabled={isGenerating} />
         </div>
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-1">Custom notes</label>
           <p className="text-xs text-gray-500 mb-2">Any other directives (tone, props, composition overrides).</p>
-          <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" value={aesthetics.custom ?? ''} onChange={(e)=>onChange('custom', e.target.value)} disabled={isGenerating} />
+          <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" placeholder="Optional" value={aesthetics.custom ?? ''} onChange={(e)=>onChange('custom', e.target.value)} disabled={isGenerating} />
         </div>
       </div>
 
@@ -190,7 +210,7 @@ function AestheticPolishPhase({
         >
           Update
         </button>
-        <button type="button" onClick={() => onContinue(aesthetics)} disabled={isGenerating} className="w-full py-3 md:py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{continueLabel ?? (isLastScene ? 'Finish & Reveal Full Story' : 'Continue Without More Updates')}</button>
+        <button type="button" onClick={() => onContinue(aesthetics)} disabled={isGenerating} className="w-full py-3 md:py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{continueLabel ?? (isLastScene ? 'Finish & Reveal Full Story' : 'Looks good to me!')}</button>
       </div>
     </div>
   );

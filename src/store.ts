@@ -76,6 +76,7 @@ const indexDbStorage: StateStorage = {
 };
 
 type StudyEvent = {
+  timestamp?: string;
   initiator: 'system' | 'user';
   type: string;
   count: number;
@@ -141,6 +142,8 @@ type RFState = {
   setPriorExperience: (v: 'yes' | 'no' | null) => void;
   hasCompletedLanding: boolean;
   setHasCompletedLanding: (v: boolean) => void;
+  hasCompletedOverview: boolean;
+  setHasCompletedOverview: (v: boolean) => void;
 
   /* Evaluation State Machine */
   evaluation: EvaluationState;
@@ -388,6 +391,7 @@ type RFState = {
 
   studyEvents: Array<StudyEvent>;
   addStudyEvent: (event: StudyEvent) => void;
+  clearStudyEvents: () => void;
 };
 
 function partialize(state: RFState): Partial<RFState> {
@@ -747,12 +751,14 @@ const createStore: StateCreator<
     iterateModalTab: null,
     setIterateModalTab: (tab) => set({ iterateModalTab: tab }),
 
-    designTopic: 'campus lunch decisions',
+    designTopic: 'using the recreation gym on campus',
     setDesignTopic: (topic) => set({ designTopic: topic }),
     priorExperience: null,
     setPriorExperience: (v) => set({ priorExperience: v }),
     hasCompletedLanding: false,
     setHasCompletedLanding: (v) => set({ hasCompletedLanding: v }),
+    hasCompletedOverview: false,
+    setHasCompletedOverview: (v) => set({ hasCompletedOverview: v }),
 
     addCommentNode: (comment = '') => {
       const center = get().centerPosition;
@@ -2270,6 +2276,23 @@ const createStore: StateCreator<
         });
 
         get().takeSnapshot();
+        const frame = outline[idx];
+        get().addStudyEvent({
+          initiator: 'system',
+          type: 'SYSTEM_REGENERATE_STORYBOARD_FRAME',
+          count: 1,
+          data: {
+            storyboardId: id,
+            frameIndex: idx,
+            frameType: frame.frameType,
+            caption: frame.caption ?? '',
+            imagePrompt: prompt.prompt,
+            negativePrompt: prompt.negativePrompt,
+            artStyle: storyboard.data.storyboard.artStyle,
+            anchorImageUsed: anchorImage !== ''
+          }
+        });
+
         updateNode<StoryboardNodeData>(id, (draft) => {
           draft.data.storyboard.outline[idx].image = image;
           draft.data.storyboard.outline[idx].imageOutOfSync = false;
@@ -2830,9 +2853,13 @@ const createStore: StateCreator<
     studyEvents: [],
     addStudyEvent: (event) => {
       set({
-        studyEvents: [...get().studyEvents, event]
+        studyEvents: [
+          ...get().studyEvents,
+          { ...event, timestamp: new Date().toISOString() }
+        ]
       });
-    }
+    },
+    clearStudyEvents: () => set({ studyEvents: [] })
   };
 };
 

@@ -1,4 +1,5 @@
 import { generateDesignerSceneImage } from '@/api/images';
+import { logSystemPanelGeneration } from '@/lib/studyUsageData';
 import { useStore } from '@/store';
 import { Loader, Modal } from '@mantine/core';
 import { useEffect, useState } from 'react';
@@ -34,6 +35,7 @@ export function StoryboardFrameAestheticModal({
   );
 
   const applyDesignerSceneUpdate = useStore((s) => s.applyDesignerSceneUpdate);
+  const addStudyEvent = useStore((s) => s.addStudyEvent);
 
   const frame =
     frameIndex !== null
@@ -60,7 +62,7 @@ export function StoryboardFrameAestheticModal({
 
     setIsGenerating(true);
     try {
-      const { image } = await generateDesignerSceneImage({
+      const { image, generation } = await generateDesignerSceneImage({
         currentImage: frame.image ?? '',
         currentCaption: frame.caption ?? '',
         frameType: frame.frameType,
@@ -69,10 +71,31 @@ export function StoryboardFrameAestheticModal({
         aestheticNotes: notes,
         stage: 'aesthetic'
       });
+      addStudyEvent({
+        initiator: 'user',
+        type: 'EDITOR_AESTHETIC_PREVIEW',
+        count: 1,
+        data: { frameIndex, aestheticNotes: notes }
+      });
       applyDesignerSceneUpdate(storyboardId, frameIndex, {
         stage: 'aesthetics',
         image,
         aestheticNotes: notes
+      });
+      logSystemPanelGeneration(addStudyEvent, {
+        storyboardId,
+        frameIndex,
+        frameType: frame.frameType,
+        stage: 'aesthetic',
+        caption: frame.caption ?? '',
+        captionChanged: false,
+        imagePrompt: generation.imagePrompt,
+        contentAnswers: generation.contentAnswers,
+        reflectionAnswers: generation.reflectionAnswers,
+        aestheticNotes: generation.aestheticNotes,
+        referenceCaption: generation.referenceCaption,
+        createFromScratch: generation.createFromScratch,
+        hasReferenceImage: generation.hasReferenceImage
       });
     } catch (err) {
       console.error('[StoryboardFrameAestheticModal preview]', err);
@@ -83,6 +106,12 @@ export function StoryboardFrameAestheticModal({
 
   const handleContinue = (notes: SceneAesthetics) => {
     if (frameIndex === null) return;
+    addStudyEvent({
+      initiator: 'user',
+      type: 'EDITOR_AESTHETIC_SAVE',
+      count: 1,
+      data: { frameIndex, aestheticNotes: notes }
+    });
     applyDesignerSceneUpdate(storyboardId, frameIndex, {
       stage: 'aesthetics',
       aestheticNotes: notes

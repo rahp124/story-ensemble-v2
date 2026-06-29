@@ -1,8 +1,11 @@
 import { Loader } from '@mantine/core';
 import type { SceneSketchRefinement } from './AestheticsPhase';
+import type { WizardPhaseTheme } from '@/lib/wizardPhaseTheme';
+import { panelCardBorderStyle, panelCardStyle } from '@/lib/wizardPhaseTheme';
 
 interface Props {
   refinement: SceneSketchRefinement;
+  phaseTheme?: WizardPhaseTheme;
   onChange: (field: keyof SceneSketchRefinement, value: string) => void;
   onPreview: (data: SceneSketchRefinement) => void;
   onContinue: (data: SceneSketchRefinement) => void;
@@ -15,6 +18,7 @@ interface Props {
 
 export default function SketchRefinementForm({
   refinement,
+  phaseTheme = 'aesthetics',
   onChange,
   onPreview,
   onContinue,
@@ -25,7 +29,10 @@ export default function SketchRefinementForm({
   contentLocked = false,
 }: Props) {
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 min-h-[500px] flex flex-col">
+    <div
+      className="rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 min-h-[500px] flex flex-col"
+      style={{ ...panelCardStyle(phaseTheme), ...panelCardBorderStyle(phaseTheme) }}
+    >
       <div className="mb-6">
         <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
           Story Reflection
