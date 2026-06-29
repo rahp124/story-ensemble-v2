@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { Loader } from '@mantine/core';
 import type { FrameOutline } from '@/types';
+import type { WizardPhaseTheme } from '@/lib/wizardPhaseTheme';
+import { panelCardBorderStyle, panelCardStyle } from '@/lib/wizardPhaseTheme';
 import {
   DESIGNER_REFLECTION_QUESTIONS,
   getDesignerContentOnlyQuestions,
@@ -25,6 +27,7 @@ interface DesignerContentPhaseProps {
   initialReflection?: DesignerSceneAnswers;
   isGenerating: boolean;
   isLastScene: boolean;
+  phaseTheme?: WizardPhaseTheme;
   onContentFinalized: (answers: DesignerSceneAnswers) => Promise<void> | void;
   onReflectionFinalized?: (answers: DesignerSceneAnswers) => void;
 }
@@ -54,6 +57,7 @@ export function DesignerContentPhase({
   initialReflection,
   isGenerating,
   isLastScene,
+  phaseTheme = 'content',
   onContentFinalized,
   onReflectionFinalized
 }: DesignerContentPhaseProps) {
@@ -130,7 +134,10 @@ export function DesignerContentPhase({
   );
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 min-h-[500px] flex flex-col">
+    <div
+      className="rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 min-h-[500px] flex flex-col"
+      style={{ ...panelCardStyle(phaseTheme), ...panelCardBorderStyle(phaseTheme) }}
+    >
       <div className="mb-6">
         <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
           Scene {sceneIndex + 1} — {frameType === 'Action' ? 'Action / Solution' : frameType}

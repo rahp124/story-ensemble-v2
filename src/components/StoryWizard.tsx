@@ -11,6 +11,7 @@ import SketchFrameRenderer from './SketchFrameRenderer';
 import { DesignerVariantPicker } from './DesignerVariantPicker';
 import { DesignerContentPhase, type DesignerSceneAnswers } from './DesignerContentPhase';
 import { StudyProgressStepper } from './StudyProgressStepper';
+import { panelCardBorderStyle, panelCardStyle, type WizardPhaseTheme } from '@/lib/wizardPhaseTheme';
 import { getDesignerVariant } from '@/data/designerStoryboards';
 import { generateDesignerSceneImage } from '@/api/images';
 import { ENABLE_DESIGNER_STORYBOARD_MODE } from '@/lib/designerMode';
@@ -623,6 +624,8 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     }> | undefined
   )?.[sceneIndex];
 
+  const captionTheme: WizardPhaseTheme = phase === 'aesthetics' ? 'aesthetics' : 'content';
+
   useEffect(() => {
     if (ENABLE_DESIGNER_STORYBOARD_MODE && phase === 'variant-select') {
       console.log('[DesignerMode] entering full storyboard variant-select');
@@ -1197,7 +1200,13 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
               </div>
 
               {/* CAPTION */}
-              <div className="bg-blue-50/50 rounded-lg p-4 border border-blue-100">
+              <div
+                className="rounded-lg p-4 border"
+                style={{
+                  ...panelCardStyle(captionTheme),
+                  ...panelCardBorderStyle(captionTheme)
+                }}
+              >
                 <p className="text-gray-700 italic text-sm leading-relaxed">
                   "
                   {ENABLE_DESIGNER_STORYBOARD_MODE &&
@@ -1221,6 +1230,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                     rewordAsImagined={priorExperience === 'no'}
                     questionSet={phase === 'panel-generate' ? 'generation' : 'content'}
                     isFinalContentRound={phase === 'content'}
+                    phaseTheme="content"
                     initialContent={designerFrame.contentAnswers}
                     initialReflection={designerFrame.reflectionAnswers}
                     isGenerating={isGenerating}
@@ -1236,6 +1246,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                   <AestheticsPhase
                     sceneIndex={sceneIndex}
                     mode="aesthetic"
+                    phaseTheme="aesthetics"
                     aesthetics={scenes[sceneIndex].aesthetics}
                     onChange={onAestheticsChange as (field: keyof SceneAesthetics | keyof SceneSketchRefinement, value: string) => void}
                     onPreview={onDesignerAestheticPreview as (aesthetics: SceneAesthetics | SceneSketchRefinement) => void}
@@ -1247,6 +1258,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
               ) : phase === 'content' ? (
                 <ContentPhase
                   sceneIndex={sceneIndex}
+                  phaseTheme="content"
                   content={scenes[sceneIndex].content}
                   onChange={onContentChange}
                   onSubmit={onContentSubmit}
@@ -1256,6 +1268,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                 <AestheticsPhase
                   sceneIndex={sceneIndex}
                   mode="aesthetic"
+                  phaseTheme="aesthetics"
                   sketchRefinement={scenes[sceneIndex].sketchRefinement}
                   aesthetics={scenes[sceneIndex].aesthetics}
                   content={scenes[sceneIndex].content}

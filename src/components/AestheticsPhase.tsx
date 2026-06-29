@@ -1,5 +1,7 @@
 import { Loader } from '@mantine/core';
 import SketchRefinementForm from './SketchRefinementForm';
+import type { WizardPhaseTheme } from '@/lib/wizardPhaseTheme';
+import { panelCardBorderStyle, panelCardStyle } from '@/lib/wizardPhaseTheme';
 
 export type SceneAesthetics = {
   character?: string;
@@ -29,6 +31,7 @@ interface AestheticsPhaseProps {
   onContinue?: (aesthetics: SceneAesthetics | SceneSketchRefinement) => void;
   isGenerating: boolean;
   isLastScene: boolean;
+  phaseTheme?: WizardPhaseTheme;
   mode?: 'sketch' | 'aesthetic';
   continueLabel?: string;
 }
@@ -44,6 +47,7 @@ export function AestheticsPhase({
   onContinue,
   isGenerating,
   isLastScene,
+  phaseTheme = 'aesthetics',
   mode,
   continueLabel,
 }: AestheticsPhaseProps) {
@@ -51,6 +55,7 @@ export function AestheticsPhase({
     return (
       <SketchRefinePhase
         sceneIndex={sceneIndex}
+        phaseTheme={phaseTheme}
         refinement={sketchRefinement || {}}
         onChange={onChange as (field: keyof SceneSketchRefinement, value: string) => void}
         onPreview={onPreview as (data: SceneSketchRefinement) => void}
@@ -66,6 +71,7 @@ export function AestheticsPhase({
   return (
     <AestheticPolishPhase
       sceneIndex={sceneIndex}
+      phaseTheme={phaseTheme}
       aesthetics={aesthetics}
       onChange={onChange as (field: keyof SceneAesthetics, value: string) => void}
       onPreview={onPreview as (aesthetics: SceneAesthetics) => void}
@@ -85,6 +91,7 @@ export function AestheticsPhase({
 
 interface SketchRefinePhaseProps {
   sceneIndex: number;
+  phaseTheme: WizardPhaseTheme;
   refinement: SceneSketchRefinement;
   onChange: (field: keyof SceneSketchRefinement, value: string) => void;
   onPreview: (data: SceneSketchRefinement) => void;
@@ -95,6 +102,7 @@ interface SketchRefinePhaseProps {
 
 function SketchRefinePhase({
   sceneIndex: _sceneIndex,
+  phaseTheme,
   refinement,
   onChange,
   onPreview,
@@ -110,6 +118,7 @@ function SketchRefinePhase({
 
   return (
     <SketchRefinementForm
+      phaseTheme={phaseTheme}
       refinement={refinement}
       onChange={onChange}
       onPreview={onPreview}
@@ -129,6 +138,7 @@ function SketchRefinePhase({
 
 interface AestheticPolishPhaseProps {
   sceneIndex: number;
+  phaseTheme: WizardPhaseTheme;
   aesthetics: SceneAesthetics;
   onChange: (field: keyof SceneAesthetics, value: string) => void;
   onPreview: (aesthetics: SceneAesthetics) => void;
@@ -140,6 +150,7 @@ interface AestheticPolishPhaseProps {
 
 function AestheticPolishPhase({
   sceneIndex,
+  phaseTheme,
   aesthetics,
   onChange,
   onPreview,
@@ -151,7 +162,10 @@ function AestheticPolishPhase({
   onContentChange: _onContentChange,
 }: AestheticPolishPhaseProps & { content?: Record<string,string|undefined>; onContentChange?: (field:string,value:string)=>void }) {
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 min-h-[500px] flex flex-col">
+    <div
+      className="rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 min-h-[500px] flex flex-col"
+      style={{ ...panelCardStyle(phaseTheme), ...panelCardBorderStyle(phaseTheme) }}
+    >
       <div className="mb-6">
         <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Scene {sceneIndex + 1} - Visual Aesthetics</h2>
         <p className="text-sm text-gray-500 mt-1">Describe visual adjustments for this panel. Use Preview Update to regenerate the current panel before continuing.</p>
