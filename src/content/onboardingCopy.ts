@@ -26,6 +26,10 @@ export type UserLandingCopy = {
     paragraphs: string[];
   };
   consent: string;
+  participantName: {
+    label: string;
+    placeholder: string;
+  };
   beginButton: string;
   beginDisabledHint: string;
 };
