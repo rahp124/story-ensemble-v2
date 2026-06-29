@@ -42,7 +42,7 @@ const VARIANT_DEFAULT_CAPTIONS: Record<string, Record<FrameType, string>> = {
   },
   sb2: {
     Context:
-      'I go to the gym regularly at the same time.',
+      'I want to find a regular time to go to the gym.',
     Problem:
       'Busy gym spots make my workout less efficient.',
     Action:
@@ -52,13 +52,13 @@ const VARIANT_DEFAULT_CAPTIONS: Record<string, Record<FrameType, string>> = {
   },
   sb3: {
     Context:
-      'I get to the gym with my friends hoping to find availability on the bouldering wall.',
+      'I want to find a consistent group to play team sports with at the gym.',
     Problem:
-      'Crowded bouldering wall leaves us waiting a lot.',
+      'Inconsistent schedules make it hard to find a time to play team sports.',
     Action:
-      'The app lets me reserve bouldering times for limited use.',
+      'I join a recreation tournament online to play dedicated team games at the gym.',
     Resolution:
-      'My friends and I have a great time climbing without worrying about crowds.'
+      'I enjoy consistent games with friends at the gym.'
   }
 };
 

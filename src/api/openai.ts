@@ -1033,6 +1033,12 @@ Requirements:
 
 type DesignerFrameType = 'Context' | 'Problem' | 'Action' | 'Resolution';
 
+const DESIGNER_SINGLE_FRAME_DIRECTIVE =
+  'Render exactly one storyboard frame as a single illustrated panel (same format as the other panels in a 4-frame storyboard). No multi-panel layouts, comic grids, split screens, film strips, or collages.';
+
+const DESIGNER_NO_TEXT_DIRECTIVE =
+  'Do not render any text, words, letters, numbers, labels, captions, signs with readable writing, speech bubbles, or UI chrome inside the image.';
+
 export function getDesignerFrameCompositionDirective(frameType: DesignerFrameType): string {
   switch (frameType) {
     case 'Context':
@@ -1055,6 +1061,7 @@ function buildDesignerContentCompositionTail(
   const frameDirective = getDesignerFrameCompositionDirective(frameType);
   if (mode === 'create') {
     return [
+      DESIGNER_SINGLE_FRAME_DIRECTIVE,
       'Create a clear, readable storyboard illustration that reflects the participant\'s answers and fits the frame type.',
       frameDirective,
       'Focus on composition, lighting, mood, and key visual elements that tell the story for this frame type.'
@@ -1083,10 +1090,12 @@ export function buildDesignerImageEditPrompt(args: {
     blocks.push(`Generate a new storyboard panel (frame type: ${args.frameType}) from the participant's responses.`);
     if (args.hasPriorPanelReference) {
       blocks.push(
-        'Use the attached reference image only for visual continuity (character appearance, art style, setting). Depict the new frame type and scene from the participant\'s answers; do not copy the prior panel composition unchanged.'
+        'The attached reference image is from the previous storyboard panel. Use it ONLY to maintain character identity (face, hair, clothing), rendering style, and color palette. Do NOT reuse the prior panel\'s scene content, composition, camera angle, character pose or action, props, or setting details. The new panel must depict a distinct moment for this frame type from the participant\'s answers.'
       );
       if (args.referenceCaption?.trim()) {
-        blocks.push(`Prior panel caption (for narrative continuity only): "${args.referenceCaption.trim()}"`);
+        blocks.push(
+          `Prior panel caption (narrative continuity only — not a visual template): "${args.referenceCaption.trim()}"`
+        );
       }
     }
   } else {
@@ -1128,6 +1137,7 @@ export function buildDesignerImageEditPrompt(args: {
       blocks.push('Aesthetic-only edit: adjust visual style, lighting, character, and environment as described. DO NOT change the story, action, or who/what is in the scene.');
     }
   } else if (args.createFromScratch) {
+    blocks.push(DESIGNER_NO_TEXT_DIRECTIVE);
     blocks.push(buildDesignerContentCompositionTail(args.frameType, 'create'));
   } else {
     blocks.push(buildDesignerContentCompositionTail(args.frameType, 'edit'));

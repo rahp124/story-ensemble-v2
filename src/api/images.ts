@@ -14,6 +14,8 @@ const NO_TEXT_IN_IMAGE =
   'Do not render any text, words, letters, numbers, labels, captions, signs with readable writing, speech bubbles, or UI chrome inside the image.';
 const NO_TEXT_NEGATIVE =
   'text, words, letters, numbers, typography, captions, labels, speech bubbles, watermarks';
+const CREATE_FROM_SCRATCH_NEGATIVE =
+  'multi-panel, grid layout, split screen, collage, text overlay, speech bubbles';
 
 export async function generateStoryboardImage(opts: {
   prompt: string;
@@ -177,6 +179,7 @@ export async function generateDesignerSceneImage(args: {
   const imagePromise = generateStoryboardImage({
     prompt,
     applyNoText: createFromScratch || args.stage === 'content',
+    ...(createFromScratch ? { negativePrompt: CREATE_FROM_SCRATCH_NEGATIVE } : {}),
     ...(refDataUrl ? { referenceImage: refDataUrl } : {})
   });
 

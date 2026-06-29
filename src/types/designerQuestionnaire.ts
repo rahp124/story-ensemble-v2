@@ -24,13 +24,13 @@ export const DESIGNER_CONTENT_QUESTIONS: Record<DesignerQuestionFrameType, Desig
     { id: 'prob-familiarity',  text: 'How familiar does this visualized image feel to your experience? What stands out as similar and different from your experience?', phase: 'content' }
   ],
   Action: [
-    { id: 'act-better',        text: 'Was there something that made this situation better for you? What was it, or what could it have been?', phase: 'generation' },
+    { id: 'act-solution',        text: 'Was there something that made this situation better for you? What was it, or what could it have been?', phase: 'generation' },
     { id: 'act-trust',         text: 'Who or what information would you trust most to help you with this? What makes you trust them?', phase: 'generation' },
     { id: 'act-familiarity',   text: 'How familiar does this visualized image feel to your experience? How well would this solution address your problem?', phase: 'content' },
     { id: 'act-change',        text: 'What else would you change in order for you to better accomplish what you want? What alternatives would you consider for addressing the problem?', phase: 'content' }
   ],
   Resolution: [
-    { id: 'res-knowing',       text: 'What about this experience would let you know it had gone well?', phase: 'generation' },
+    { id: 'res-success',       text: 'What about this experience would let you know it had gone well?', phase: 'generation' },
     { id: 'res-avoid',         text: 'What do you need in order to avoid the problem in the future?', phase: 'generation' },
     { id: 'res-realism',       text: 'How realistic does this visualized image feel to your experience? What stands out as similar and different from your experience?', phase: 'content' },
     { id: 'res-change',        text: 'What else would you change in order for you to better accomplish what you want or better avoid the problem in the future?', phase: 'content' }
