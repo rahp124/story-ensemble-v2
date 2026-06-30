@@ -110,7 +110,7 @@ function CaptionField({
 
   return (
     <textarea
-      className="text-sm text-gray-700 mt-2 w-full border border-gray-200 rounded-lg p-2 resize-none min-h-[4rem] focus:outline-none focus:ring-2 focus:ring-blue-400"
+      className="text-sm text-gray-700 mt-2 w-full border border-gray-200 rounded-lg p-2 resize-none min-h-[9rem] focus:outline-none focus:ring-2 focus:ring-blue-400"
       value={local}
       onChange={(e) => setLocal(e.target.value)}
       onBlur={() => {

@@ -5,15 +5,15 @@ header:
   title: Here's what you'll do
 
 features:
-  - icon: "📖"
-    title: See illustrated scenes
-    description: A short visual story unfolds, one frame at a time.
-  - icon: "💭"
-    title: Reflect on your experience
-    description: Share what feels true — or what would, if it were you.
+  - icon: "👥"
+    title: Content
+    description: Starting from some default storyboards, you will answer questions detailing your personal experience.
   - icon: "🎨"
-    title: Make it more accurate
-    description: Adjust the visuals so the scenes match your reality.
+    title: Aesthetics
+    description: You will get the chance to reflect on your experiences and edit each generated scene to visually match your own experiences.
+  - icon: "🎞️"
+    title: Storyboard
+    description: See your storyboard and adjust the narrative to tell your story in your own words.
 
 topic:
   label: Topic

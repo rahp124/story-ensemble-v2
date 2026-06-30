@@ -355,7 +355,12 @@ type RFState = {
     nodeId: string,
     frameIndex: number,
     currentAnswers: Record<string, string>,
-    options?: { awaitImage?: boolean; imageOnly?: boolean; forcePromptRegeneration?: boolean }
+    options?: {
+      awaitImage?: boolean;
+      imageOnly?: boolean;
+      forcePromptRegeneration?: boolean;
+      imageProvider?: 'fal' | 'openai' | 'stability';
+    }
   ) => Promise<FrameComputeResult>;
 
   writeComputedStoryboardFrame: (
@@ -368,7 +373,12 @@ type RFState = {
     nodeId: string,
     frameIndex: number,
     currentAnswers: Record<string, string>,
-    options?: { awaitImage?: boolean; imageOnly?: boolean; forcePromptRegeneration?: boolean }
+    options?: {
+      awaitImage?: boolean;
+      imageOnly?: boolean;
+      forcePromptRegeneration?: boolean;
+      imageProvider?: 'fal' | 'openai' | 'stability';
+    }
   ) => Promise<void>;
 
   invalidateFrameImageGen: (nodeId: string, frameIndex: number) => void;
@@ -2662,7 +2672,8 @@ const createStore: StateCreator<
           prompt: imagePrompt,
           stylePreset: storyboard.data.storyboard.artStyle,
           referenceImage: anchor !== '' ? anchor : undefined,
-          size: '1024x1024'
+          size: '1024x1024',
+          provider: options.imageProvider
         });
       };
 

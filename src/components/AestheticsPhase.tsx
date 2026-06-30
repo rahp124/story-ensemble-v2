@@ -168,7 +168,7 @@ function AestheticPolishPhase({
     >
       <div className="mb-6">
         <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Scene {sceneIndex + 1} - Visual Aesthetics</h2>
-        <p className="text-sm text-gray-500 mt-1">Describe visual adjustments for this panel. Use Preview Update to regenerate the current panel before continuing.</p>
+        <p className="text-sm text-gray-500 mt-1">Describe visual adjustments for this panel. Use Update to re-generate the current panel before continuing.</p>
       </div>
 
       <div className="flex-grow space-y-5">
@@ -206,11 +206,18 @@ function AestheticPolishPhase({
           type="button"
           onClick={() => onPreview(aesthetics)}
           disabled={isGenerating}
-          className="w-full py-3 px-6 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl border border-gray-300 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Update
+          Update Image
         </button>
-        <button type="button" onClick={() => onContinue(aesthetics)} disabled={isGenerating} className="w-full py-3 md:py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{continueLabel ?? (isLastScene ? 'Finish & Reveal Full Story' : 'Looks good to me!')}</button>
+        <button
+          type="button"
+          onClick={() => onContinue(aesthetics)}
+          disabled={isGenerating}
+          className="w-full py-3 md:py-4 px-6 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl border border-gray-300 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        > 
+          {continueLabel ?? (isLastScene ? 'Finish & Reveal Full Story' : 'Looks good to me!')}
+        </button>
       </div>
     </div>
   );

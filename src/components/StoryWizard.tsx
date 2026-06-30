@@ -243,7 +243,9 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         // Fall back to existing behavior: generate high-fidelity image for frame 0
         setIsFirstFrameGenerating(true);
         try {
-          await generateSingleStoryboardFrame(storyboardId, 0, answers);
+          await generateSingleStoryboardFrame(storyboardId, 0, answers, {
+            imageProvider: 'openai'
+          });
         } finally {
           setIsFirstFrameGenerating(false);
         }
@@ -295,7 +297,9 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
       preCacheImagePrompt(sbId, nextIndex, ctx);
 
-      const p = generateSingleStoryboardFrame(sbId, nextIndex, ctx)
+      const p = generateSingleStoryboardFrame(sbId, nextIndex, ctx, {
+        imageProvider: 'openai'
+      })
         .then(() => {
           if (speculativeRef.current?.frameIndex === nextIndex) {
             speculativeRef.current.resolved = true;
