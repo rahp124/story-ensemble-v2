@@ -24,6 +24,7 @@ export async function generateStoryboardImage(opts: {
   referenceImage?: string;
   size?: '1024x1024' | '512x512';
   applyNoText?: boolean;
+  provider?: 'fal' | 'openai' | 'stability';
 }): Promise<string> {
   const shouldApplyNoText = !opts.referenceImage || opts.applyNoText === true;
   const prompt = shouldApplyNoText ? `${opts.prompt}\n\n${NO_TEXT_IN_IMAGE}` : opts.prompt;
@@ -31,7 +32,7 @@ export async function generateStoryboardImage(opts: {
     ? [opts.negativePrompt, NO_TEXT_NEGATIVE].filter(Boolean).join(', ')
     : opts.negativePrompt;
 
-  const provider = resolveImageProvider();
+  const provider = opts.provider ?? resolveImageProvider();
 
   if (provider === 'fal') {
     try {
@@ -178,6 +179,8 @@ export async function generateDesignerSceneImage(args: {
 
   const imagePromise = generateStoryboardImage({
     prompt,
+    provider:
+      createFromScratch && args.stage === 'content' ? 'openai' : undefined,
     applyNoText: createFromScratch || args.stage === 'content',
     ...(createFromScratch ? { negativePrompt: CREATE_FROM_SCRATCH_NEGATIVE } : {}),
     ...(refDataUrl ? { referenceImage: refDataUrl } : {})
