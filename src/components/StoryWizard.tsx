@@ -10,6 +10,7 @@ import { VisualStylePhase } from './VisualStylePhase';
 import SketchFrameRenderer from './SketchFrameRenderer';
 import { DesignerVariantPicker } from './DesignerVariantPicker';
 import { DesignerContentPhase, type DesignerSceneAnswers } from './DesignerContentPhase';
+import { ReflectionPhase } from './ReflectionPhase';
 import { StudyProgressStepper } from './StudyProgressStepper';
 import { panelCardBorderStyle, panelCardStyle, type WizardPhaseTheme } from '@/lib/wizardPhaseTheme';
 import { getDesignerVariant } from '@/data/designerStoryboards';
@@ -38,7 +39,7 @@ type StoryboardFrame = {
 
 type WizardState = {
   sceneIndex: number;
-  phase: 'variant-select' | 'panel-generate' | 'content' | 'aesthetics' | 'story-lock' | 'visual-style' | 'error';
+  phase: 'variant-select' | 'panel-generate' | 'content' | 'aesthetics' | 'reflection' | 'story-lock' | 'visual-style' | 'error';
   scenes: SceneState[];
   errorMessage?: string;
 };
@@ -106,7 +107,7 @@ const DESIGNER_SCENE_FRAME_TYPES: FrameOutline['frameType'][] = [
 
 const INITIAL_WIZARD_STATE: WizardState = {
   sceneIndex: 0,
-  phase: ENABLE_DESIGNER_STORYBOARD_MODE ? 'variant-select' : 'content',
+  phase: ENABLE_DESIGNER_STORYBOARD_MODE ? 'panel-generate' : 'content',
   scenes: Array.from({ length: 4 }, () => ({ content: {}, aesthetics: {} }))
 };
 
@@ -171,6 +172,20 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
   const viewedFrame = storyboardFrames?.[viewedFrameIndex];
   const framesGenerated = sceneIndex + 1;
+
+  // Designer mode skips the variant picker: create a blank designer storyboard
+  // node up front so the per-panel Generation → Aesthetics → Reflection loop can
+  // begin immediately at scene 0.
+  useEffect(() => {
+    if (!ENABLE_DESIGNER_STORYBOARD_MODE || sbId !== null) return;
+    useStore.setState({ nodes: [], edges: [] });
+    const id = createDesignerStoryboardNode();
+    setSbId(id);
+    setUseGeneratedPanelsFlow(true);
+    setWizardState({ ...INITIAL_WIZARD_STATE, phase: 'panel-generate', sceneIndex: 0 });
+    setViewedFrameIndex(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ─── Warm-up submit (existing behavior, unchanged) ───────────────────────────
 
@@ -775,7 +790,9 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         createFromScratch: generation.createFromScratch,
         hasReferenceImage: generation.hasReferenceImage
       });
-      setWizardState((prev) => ({ ...prev, phase: 'content' }));
+      // Panel image is generated — advance to the Aesthetics page for this panel.
+      setWizardState((prev) => ({ ...prev, phase: 'aesthetics' }));
+      setViewedFrameIndex(sceneIndex);
     } catch (err) {
       console.error('[designer panel generate]', err);
     } finally {
@@ -847,18 +864,23 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       data: { sceneIndex, answers }
     });
 
+    // Reflection is the last step of the per-panel loop. After the final panel,
+    // finish the wizard (revealing the summary editor); otherwise restart the
+    // loop for the next panel at its Generation step.
     if (sceneIndex === 3) {
-      setWizardState(prev => ({ ...prev, phase: 'aesthetics', sceneIndex: 0 }));
-      setViewedFrameIndex(0);
+      addStudyEvent({
+        initiator: 'user',
+        type: 'WIZARD_COMPLETE',
+        count: 1,
+        data: { storyboardId: sbId }
+      });
+      onComplete();
       return;
     }
 
     const nextIndex = sceneIndex + 1;
-    const nextPhase = useGeneratedPanelsFlow ? 'panel-generate' : 'variant-select';
-    if (useGeneratedPanelsFlow) {
-      clearDesignerFrameSlot(nextIndex);
-    }
-    setWizardState(prev => ({ ...prev, sceneIndex: nextIndex, phase: nextPhase }));
+    clearDesignerFrameSlot(nextIndex);
+    setWizardState(prev => ({ ...prev, sceneIndex: nextIndex, phase: 'panel-generate' }));
     setViewedFrameIndex(nextIndex);
   };
 
@@ -917,26 +939,15 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       stage: 'aesthetics',
       aestheticNotes: aesthetics
     });
-
-    if (sceneIndex === 3) {
-      addStudyEvent({
-        initiator: 'user',
-        type: 'WIZARD_COMPLETE',
-        count: 1,
-        data: { storyboardId: sbId }
-      });
-      onComplete();
-      return;
-    }
     addStudyEvent({
       initiator: 'user',
       type: 'DESIGNER_AESTHETIC_CONTINUE',
       count: 1,
       data: { sceneIndex, aestheticNotes: aesthetics }
     });
-    const nextIndex = sceneIndex + 1;
-    setWizardState(prev => ({ ...prev, sceneIndex: nextIndex, phase: 'aesthetics' }));
-    setViewedFrameIndex(nextIndex);
+    // Accepting the aesthetics advances to the Reflection page for this panel.
+    setWizardState(prev => ({ ...prev, phase: 'reflection' }));
+    setViewedFrameIndex(sceneIndex);
   };
 
   // ─── Render path 1: warm-up / variant select ─────────────────────────────────
@@ -959,6 +970,15 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   }
 
   if (sbId === null) {
+    if (ENABLE_DESIGNER_STORYBOARD_MODE) {
+      // The mount effect is creating the designer storyboard node; show a loader
+      // for the brief moment before the per-panel loop can render.
+      return (
+        <div className="fixed inset-0 bg-gray-50 z-50 flex items-center justify-center p-4">
+          <Loader size="lg" color="blue" />
+        </div>
+      );
+    }
     return (
       <div className="fixed inset-0 bg-gray-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
         <DynamicStoryWizard
@@ -1230,17 +1250,22 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                     frameType={designerFrame.frameType}
                     rewordAsImagined={priorExperience === 'no'}
                     questionSet={phase === 'panel-generate' ? 'generation' : 'content'}
-                    isFinalContentRound={phase === 'content'}
                     phaseTheme="content"
                     initialContent={designerFrame.contentAnswers}
-                    initialReflection={designerFrame.reflectionAnswers}
                     isGenerating={isGenerating}
-                    isLastScene={sceneIndex === 3}
                     onContentFinalized={
                       phase === 'panel-generate'
                         ? onDesignerPanelGenerateFinalized
                         : onDesignerContentFinalized
                     }
+                  />
+                ) : phase === 'reflection' && designerFrame ? (
+                  <ReflectionPhase
+                    sceneIndex={sceneIndex}
+                    frameType={designerFrame.frameType}
+                    initialReflection={designerFrame.reflectionAnswers}
+                    isLastScene={sceneIndex === 3}
+                    phaseTheme="content"
                     onReflectionFinalized={onDesignerReflectionFinalized}
                   />
                 ) : (
@@ -1254,6 +1279,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                     onContinue={onDesignerAestheticContinue as (aesthetics: SceneAesthetics | SceneSketchRefinement) => void}
                     isGenerating={isPreviewGenerating}
                     isLastScene={sceneIndex === 3}
+                    continueLabel="Looks good to me!"
                   />
                 )
               ) : phase === 'content' ? (
