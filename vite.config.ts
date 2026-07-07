@@ -15,7 +15,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // Forward /api/* to the Vercel dev server when running `npm run dev` alongside `vercel dev`
+      // Forward /api/* to the local API shim (scripts/dev-server.mjs on port 3000), started by npm run dev
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true

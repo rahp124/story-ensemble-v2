@@ -1,0 +1,28 @@
+adminSetup: Admin Setup
+
+pick:
+  eyebrow: Character
+  title: Choose your character
+  subtitle: Select the portrait that most closely resembles you. You can refine it on the next screen.
+  continueButton: Continue
+  continueDisabledHint: Select a portrait to continue.
+
+refine:
+  eyebrow: Character
+  title: Refine your portrait
+  subtitle: Optionally describe adjustments to face, hair, or clothing. Use Update to preview changes before continuing.
+  face:
+    label: Face adjustment
+    helper: Describe how your face should look differently (e.g. skin tone, facial features, eye color).
+    placeholder: Optional
+  hairAccessories:
+    label: Hair / accessories adjustment
+    helper: Describe changes to hairstyle, glasses, jewelry, or other accessories.
+    placeholder: Optional
+  clothing:
+    label: Clothing adjustment
+    helper: Describe how your outfit should look differently.
+    placeholder: Optional
+  updateButton: Update Image
+  continueButton: Continue to story
+  generating: Regenerating portrait...

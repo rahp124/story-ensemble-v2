@@ -736,24 +736,17 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     console.log(`[DesignerMode] panel generate frame ${sceneIndex} (${designerFrame.frameType})`);
     setIsGenerating(true);
     try {
-      const prevImage =
-        sceneIndex > 0
-          ? (storyboardFrames?.[sceneIndex - 1]?.image?.trim() ?? '')
-          : '';
-      const prevCaption =
-        sceneIndex > 0
-          ? (storyboardFrames?.[sceneIndex - 1]?.caption?.trim() ?? '')
-          : '';
+      const characterRef = useStore.getState().characterProfile?.image?.trim() ?? '';
 
       const { image, caption, generation } = await generateDesignerSceneImage({
         currentImage: '',
         currentCaption: '',
-        referenceImage: prevImage || undefined,
-        referenceCaption: prevCaption || undefined,
+        referenceImage: characterRef || undefined,
         frameType: designerFrame.frameType,
         contentAnswers: answers,
         stage: 'content',
-        createFromScratch: true
+        createFromScratch: true,
+        hasCharacterProfileReference: !!characterRef
       });
       addStudyEvent({
         initiator: 'user',
@@ -798,12 +791,14 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       : answers;
     setIsGenerating(true);
     try {
+      const characterRef = useStore.getState().characterProfile?.image?.trim() ?? '';
       const { image, caption, generation } = await generateDesignerSceneImage({
         currentImage: designerFrame.image ?? '',
         currentCaption: designerFrame.caption ?? '',
         frameType: designerFrame.frameType,
         contentAnswers: mergedAnswers,
-        stage: 'content'
+        stage: 'content',
+        hasCharacterProfileReference: !!characterRef
       });
       addStudyEvent({
         initiator: 'user',
@@ -872,6 +867,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     console.log(`[DesignerMode] aesthetic update frame ${sceneIndex} (${designerFrame.frameType})`);
     setIsPreviewGenerating(true);
     try {
+      const characterRef = useStore.getState().characterProfile?.image?.trim() ?? '';
       const { image, generation } = await generateDesignerSceneImage({
         currentImage: designerFrame.image ?? '',
         currentCaption: designerFrame.caption ?? '',
@@ -879,7 +875,8 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         contentAnswers: designerFrame.contentAnswers ?? {},
         reflectionAnswers: designerFrame.reflectionAnswers ?? {},
         aestheticNotes: aesthetics,
-        stage: 'aesthetic'
+        stage: 'aesthetic',
+        hasCharacterProfileReference: !!characterRef
       });
       addStudyEvent({
         initiator: 'user',

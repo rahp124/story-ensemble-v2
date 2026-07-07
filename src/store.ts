@@ -84,6 +84,18 @@ type StudyEvent = {
   data: any;
 };
 
+export type CharacterProfileAdjustments = {
+  face?: string;
+  hairAccessories?: string;
+  clothing?: string;
+};
+
+export type CharacterProfile = {
+  image: string;
+  sourceHeadshotId: string;
+  adjustments: CharacterProfileAdjustments;
+};
+
 // Evaluation Phase Types
 type AppPhase = 'editor' | 'pre-survey' | 'evaluating' | 'final-storyboard';
 type EvalSubStep = 'content-intro' | 'content-q' | 'aesthetics-intro' | 'aesthetics-q';
@@ -144,6 +156,10 @@ type RFState = {
   setHasCompletedLanding: (v: boolean) => void;
   hasCompletedOverview: boolean;
   setHasCompletedOverview: (v: boolean) => void;
+  characterProfile: CharacterProfile | null;
+  setCharacterProfile: (profile: CharacterProfile | null) => void;
+  hasCompletedCharacterCreation: boolean;
+  setHasCompletedCharacterCreation: (v: boolean) => void;
 
   /* Evaluation State Machine */
   evaluation: EvaluationState;
@@ -409,7 +425,8 @@ function partialize(state: RFState): Partial<RFState> {
     nodes: state.nodes,
     edges: state.edges,
     studyEvents: state.studyEvents,
-    evaluation: state.evaluation
+    evaluation: state.evaluation,
+    characterProfile: state.characterProfile
   };
 }
 
@@ -769,6 +786,10 @@ const createStore: StateCreator<
     setHasCompletedLanding: (v) => set({ hasCompletedLanding: v }),
     hasCompletedOverview: false,
     setHasCompletedOverview: (v) => set({ hasCompletedOverview: v }),
+    characterProfile: null,
+    setCharacterProfile: (profile) => set({ characterProfile: profile }),
+    hasCompletedCharacterCreation: false,
+    setHasCompletedCharacterCreation: (v) => set({ hasCompletedCharacterCreation: v }),
 
     addCommentNode: (comment = '') => {
       const center = get().centerPosition;
