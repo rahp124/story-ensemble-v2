@@ -174,12 +174,12 @@ function AestheticPolishPhase({
       <div className="flex-grow space-y-5">
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-1">Character adjustment</label>
-          <p className="text-xs text-gray-500 mb-2">Describe how the character should look or feel differently.</p>
+          <p className="text-xs text-gray-500 mb-2">Describe how the character's appearance or facial expression should look differently.</p>
           <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" placeholder="Optional" value={aesthetics.character ?? ''} onChange={(e)=>onChange('character', e.target.value)} disabled={isGenerating} />
         </div>
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-1">Action adjustment</label>
-          <p className="text-xs text-gray-500 mb-2">Describe how the character's pose, gesture, or activity should differ.</p>
+          <p className="text-xs text-gray-500 mb-2">Describe how the character's pose, gesture, or activity should be different.</p>
           <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" placeholder="Optional" value={aesthetics.action ?? ''} onChange={(e)=>onChange('action', e.target.value)} disabled={isGenerating} />
         </div>
         <div>
@@ -187,11 +187,11 @@ function AestheticPolishPhase({
           <p className="text-xs text-gray-500 mb-2">Adjust background, lighting, or setting details.</p>
           <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" placeholder="Optional" value={aesthetics.environment ?? ''} onChange={(e)=>onChange('environment', e.target.value)} disabled={isGenerating} />
         </div>
-        <div>
+        {/* <div>
           <label className="block text-sm font-semibold text-gray-800 mb-1">Custom notes</label>
           <p className="text-xs text-gray-500 mb-2">Any other directives (tone, props, composition overrides).</p>
           <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" placeholder="Optional" value={aesthetics.custom ?? ''} onChange={(e)=>onChange('custom', e.target.value)} disabled={isGenerating} />
-        </div>
+        </div> */}
       </div>
 
       {isGenerating && (

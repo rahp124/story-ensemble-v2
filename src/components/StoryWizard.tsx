@@ -1046,9 +1046,8 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         {ENABLE_DESIGNER_STORYBOARD_MODE ? (
           <div className="w-full mb-8 md:mb-10">
             <StudyProgressStepper
-              phase={phase === 'aesthetics' ? 'aesthetics' : 'content'}
+              phase={phase}
               sceneIndex={sceneIndex}
-              totalScenes={4}
             />
           </div>
         ) : (

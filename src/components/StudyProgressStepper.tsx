@@ -1,78 +1,44 @@
-import { WIZARD_PHASE_THEME } from '@/lib/wizardPhaseTheme';
+import { Fragment } from "react/jsx-runtime";
 
-export type StudyPhase = 'intro' | 'content' | 'aesthetics' | 'end';
+export type StoryWizardPhase =
+  | 'variant-select'
+  | 'panel-generate'
+  | 'content'
+  | 'aesthetics'
+  | 'reflection'
+  | 'story-lock'
+  | 'visual-style'
+  | 'error';
 
 interface StudyProgressStepperProps {
-  /** Which high-level phase the participant is currently in. */
-  phase: StudyPhase;
-  /** Zero-based index of the active scene within content/aesthetics. */
+  /** Current StoryWizard phase (designer flow). */
+  phase: StoryWizardPhase;
+  /** Zero-based panel index in the designer flow (0..3). */
   sceneIndex: number;
-  /** Number of scenes (Content + Aesthetics each get one circle per scene). */
-  totalScenes?: number;
   className?: string;
 }
 
 type CircleStatus = 'complete' | 'active' | 'upcoming';
-type StepTheme = 'content' | 'aesthetics' | 'neutral';
-
-const PHASE_ORDER: Record<StudyPhase, number> = {
-  intro: 0,
-  content: 1,
-  aesthetics: 2,
-  end: 3
-};
 
 function StepCircle({
   status,
-  label,
-  theme = 'neutral'
+  label
 }: {
   status: CircleStatus;
   label?: string;
-  theme?: StepTheme;
 }) {
   const base =
     'flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-colors';
 
-  if (theme === 'neutral') {
-    const styles =
-      status === 'complete'
-        ? 'bg-blue-600 text-white'
-        : status === 'active'
-          ? 'bg-blue-600 text-white ring-4 ring-blue-200'
-          : 'bg-white border-2 border-gray-300 text-gray-400';
-
-    return (
-      <div className={`${base} ${styles}`}>
-        {status === 'complete' ? (
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-          </svg>
-        ) : (
-          label
-        )}
-      </div>
-    );
-  }
-
-  const colors = WIZARD_PHASE_THEME[theme];
-
-  if (status === 'upcoming') {
-    return (
-      <div className={`${base} bg-white border-2 border-gray-300 text-gray-400`}>
-        {label}
-      </div>
-    );
-  }
+  const styles =
+    status === 'complete'
+      ? 'bg-blue-600 text-white'
+      : status === 'active'
+        ? 'bg-gray-200 text-gray-900 ring-4 ring-gray-300'
+        : 'bg-white border-2 border-gray-300 text-gray-400';
 
   return (
-    <div
-      className={`${base} text-gray-900`}
-      style={{
-        backgroundColor: colors.primary,
-        ...(status === 'active' ? { boxShadow: `0 0 0 4px ${colors.secondary}` } : {})
-      }}
-    >
+    <div className={`${base} ${styles}`}>
       {status === 'complete' ? (
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
@@ -86,15 +52,12 @@ function StepCircle({
 
 function StepGroup({
   title,
-  statuses,
-  theme = 'neutral'
+  statuses
 }: {
   title: string;
   statuses: CircleStatus[];
-  theme?: StepTheme;
 }) {
   const active = statuses.some((s) => s === 'active');
-  const neutralPhaseLabel = theme === 'content' || theme === 'aesthetics';
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -103,15 +66,12 @@ function StepGroup({
           <StepCircle
             key={i}
             status={status}
-            theme={theme}
             label={statuses.length > 1 ? String(i + 1) : undefined}
           />
         ))}
       </div>
       <span
-        className={`text-xs font-bold uppercase tracking-wider ${
-          neutralPhaseLabel ? 'text-gray-400' : active ? 'text-blue-600' : 'text-gray-400'
-        }`}
+        className={`text-xs font-bold uppercase tracking-wider ${active ? 'text-gray-900' : 'text-gray-400'}`}
       >
         {title}
       </span>
@@ -119,32 +79,36 @@ function StepGroup({
   );
 }
 
-/**
- * Reusable end-to-end study progress indicator:
- * Intro (1) → Content (one per scene) → Aesthetics (one per scene) → End (1).
- */
 export function StudyProgressStepper({
   phase,
   sceneIndex,
-  totalScenes = 4,
   className = ''
 }: StudyProgressStepperProps) {
-  const order = PHASE_ORDER[phase];
+  const panelTitles = ['Context', 'Problem', 'Action', 'Resolution'] as const;
 
-  const sceneStatuses = (phaseKey: 'content' | 'aesthetics'): CircleStatus[] => {
-    const phaseIdx = PHASE_ORDER[phaseKey];
-    return Array.from({ length: totalScenes }, (_, i) => {
-      if (order > phaseIdx) return 'complete';
-      if (order < phaseIdx) return 'upcoming';
-      // Currently in this phase
-      if (i < sceneIndex) return 'complete';
-      if (i === sceneIndex) return 'active';
+  const isDone = phase === 'story-lock' || phase === 'visual-style';
+  const activePanelIndex = Math.min(Math.max(sceneIndex, 0), panelTitles.length - 1);
+
+  const activeSubstepIndex = (() => {
+    if (phase === 'aesthetics') return 1;
+    if (phase === 'reflection') return 2;
+    // Treat both panel generation and content-update screens as the first page of the panel.
+    return 0;
+  })();
+
+  const panelStatuses = (panelIndex: number): CircleStatus[] => {
+    if (isDone) return ['complete', 'complete', 'complete'];
+    if (panelIndex < activePanelIndex) return ['complete', 'complete', 'complete'];
+    if (panelIndex > activePanelIndex) return ['upcoming', 'upcoming', 'upcoming'];
+    return (['upcoming', 'upcoming', 'upcoming'] as CircleStatus[]).map((_, i) => {
+      if (i < activeSubstepIndex) return 'complete';
+      if (i === activeSubstepIndex) return 'active';
       return 'upcoming';
     });
   };
 
-  const introStatus: CircleStatus = phase === 'intro' ? 'active' : 'complete';
-  const endStatus: CircleStatus = phase === 'end' ? 'active' : 'upcoming';
+  const introStatus: CircleStatus = isDone ? 'complete' : 'complete';
+  const overviewStatus: CircleStatus = isDone ? 'active' : 'upcoming';
 
   return (
     <div
@@ -152,11 +116,15 @@ export function StudyProgressStepper({
     >
       <StepGroup title="Intro" statuses={[introStatus]} />
       <div className="hidden md:block flex-1 max-w-[3rem] h-px bg-gray-200 mt-3.5" />
-      <StepGroup title="Content" statuses={sceneStatuses('content')} theme="content" />
-      <div className="hidden md:block flex-1 max-w-[3rem] h-px bg-gray-200 mt-3.5" />
-      <StepGroup title="Aesthetics" statuses={sceneStatuses('aesthetics')} theme="aesthetics" />
-      <div className="hidden md:block flex-1 max-w-[3rem] h-px bg-gray-200 mt-3.5" />
-      <StepGroup title="End" statuses={[endStatus]} />
+      {panelTitles.map((title) => (
+        <Fragment key={title}>
+          <div key={title} className="flex items-start gap-3 md:gap-6">
+            <StepGroup title={title} statuses={panelStatuses(panelTitles.indexOf(title))} />
+          </div>
+          <div className="hidden md:block flex-1 max-w-[3rem] h-px bg-gray-200 mt-3.5" />
+        </Fragment>
+      ))}
+      <StepGroup title="Review" statuses={[overviewStatus]} />
     </div>
   );
 }

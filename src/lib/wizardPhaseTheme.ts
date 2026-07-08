@@ -12,9 +12,11 @@ export const WIZARD_PHASE_THEME = {
 } as const;
 
 export function panelCardStyle(theme: WizardPhaseTheme) {
-  return { backgroundColor: WIZARD_PHASE_THEME[theme].secondary };
+  void theme;
+  return { backgroundColor: 'rgba(249, 250, 251, 1)' };
 }
 
 export function panelCardBorderStyle(theme: WizardPhaseTheme) {
-  return { borderColor: WIZARD_PHASE_THEME[theme].primary };
+  void theme;
+  return { borderColor: 'rgba(229, 231, 235, 1)' };
 }
