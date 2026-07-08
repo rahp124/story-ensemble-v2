@@ -4,8 +4,11 @@ import { useStore } from '../store';
 import type { CharacterProfileAdjustments } from '../store';
 import { CHARACTER_CREATION_COPY } from '../content/onboardingCopy';
 import { CHARACTER_HEADSHOTS } from '@/data/characterHeadshots';
-import { generateCharacterProfileImage, toDataUrl } from '@/api/images';
+import { generateCharacterProfileImage, generateComicHeadshotFromPhoto, toDataUrl } from '@/api/images';
 import { CharacterRefinementPhase } from './CharacterRefinementPhase';
+import { PhotoCaptureModal } from './PhotoCaptureModal';
+
+const UPLOADED_PHOTO_SOURCE_ID = 'uploaded';
 
 type Step = 'pick' | 'refine';
 
@@ -50,6 +53,9 @@ export function CharacterCreationPage() {
   const [adjustments, setAdjustments] = useState<CharacterProfileAdjustments>({});
   const [wasRegenerated, setWasRegenerated] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [isConvertingPhoto, setIsConvertingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   const handlePickContinue = () => {
     if (!selectedHeadshotId) return;
@@ -65,6 +71,39 @@ export function CharacterCreationPage() {
 
     setWorkingImage(headshot.image);
     setStep('refine');
+  };
+
+  const handlePhotoConfirm = async (dataUrl: string) => {
+    setPhotoError(null);
+    setIsConvertingPhoto(true);
+
+    useStore.getState().addStudyEvent({
+      initiator: 'user',
+      type: 'CHARACTER_PHOTO_CAPTURED',
+      count: 1,
+      data: {}
+    });
+
+    try {
+      const { image, imagePrompt } = await generateComicHeadshotFromPhoto(dataUrl);
+
+      useStore.getState().addStudyEvent({
+        initiator: 'system',
+        type: 'CHARACTER_COMIC_HEADSHOT_GENERATED',
+        count: 1,
+        data: { imagePrompt }
+      });
+
+      setWorkingImage(image);
+      setSelectedHeadshotId(UPLOADED_PHOTO_SOURCE_ID);
+      setIsPhotoModalOpen(false);
+      setStep('refine');
+    } catch (err) {
+      console.error('[character photo capture]', err);
+      setPhotoError(copy.upload.genericError);
+    } finally {
+      setIsConvertingPhoto(false);
+    }
   };
 
   const handleAdjustmentChange = (
@@ -159,6 +198,23 @@ export function CharacterCreationPage() {
               </p>
             </div>
 
+            <button
+              type="button"
+              onClick={() => {
+                setPhotoError(null);
+                setIsPhotoModalOpen(true);
+              }}
+              className="mt-4 w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border-2 border-dashed border-slate-300 text-slate-600 font-semibold text-sm hover:border-blue-400 hover:text-blue-600 transition-colors"
+            >
+              {copy.pick.uploadButton}
+            </button>
+
+            <div className="mt-8 flex items-center gap-3">
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs font-medium text-slate-400">{copy.pick.uploadDividerLabel}</span>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
+
             <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-4">
               {CHARACTER_HEADSHOTS.map((headshot) => (
                 <button
@@ -188,6 +244,19 @@ export function CharacterCreationPage() {
             )}
           </div>
         </div>
+
+        {isPhotoModalOpen && (
+          <PhotoCaptureModal
+            copy={copy.upload}
+            isProcessing={isConvertingPhoto}
+            error={photoError}
+            onCancel={() => {
+              if (isConvertingPhoto) return;
+              setIsPhotoModalOpen(false);
+            }}
+            onConfirm={handlePhotoConfirm}
+          />
+        )}
       </div>
     );
   }

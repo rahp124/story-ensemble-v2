@@ -32,7 +32,7 @@ export const DESIGNER_CONTENT_QUESTIONS: Record<DesignerQuestionFrameType, Desig
   Resolution: [
     { id: 'res-after',         text: 'What did you do immediately after this experience?', phase: 'generation' },
     // { id: 'res-avoid',         text: 'What do you need in order to avoid the problem in the future?', phase: 'generation' },
-    { id: 'res-success',       text: 'What about this experience would let you know it had gone well or poorly?', phase: 'generation' },    
+    { id: 'res-success',       text: 'What about this experience would let you know it could have gone better?', phase: 'generation' },    
     // { id: 'res-realism',       text: 'What stands out in this image as realistic and unrealistic from your experience?', phase: 'content' },    
   ]
 };

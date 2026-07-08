@@ -1188,3 +1188,13 @@ export function buildCharacterProfileEditPrompt(adjustments: {
 
   return blocks.join('\n\n');
 }
+
+export function buildComicHeadshotPrompt(): string {
+  return [
+    'Redraw this photo as a comic book style character portrait headshot.',
+    'Clean portrait composition: head and shoulders only, facing directly forward toward the camera, simple neutral background.',
+    'Impressionist comic book illustration style: clean linework with symbolic and exaggerated expressions without realistic detail.',
+    "Preserve the person's general likeness: facial structure, skin tone, hairstyle and color, and any glasses or accessories visible in the photo.",
+    'Do NOT change the framing to a full-body shot, action scene, or storyboard panel.'
+  ].join('\n\n');
+}

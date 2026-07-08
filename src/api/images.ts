@@ -4,7 +4,8 @@ import {
   generateStructured,
   generateDesignerContentCaption,
   buildDesignerImageEditPrompt,
-  buildCharacterProfileEditPrompt
+  buildCharacterProfileEditPrompt,
+  buildComicHeadshotPrompt
 } from './openai';
 import { generateImage } from './stableDiffusion';
 import { editImageWithFluxKontext, generateImageWithFlux } from './fal';
@@ -232,6 +233,21 @@ export async function generateCharacterProfileImage(args: {
   const image = await generateStoryboardImage({
     prompt: imagePrompt,
     referenceImage: refDataUrl
+  });
+
+  return { image, imagePrompt };
+}
+
+export async function generateComicHeadshotFromPhoto(
+  photoDataUrl: string
+): Promise<{ image: string; imagePrompt: string }> {
+  const refDataUrl = await toDataUrl(photoDataUrl);
+  const imagePrompt = buildComicHeadshotPrompt();
+
+  const image = await generateStoryboardImage({
+    prompt: imagePrompt,
+    referenceImage: refDataUrl,
+    applyNoText: true
   });
 
   return { image, imagePrompt };

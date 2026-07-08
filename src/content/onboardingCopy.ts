@@ -69,6 +69,22 @@ export type CharacterCreationCopy = {
     subtitle: string;
     continueButton: string;
     continueDisabledHint: string;
+    uploadDividerLabel: string;
+    uploadButton: string;
+  };
+  upload: {
+    modalTitle: string;
+    takeSelfieButton: string;
+    chooseFileButton: string;
+    captureButton: string;
+    retakeButton: string;
+    chooseDifferentButton: string;
+    backButton: string;
+    continueButton: string;
+    cancelButton: string;
+    processing: string;
+    cameraError: string;
+    genericError: string;
   };
   refine: {
     eyebrow: string;

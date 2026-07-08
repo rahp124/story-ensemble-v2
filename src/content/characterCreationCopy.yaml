@@ -3,9 +3,25 @@ adminSetup: Admin Setup
 pick:
   eyebrow: Character
   title: Choose your character
-  subtitle: Select the portrait that most closely resembles you. You can refine it on the next screen.
+  subtitle: Create or select a portrait that most closely resembles you. You can refine it on the next screen.
   continueButton: Continue
   continueDisabledHint: Select a portrait to continue.
+  uploadDividerLabel: Or start with an example photo
+  uploadButton: Upload a photo
+
+upload:
+  modalTitle: Upload a photo
+  takeSelfieButton: Take a selfie
+  chooseFileButton: Choose a file
+  captureButton: Capture photo
+  retakeButton: Retake photo
+  chooseDifferentButton: Choose a different photo
+  backButton: Back
+  continueButton: Continue
+  cancelButton: Cancel
+  processing: Creating your comic-style headshot...
+  cameraError: We couldn't access your camera. Try choosing a file instead.
+  genericError: Something went wrong generating your headshot. Please try again.
 
 refine:
   eyebrow: Character
