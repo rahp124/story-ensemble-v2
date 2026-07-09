@@ -1,4 +1,11 @@
-import { Fragment } from "react/jsx-runtime";
+import { useState } from 'react';
+import { useStore } from '@/store';
+import {
+  StoryboardPanelStrip,
+  type PanelFrameState,
+  type StoryboardPanelFrame
+} from './StoryboardPanelStrip';
+import { StoryboardFrameAestheticModal } from './StoryboardFrameAestheticModal';
 
 export type StoryWizardPhase =
   | 'variant-select'
@@ -15,116 +22,76 @@ interface StudyProgressStepperProps {
   phase: StoryWizardPhase;
   /** Zero-based panel index in the designer flow (0..3). */
   sceneIndex: number;
+  storyboardId: string | null;
+  frames: StoryboardPanelFrame[];
   className?: string;
 }
 
-type CircleStatus = 'complete' | 'active' | 'upcoming';
-
-function StepCircle({
-  status,
-  label
-}: {
-  status: CircleStatus;
-  label?: string;
-}) {
-  const base =
-    'flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-colors';
-
-  const styles =
-    status === 'complete'
-      ? 'bg-blue-600 text-white'
-      : status === 'active'
-        ? 'bg-gray-200 text-gray-900 ring-4 ring-gray-300'
-        : 'bg-white border-2 border-gray-300 text-gray-400';
-
-  return (
-    <div className={`${base} ${styles}`}>
-      {status === 'complete' ? (
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-        </svg>
-      ) : (
-        label
-      )}
-    </div>
-  );
-}
-
-function StepGroup({
-  title,
-  statuses
-}: {
-  title: string;
-  statuses: CircleStatus[];
-}) {
-  const active = statuses.some((s) => s === 'active');
-
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="flex items-center gap-1.5">
-        {statuses.map((status, i) => (
-          <StepCircle
-            key={i}
-            status={status}
-            label={statuses.length > 1 ? String(i + 1) : undefined}
-          />
-        ))}
-      </div>
-      <span
-        className={`text-xs font-bold uppercase tracking-wider ${active ? 'text-gray-900' : 'text-gray-400'}`}
-      >
-        {title}
-      </span>
-    </div>
-  );
+function getFrameState(
+  index: number,
+  sceneIndex: number,
+  hasImage: boolean,
+  isDone: boolean
+): PanelFrameState {
+  if (isDone) {
+    return hasImage ? 'complete' : 'upcoming';
+  }
+  if (index < sceneIndex) {
+    return hasImage ? 'complete' : 'upcoming';
+  }
+  if (index === sceneIndex) {
+    return 'active';
+  }
+  return 'upcoming';
 }
 
 export function StudyProgressStepper({
   phase,
   sceneIndex,
+  storyboardId,
+  frames,
   className = ''
 }: StudyProgressStepperProps) {
-  const panelTitles = ['Context', 'Problem', 'Action', 'Resolution'] as const;
+  const addStudyEvent = useStore((s) => s.addStudyEvent);
+  const [aestheticFrameIndex, setAestheticFrameIndex] = useState<number | null>(null);
 
   const isDone = phase === 'story-lock' || phase === 'visual-style';
-  const activePanelIndex = Math.min(Math.max(sceneIndex, 0), panelTitles.length - 1);
+  const activeIndex = isDone ? undefined : sceneIndex;
 
-  const activeSubstepIndex = (() => {
-    if (phase === 'aesthetics') return 1;
-    if (phase === 'reflection') return 2;
-    // Treat both panel generation and content-update screens as the first page of the panel.
-    return 0;
-  })();
+  const frameStates = frames.map((frame, index) =>
+    getFrameState(index, sceneIndex, Boolean(frame.image?.trim()), isDone)
+  );
 
-  const panelStatuses = (panelIndex: number): CircleStatus[] => {
-    if (isDone) return ['complete', 'complete', 'complete'];
-    if (panelIndex < activePanelIndex) return ['complete', 'complete', 'complete'];
-    if (panelIndex > activePanelIndex) return ['upcoming', 'upcoming', 'upcoming'];
-    return (['upcoming', 'upcoming', 'upcoming'] as CircleStatus[]).map((_, i) => {
-      if (i < activeSubstepIndex) return 'complete';
-      if (i === activeSubstepIndex) return 'active';
-      return 'upcoming';
+  const handleFrameClick = (frameIndex: number) => {
+    if (frameStates[frameIndex] !== 'complete') return;
+
+    addStudyEvent({
+      initiator: 'user',
+      type: 'OPEN_FRAME_AESTHETICS',
+      count: 1,
+      data: { frameIndex }
     });
+    setAestheticFrameIndex(frameIndex);
   };
 
-  const introStatus: CircleStatus = isDone ? 'complete' : 'complete';
-  const overviewStatus: CircleStatus = isDone ? 'active' : 'upcoming';
-
   return (
-    <div
-      className={`w-full flex items-start justify-center gap-3 md:gap-6 flex-wrap ${className}`}
-    >
-      <StepGroup title="Intro" statuses={[introStatus]} />
-      <div className="hidden md:block flex-1 max-w-[3rem] h-px bg-gray-200 mt-3.5" />
-      {panelTitles.map((title) => (
-        <Fragment key={title}>
-          <div key={title} className="flex items-start gap-3 md:gap-6">
-            <StepGroup title={title} statuses={panelStatuses(panelTitles.indexOf(title))} />
-          </div>
-          <div className="hidden md:block flex-1 max-w-[3rem] h-px bg-gray-200 mt-3.5" />
-        </Fragment>
-      ))}
-      <StepGroup title="Review" statuses={[overviewStatus]} />
+    <div className={`w-full ${className}`}>
+      <StoryboardPanelStrip
+        variant="progress"
+        frames={frames}
+        activeIndex={activeIndex}
+        frameStates={frameStates}
+        clickableCompletedOnly
+        onFrameClick={handleFrameClick}
+      />
+
+      {storyboardId && (
+        <StoryboardFrameAestheticModal
+          storyboardId={storyboardId}
+          frameIndex={aestheticFrameIndex}
+          onClose={() => setAestheticFrameIndex(null)}
+        />
+      )}
     </div>
   );
 }

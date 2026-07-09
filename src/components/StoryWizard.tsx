@@ -1048,6 +1048,16 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
             <StudyProgressStepper
               phase={phase}
               sceneIndex={sceneIndex}
+              storyboardId={sbId}
+              frames={DESIGNER_SCENE_FRAME_TYPES.map((frameType, i) => {
+                const frame = storyboardFrames?.[i];
+                return {
+                  id: frame?.id ?? String(i),
+                  frameType,
+                  image: frame?.image,
+                  caption: frame?.caption ?? ''
+                };
+              })}
             />
           </div>
         ) : (
