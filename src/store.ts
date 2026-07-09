@@ -376,6 +376,7 @@ type RFState = {
       imageOnly?: boolean;
       forcePromptRegeneration?: boolean;
       imageProvider?: 'fal' | 'openai' | 'stability';
+      skipStoreWrite?: boolean;
     }
   ) => Promise<FrameComputeResult>;
 
@@ -394,8 +395,9 @@ type RFState = {
       imageOnly?: boolean;
       forcePromptRegeneration?: boolean;
       imageProvider?: 'fal' | 'openai' | 'stability';
+      skipStoreWrite?: boolean;
     }
-  ) => Promise<void>;
+  ) => Promise<FrameComputeResult | void>;
 
   invalidateFrameImageGen: (nodeId: string, frameIndex: number) => void;
 
@@ -2699,7 +2701,7 @@ const createStore: StateCreator<
       };
 
       const imagePromise = runImageGen().then((img) => {
-        if (frameImageGenSeq.get(seqKey) === seq) {
+        if (frameImageGenSeq.get(seqKey) === seq && !options.skipStoreWrite) {
           updateNode<StoryboardNodeData>(nodeId, (draft) => {
             draft.data.storyboard.outline[frameIndex].image = img;
           });
@@ -2707,13 +2709,14 @@ const createStore: StateCreator<
         return img;
       });
 
+      let generatedImage = '';
       if (options.awaitImage) {
-        await imagePromise;
+        generatedImage = await imagePromise;
       }
 
       return {
         caption,
-        image: '',
+        image: generatedImage,
         prompt: imagePrompt,
         auditLog: {
           timestamp: new Date().toISOString(),
@@ -2746,6 +2749,9 @@ const createStore: StateCreator<
         return;
       }
       const result = await get().computeStoryboardFrame(nodeId, frameIndex, currentAnswers, options);
+      if (options?.skipStoreWrite) {
+        return result;
+      }
       get().writeComputedStoryboardFrame(nodeId, frameIndex, result);
     },
 

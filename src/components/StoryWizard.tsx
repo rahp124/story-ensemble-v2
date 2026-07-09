@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { useStore } from '../store';
+import { useStore, type FrameComputeResult } from '../store';
 import { useDisplayStore } from '@/lib/displayStore';
 import { Loader } from '@mantine/core';
 import { DynamicStoryWizard } from './DynamicStoryWizard';
 import { ContentPhase, SceneContent } from './ContentPhase';
-import { AestheticsPhase, SceneAesthetics, SceneSketchRefinement } from './AestheticsPhase';
+import { AestheticsPhase, SceneAesthetics, SceneSketchRefinement, type AestheticComparisonChoice, type AestheticPreviewResult } from './AestheticsPhase';
 import { StoryLockPhase } from './StoryLockPhase';
 import { VisualStylePhase } from './VisualStylePhase';
 import SketchFrameRenderer from './SketchFrameRenderer';
@@ -133,6 +133,8 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     resolved: boolean;
     hasAesthetics: boolean; // true only when restarted after Preview Update with real aesthetics
   } | null>(null);
+  const legacyPreviewResultRef = useRef<FrameComputeResult | null>(null);
+  const legacyPreviewWizardStateRef = useRef<WizardState | null>(null);
 
   const {
     addProjectNode,
@@ -148,6 +150,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     consumeWarmUpPrefetch,
     preCacheImagePrompt,
     generateSingleStoryboardFrame,
+    writeComputedStoryboardFrame,
     generateInitialSketchStoryboard,
     refineSketchStoryboardFrame,
     generateFinalStoryboardImages, // Used to trigger final render when implemented in canvas
@@ -171,6 +174,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     | undefined;
 
   const viewedFrame = storyboardFrames?.[viewedFrameIndex];
+  const currentSceneFrame = storyboardFrames?.[sceneIndex];
   const framesGenerated = sceneIndex + 1;
 
   // Designer mode skips the variant picker: create a blank designer storyboard
@@ -370,12 +374,13 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     });
   };
 
-  const onAestheticPreview = async (aesthetics: SceneAesthetics) => {
+  const onAestheticPreview = async (aesthetics: SceneAesthetics): Promise<AestheticPreviewResult | void> => {
     const updatedScenes = scenes.map((s, i) =>
       i === sceneIndex ? { ...s, aesthetics } : s
     );
     const nextState = { ...wizardState, scenes: updatedScenes };
     setWizardState(nextState);
+    legacyPreviewWizardStateRef.current = nextState;
 
     // Discard speculative — it was generated with the pre-preview caption.
     // invalidateFrameImageGen bumps the seq (so any in-flight round-1 write is
@@ -387,41 +392,66 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
     setIsPreviewGenerating(true);
     try {
+      if (!sbId) return;
       const captions = (storyboardFrames ?? []).slice(0, sceneIndex).map(f => f.caption ?? '');
       const ctx = buildFlatContext(warmUpAnswers, nextState, sceneIndex, true, captions);
-      await generateFrame(sceneIndex, ctx, { forcePromptRegeneration: true });
-
-      // Restart speculative for the next frame using the updated caption from this preview.
-      // Read directly from the store — the closure's storyboardFrames is stale here.
-      if (sceneIndex < 3 && sbId) {
-        const nextIndex = sceneIndex + 1;
-        const freshNode = useStore.getState().nodes.find(n => n.id === sbId);
-        const freshOutline = (freshNode?.data?.storyboard?.outline ?? []) as Array<{ caption: string }>;
-        const updatedCaptions = freshOutline.slice(0, nextIndex).map(f => f.caption ?? '');
-        const nextCtx = buildFlatContext(warmUpAnswers, nextState, nextIndex, true, updatedCaptions);
-
-        preCacheImagePrompt(sbId, nextIndex, nextCtx);
-
-        const p = generateSingleStoryboardFrame(sbId, nextIndex, nextCtx)
-          .then(() => {
-            if (speculativeRef.current?.frameIndex === nextIndex) {
-              speculativeRef.current.resolved = true;
-            }
-          })
-          .catch(err => {
-            console.warn('[speculative after preview] frame generation failed:', err);
-            if (speculativeRef.current?.frameIndex === nextIndex) {
-              speculativeRef.current = null;
-            }
-          });
-
-        speculativeRef.current = { frameIndex: nextIndex, promise: p, resolved: false, hasAesthetics: true };
+      const result = await generateSingleStoryboardFrame(sbId, sceneIndex, ctx, {
+        awaitImage: true,
+        forcePromptRegeneration: true,
+        skipStoreWrite: true,
+      });
+      if (result?.image) {
+        legacyPreviewResultRef.current = result;
+        return { image: result.image, caption: result.caption };
       }
     } catch (error) {
       console.error(error);
     } finally {
       setIsPreviewGenerating(false);
     }
+  };
+
+  const restartSpeculativeAfterPreview = (nextState: WizardState) => {
+    if (!sbId || sceneIndex >= 3) return;
+
+    const nextIndex = sceneIndex + 1;
+    const freshNode = useStore.getState().nodes.find(n => n.id === sbId);
+    const freshOutline = (freshNode?.data?.storyboard?.outline ?? []) as Array<{ caption: string }>;
+    const updatedCaptions = freshOutline.slice(0, nextIndex).map(f => f.caption ?? '');
+    const nextCtx = buildFlatContext(warmUpAnswers, nextState, nextIndex, true, updatedCaptions);
+
+    preCacheImagePrompt(sbId, nextIndex, nextCtx);
+
+    const p = generateSingleStoryboardFrame(sbId, nextIndex, nextCtx)
+      .then(() => {
+        if (speculativeRef.current?.frameIndex === nextIndex) {
+          speculativeRef.current.resolved = true;
+        }
+      })
+      .catch(err => {
+        console.warn('[speculative after preview] frame generation failed:', err);
+        if (speculativeRef.current?.frameIndex === nextIndex) {
+          speculativeRef.current = null;
+        }
+      });
+
+    speculativeRef.current = { frameIndex: nextIndex, promise: p, resolved: false, hasAesthetics: true };
+  };
+
+  const onAestheticPreviewChoice = (
+    choice: AestheticComparisonChoice,
+    _aesthetics: SceneAesthetics,
+    _preview: AestheticPreviewResult
+  ) => {
+    if (choice === 'updated' && sbId && legacyPreviewResultRef.current) {
+      writeComputedStoryboardFrame(sbId, sceneIndex, legacyPreviewResultRef.current);
+      const nextState = legacyPreviewWizardStateRef.current;
+      if (nextState) {
+        restartSpeculativeAfterPreview(nextState);
+      }
+    }
+    legacyPreviewResultRef.current = null;
+    legacyPreviewWizardStateRef.current = null;
   };
 
   const onAestheticContinue = async (aesthetics: SceneAesthetics) => {
@@ -884,7 +914,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     setViewedFrameIndex(nextIndex);
   };
 
-  const onDesignerAestheticPreview = async (aesthetics: SceneAesthetics) => {
+  const onDesignerAestheticPreview = async (aesthetics: SceneAesthetics): Promise<AestheticPreviewResult | void> => {
     if (!sbId || !designerFrame) return;
     console.log(`[DesignerMode] aesthetic update frame ${sceneIndex} (${designerFrame.frameType})`);
     setIsPreviewGenerating(true);
@@ -899,17 +929,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         aestheticNotes: aesthetics,
         stage: 'aesthetic',
         hasCharacterProfileReference: !!characterRef
-      });
-      addStudyEvent({
-        initiator: 'user',
-        type: 'DESIGNER_AESTHETIC_PREVIEW',
-        count: 1,
-        data: { sceneIndex, aestheticNotes: aesthetics }
-      });
-      applyDesignerSceneUpdate(sbId, sceneIndex, {
-        stage: 'aesthetics',
-        image,
-        aestheticNotes: aesthetics
       });
       logSystemPanelGeneration(addStudyEvent, {
         storyboardId: sbId,
@@ -926,11 +945,31 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         createFromScratch: generation.createFromScratch,
         hasReferenceImage: generation.hasReferenceImage
       });
+      return { image, caption: designerFrame.caption ?? '' };
     } catch (err) {
       console.error('[designer aesthetic preview]', err);
     } finally {
       setIsPreviewGenerating(false);
     }
+  };
+
+  const onDesignerAestheticPreviewChoice = (
+    choice: AestheticComparisonChoice,
+    aesthetics: SceneAesthetics,
+    preview: AestheticPreviewResult
+  ) => {
+    if (choice !== 'updated' || !sbId || !designerFrame) return;
+    applyDesignerSceneUpdate(sbId, sceneIndex, {
+      stage: 'aesthetics',
+      image: preview.image,
+      aestheticNotes: aesthetics
+    });
+    addStudyEvent({
+      initiator: 'user',
+      type: 'DESIGNER_AESTHETIC_PREVIEW',
+      count: 1,
+      data: { sceneIndex, aestheticNotes: aesthetics }
+    });
   };
 
   const onDesignerAestheticContinue = (aesthetics: SceneAesthetics) => {
@@ -1283,8 +1322,11 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                     mode="aesthetic"
                     phaseTheme="aesthetics"
                     aesthetics={scenes[sceneIndex].aesthetics}
+                    currentImage={currentSceneFrame?.image ?? ''}
+                    currentCaption={currentSceneFrame?.caption ?? ''}
                     onChange={onAestheticsChange as (field: keyof SceneAesthetics | keyof SceneSketchRefinement, value: string) => void}
                     onPreview={onDesignerAestheticPreview as (aesthetics: SceneAesthetics | SceneSketchRefinement) => void}
+                    onPreviewChoice={onDesignerAestheticPreviewChoice}
                     onContinue={onDesignerAestheticContinue as (aesthetics: SceneAesthetics | SceneSketchRefinement) => void}
                     isGenerating={isPreviewGenerating}
                     isLastScene={sceneIndex === 3}
@@ -1307,10 +1349,13 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                   phaseTheme="aesthetics"
                   sketchRefinement={scenes[sceneIndex].sketchRefinement}
                   aesthetics={scenes[sceneIndex].aesthetics}
+                  currentImage={currentSceneFrame?.image ?? ''}
+                  currentCaption={currentSceneFrame?.caption ?? ''}
                   content={scenes[sceneIndex].content}
                   onContentChange={(field, value) => onContentChange(field as keyof SceneContent, value)}
                   onChange={onAestheticsChange as (field: keyof SceneAesthetics | keyof SceneSketchRefinement, value: string) => void}
                   onPreview={onAestheticPreview as (aesthetics: SceneAesthetics | SceneSketchRefinement) => void}
+                  onPreviewChoice={onAestheticPreviewChoice}
                   onContinue={onAestheticContinue as (aesthetics: SceneAesthetics | SceneSketchRefinement) => void}
                   isGenerating={isPreviewGenerating}
                   isLastScene={sceneIndex === 3}

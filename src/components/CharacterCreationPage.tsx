@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Loader } from '@mantine/core';
 import { useStore } from '../store';
 import type { CharacterProfileAdjustments } from '../store';
-import { CHARACTER_CREATION_COPY } from '../content/onboardingCopy';
+import { CHARACTER_CREATION_COPY, STUDY_OVERVIEW_COPY } from '../content/onboardingCopy';
 import { CHARACTER_HEADSHOTS } from '@/data/characterHeadshots';
 import { generateCharacterProfileImage, generateComicHeadshotFromPhoto, toDataUrl } from '@/api/images';
 import { CharacterRefinementPhase } from './CharacterRefinementPhase';
@@ -45,8 +45,10 @@ export function CharacterCreationPage() {
   const setAdminSetupOpen = useStore((s) => s.setAdminSetupOpen);
   const setCharacterProfile = useStore((s) => s.setCharacterProfile);
   const setHasCompletedCharacterCreation = useStore((s) => s.setHasCompletedCharacterCreation);
+  const designTopic = useStore((s) => s.designTopic);
 
   const copy = CHARACTER_CREATION_COPY;
+  const topicLabel = designTopic?.trim() || STUDY_OVERVIEW_COPY.topic.defaultTopic;
   const [step, setStep] = useState<Step>('pick');
   const [selectedHeadshotId, setSelectedHeadshotId] = useState<string | null>(null);
   const [workingImage, setWorkingImage] = useState('');
@@ -276,6 +278,14 @@ export function CharacterCreationPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
             <div className="lg:col-span-5">
+              <div className="mb-4 flex justify-center">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 ring-1 ring-blue-100">
+                  <span className="text-[10px] uppercase font-semibold tracking-[0.15em] text-blue-700/70">
+                    {STUDY_OVERVIEW_COPY.topic.label}
+                  </span>
+                  <span className="text-sm font-semibold text-blue-900">{topicLabel}</span>
+                </div>
+              </div>
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="w-full aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
                   {isGenerating ? (

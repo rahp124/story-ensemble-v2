@@ -5,6 +5,8 @@ import { Loader, Modal } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import {
   AestheticsPhase,
+  type AestheticComparisonChoice,
+  type AestheticPreviewResult,
   type SceneAesthetics,
   type SceneSketchRefinement
 } from './AestheticsPhase';
@@ -57,7 +59,7 @@ export function StoryboardFrameAestheticModal({
     setAesthetics((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePreview = async (notes: SceneAesthetics) => {
+  const handlePreview = async (notes: SceneAesthetics): Promise<AestheticPreviewResult | void> => {
     if (frameIndex === null || !frame) return;
 
     setIsGenerating(true);
@@ -70,17 +72,6 @@ export function StoryboardFrameAestheticModal({
         reflectionAnswers: frame.reflectionAnswers ?? {},
         aestheticNotes: notes,
         stage: 'aesthetic'
-      });
-      addStudyEvent({
-        initiator: 'user',
-        type: 'EDITOR_AESTHETIC_PREVIEW',
-        count: 1,
-        data: { frameIndex, aestheticNotes: notes }
-      });
-      applyDesignerSceneUpdate(storyboardId, frameIndex, {
-        stage: 'aesthetics',
-        image,
-        aestheticNotes: notes
       });
       logSystemPanelGeneration(addStudyEvent, {
         storyboardId,
@@ -97,11 +88,31 @@ export function StoryboardFrameAestheticModal({
         createFromScratch: generation.createFromScratch,
         hasReferenceImage: generation.hasReferenceImage
       });
+      return { image, caption: frame.caption ?? '' };
     } catch (err) {
       console.error('[StoryboardFrameAestheticModal preview]', err);
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handlePreviewChoice = (
+    choice: AestheticComparisonChoice,
+    notes: SceneAesthetics,
+    preview: AestheticPreviewResult
+  ) => {
+    if (choice !== 'updated' || frameIndex === null) return;
+    addStudyEvent({
+      initiator: 'user',
+      type: 'EDITOR_AESTHETIC_PREVIEW',
+      count: 1,
+      data: { frameIndex, aestheticNotes: notes }
+    });
+    applyDesignerSceneUpdate(storyboardId, frameIndex, {
+      stage: 'aesthetics',
+      image: preview.image,
+      aestheticNotes: notes
+    });
   };
 
   const handleContinue = (notes: SceneAesthetics) => {
@@ -156,6 +167,8 @@ export function StoryboardFrameAestheticModal({
               sceneIndex={frameIndex}
               mode="aesthetic"
               aesthetics={aesthetics}
+              currentImage={frame?.image ?? ''}
+              currentCaption={frame?.caption ?? ''}
               onChange={
                 handleChange as (
                   field: keyof SceneAesthetics | keyof SceneSketchRefinement,
@@ -167,6 +180,7 @@ export function StoryboardFrameAestheticModal({
                   aesthetics: SceneAesthetics | SceneSketchRefinement
                 ) => void
               }
+              onPreviewChoice={handlePreviewChoice}
               onContinue={
                 handleContinue as (
                   aesthetics: SceneAesthetics | SceneSketchRefinement

@@ -25,7 +25,7 @@ priorExperience:
   options:
     - value: yes
       title: Yes, I've experienced this
-      description: I will recall firsthand context with this topic.
+      description: I can recall the last time this happened to me.
     - value: no
       title: No, but I'll picture myself in this context
       description: I'll imagine the most realistic scenario for me.
@@ -33,7 +33,7 @@ priorExperience:
 experienceSummary:
   label: Briefly describe your experience
   optional: (optional)
-  placeholder: 1-2 sentences about your experience
+  placeholder: 1-2 sentences is sufficient
   helper:
 
 continueButton: Continue
