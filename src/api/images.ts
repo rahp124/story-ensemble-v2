@@ -247,7 +247,8 @@ export async function generateComicHeadshotFromPhoto(
   const image = await generateStoryboardImage({
     prompt: imagePrompt,
     referenceImage: refDataUrl,
-    applyNoText: true
+    applyNoText: true,
+    provider: 'openai'
   });
 
   return { image, imagePrompt };

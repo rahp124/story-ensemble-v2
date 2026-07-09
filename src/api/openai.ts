@@ -1191,10 +1191,10 @@ export function buildCharacterProfileEditPrompt(adjustments: {
 
 export function buildComicHeadshotPrompt(): string {
   return [
-    'Redraw this photo as a comic book style character portrait headshot.',
+    'Redraw this photo as an abstract comic book style character portrait headshot (style: Scott Pilgrim comic style).',
     'Clean portrait composition: head and shoulders only, facing directly forward toward the camera, simple neutral background.',
-    'Impressionist comic book illustration style: clean linework with symbolic and exaggerated expressions without realistic detail.',
-    "Preserve the person's general likeness: facial structure, skin tone, hairstyle and color, and any glasses or accessories visible in the photo.",
+    'Impressionist comic book illustration style: clean linework with symbolic facial features reminiscient of American indie comics and Japanese manga, like Scott Pilgrim.',
+    "Preserve the person's general likeness: skin tone, hairstyle and color, and any glasses or accessories visible in the photo. Do NOT include details such as realistic teeth or shading.",
     'Do NOT change the framing to a full-body shot, action scene, or storyboard panel.'
   ].join('\n\n');
 }
