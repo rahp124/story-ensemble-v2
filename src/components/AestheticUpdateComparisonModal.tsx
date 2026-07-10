@@ -1,13 +1,14 @@
 import { Modal } from '@mantine/core';
-import type { AestheticPreviewResult } from './AestheticsPhase';
 
-export type AestheticComparisonChoice = 'original' | 'updated';
+export type ImagePreviewResult = { image: string; caption?: string };
+
+export type ImageComparisonChoice = 'original' | 'updated';
 
 interface AestheticUpdateComparisonModalProps {
   opened: boolean;
-  original: AestheticPreviewResult;
-  preview: AestheticPreviewResult;
-  onSelect: (choice: AestheticComparisonChoice) => void;
+  original: ImagePreviewResult;
+  preview: ImagePreviewResult;
+  onSelect: (choice: ImageComparisonChoice) => void;
   onClose: () => void;
 }
 
@@ -19,7 +20,7 @@ function ComparisonColumn({
 }: {
   label: string;
   image: string;
-  caption: string;
+  caption?: string;
   onClick: () => void;
 }) {
   return (
@@ -36,9 +37,11 @@ function ComparisonColumn({
           <p className="text-sm text-gray-500 px-4 text-center">No image</p>
         )}
       </div>
-      <p className="text-sm text-gray-600 italic leading-relaxed">
-        &ldquo;{caption || 'No caption'}&rdquo;
-      </p>
+      {caption !== undefined && caption !== '' && (
+        <p className="text-sm text-gray-600 italic leading-relaxed">
+          &ldquo;{caption}&rdquo;
+        </p>
+      )}
     </button>
   );
 }

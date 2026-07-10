@@ -5,7 +5,8 @@ import type { CharacterProfileAdjustments } from '../store';
 import { CHARACTER_CREATION_COPY, STUDY_OVERVIEW_COPY } from '../content/onboardingCopy';
 import { CHARACTER_HEADSHOTS } from '@/data/characterHeadshots';
 import { generateCharacterProfileImage, generateComicHeadshotFromPhoto, toDataUrl } from '@/api/images';
-import { CharacterRefinementPhase } from './CharacterRefinementPhase';
+import { CharacterRefinementPhase, type CharacterPreviewResult } from './CharacterRefinementPhase';
+import type { ImageComparisonChoice } from './AestheticUpdateComparisonModal';
 import { PhotoCaptureModal } from './PhotoCaptureModal';
 
 const UPLOADED_PHOTO_SOURCE_ID = 'uploaded';
@@ -115,24 +116,16 @@ export function CharacterCreationPage() {
     setAdjustments((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePreview = async (nextAdjustments: CharacterProfileAdjustments) => {
+  const handlePreview = async (
+    nextAdjustments: CharacterProfileAdjustments
+  ): Promise<CharacterPreviewResult | void> => {
     if (!workingImage) return;
     setIsGenerating(true);
     try {
-      useStore.getState().addStudyEvent({
-        initiator: 'user',
-        type: 'CHARACTER_PROFILE_PREVIEW',
-        count: 1,
-        data: { adjustments: nextAdjustments }
-      });
-
       const { image, imagePrompt } = await generateCharacterProfileImage({
         currentImage: workingImage,
         adjustments: nextAdjustments
       });
-
-      setWorkingImage(image);
-      setWasRegenerated(true);
 
       useStore.getState().addStudyEvent({
         initiator: 'system',
@@ -140,11 +133,29 @@ export function CharacterCreationPage() {
         count: 1,
         data: { imagePrompt, hasReferenceImage: true }
       });
+
+      return { image };
     } catch (err) {
       console.error('[character profile preview]', err);
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handlePreviewChoice = (
+    choice: ImageComparisonChoice,
+    nextAdjustments: CharacterProfileAdjustments,
+    preview: CharacterPreviewResult
+  ) => {
+    if (choice !== 'updated') return;
+    setWorkingImage(preview.image);
+    setWasRegenerated(true);
+    useStore.getState().addStudyEvent({
+      initiator: 'user',
+      type: 'CHARACTER_PROFILE_PREVIEW',
+      count: 1,
+      data: { adjustments: nextAdjustments }
+    });
   };
 
   const handleFinalize = async (nextAdjustments: CharacterProfileAdjustments) => {
@@ -308,8 +319,10 @@ export function CharacterCreationPage() {
               <CharacterRefinementPhase
                 copy={copy.refine}
                 adjustments={adjustments}
+                currentImage={workingImage}
                 onChange={handleAdjustmentChange}
                 onPreview={handlePreview}
+                onPreviewChoice={handlePreviewChoice}
                 onContinue={handleFinalize}
                 isGenerating={isGenerating}
               />
