@@ -26,7 +26,7 @@ upload:
 refine:
   eyebrow: Character
   title: Refine your portrait
-  subtitle: Keeping your scenario in mind, describe adjustments to your character's face, hair, or clothing. Use Update Image to make changes before continuing.
+  subtitle: Keeping your scenario in mind, describe adjustments to your character's face, hair, or clothing. Use Update Image to make any changes before continuing.
   face:
     label: Face adjustment (optional)
     helper: Describe how your face should look differently (e.g. skin tone, facial features, eye color).
