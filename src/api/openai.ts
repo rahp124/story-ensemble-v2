@@ -1011,7 +1011,7 @@ export async function generateDesignerContentCaption(args: {
   currentCaption: string;
   contentAnswers: Record<string, string>;
 }): Promise<string> {
-  const userContent = `Rewrite the storyboard panel caption so it reflects the participant's responses for this scene.
+  const userContent = `Rewrite the storyboard panel caption in the participant's first-person voice so it reflects their responses for this scene.
 
 Frame type: ${args.frameType}
 Current caption: """${args.currentCaption}"""
@@ -1022,7 +1022,8 @@ ${JSON.stringify(args.contentAnswers, null, 2)}
 """
 
 Requirements:
-- 1 to 2 sentences, narrative voice, present-tense, under 220 characters.
+- 1 to 2 sentences, present-tense, under 220 characters.
+- Write in first person (I / me / my), matching the participant's voice in their answers. Do not rewrite as third person (they / the student / the participant).
 - Keep the same scene and viewpoint as the current caption; only update what the answers actually changed.
 - Do not invent new characters, locations, or props that aren't supported by the answers.
 - No markdown, no quotes, no leading label.`;
