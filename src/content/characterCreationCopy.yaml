@@ -11,7 +11,7 @@ pick:
 
 upload:
   modalTitle: Upload a photo
-  takeSelfieButton: Take a selfie
+  takeSelfieButton: Take a picture
   chooseFileButton: Choose a file
   captureButton: Capture photo
   retakeButton: Retake photo

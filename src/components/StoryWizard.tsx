@@ -666,9 +666,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   const showLeftImagePanel = !(
     ENABLE_DESIGNER_STORYBOARD_MODE &&
     phase === 'panel-generate' &&
-    !isGenerating &&
-    !isFirstFrameGenerating &&
-    !isPreviewGenerating &&
     !currentSceneFrame?.image &&
     !(ENABLE_SKETCH_MODE && currentSceneFrame?.sketch)
   );

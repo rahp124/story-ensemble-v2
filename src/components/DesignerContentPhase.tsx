@@ -43,7 +43,7 @@ function resolveQuestions(
   return getDesignerContentOnlyQuestions(frameType);
 }
 
-const DEFAULT_CONTENT_SUBTITLES: Record<FrameOutline['frameType'], string> = {
+export const DEFAULT_CONTENT_SUBTITLES: Record<FrameOutline['frameType'], string> = {
   Context: 'Set the scene...',
   Problem: 'What went wrong...',
   Action: 'What you tried...',
@@ -85,13 +85,7 @@ export function DesignerContentPhase({
   };
 
   const finalizeLabel =
-    questionSet === 'generation'
-      ? isGenerating
-        ? 'Generating panel...'
-        : 'Generate Panel'
-      : isGenerating
-        ? 'Updating scene...'
-        : 'Update Scene';
+    questionSet === 'generation' ? 'Generate Panel' : 'Update Scene';
 
   useHotkeys(
     'pageup',
@@ -157,15 +151,6 @@ export function DesignerContentPhase({
         ))}
       </div>
 
-      {isGenerating && (
-        <div className="flex items-center gap-3 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <Loader size="sm" color="blue" />
-          <p className="text-sm font-medium text-blue-700">
-            {questionSet === 'generation' ? 'Generating panel...' : 'Updating scene...'}
-          </p>
-        </div>
-      )}
-
       <div className="pt-6 md:pt-8 mt-6 md:mt-8 border-t border-gray-100">
         <button
           type="button"
@@ -175,6 +160,12 @@ export function DesignerContentPhase({
         >
           {finalizeLabel}
         </button>
+        {isGenerating && (
+          <div className="flex items-center gap-3 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <Loader size="sm" color="blue" />
+            <p className="text-sm font-medium text-blue-700">While the panel loads, visualize how the scene should look in your mind first!</p>
+          </div>
+        )}
       </div>
     </div>
   );

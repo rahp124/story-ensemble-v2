@@ -47,6 +47,8 @@ interface AestheticsPhaseProps {
   continueLabel?: string;
   currentImage?: string;
   currentCaption?: string;
+  title?: string;
+  subtitle?: string;
 }
 
 export function AestheticsPhase({
@@ -66,6 +68,8 @@ export function AestheticsPhase({
   continueLabel,
   currentImage,
   currentCaption,
+  title,
+  subtitle,
 }: AestheticsPhaseProps) {
   if (mode === 'sketch') {
     return (
@@ -100,6 +104,8 @@ export function AestheticsPhase({
       continueLabel={continueLabel}
       currentImage={currentImage}
       currentCaption={currentCaption}
+      title={title}
+      subtitle={subtitle}
     />
   );
 }
@@ -172,6 +178,8 @@ interface AestheticPolishPhaseProps {
   continueLabel?: string;
   currentImage?: string;
   currentCaption?: string;
+  title?: string;
+  subtitle?: string;
 }
 
 function AestheticPolishPhase({
@@ -187,6 +195,8 @@ function AestheticPolishPhase({
   continueLabel,
   currentImage,
   currentCaption,
+  title,
+  subtitle,
   content: _content,
   onContentChange: _onContentChange,
 }: AestheticPolishPhaseProps & { content?: Record<string,string|undefined>; onContentChange?: (field:string,value:string)=>void }) {
@@ -213,6 +223,11 @@ function AestheticPolishPhase({
   const resolveChoice = (choice: AestheticComparisonChoice) => {
     if (!comparison) return;
     onPreviewChoice?.(choice, aesthetics, comparison.preview);
+    if (choice === 'updated') {
+      onChange('character', '');
+      onChange('action', '');
+      onChange('environment', '');
+    }
     setComparison(null);
   };
 
@@ -223,8 +238,13 @@ function AestheticPolishPhase({
         style={{ ...panelCardStyle(phaseTheme), ...panelCardBorderStyle(phaseTheme) }}
       >
         <div className="mb-6">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Scene {sceneIndex + 1} - Visual Aesthetics</h2>
-          <p className="text-sm text-gray-700 mt-1">Describe visual adjustments for this panel. Use Update Image to make changes before continuing.</p>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
+            {title ?? `Scene ${sceneIndex + 1} - Visual Aesthetics`}
+          </h2>
+          <p className="text-sm text-gray-700 mt-1">
+            {subtitle ??
+              'Describe visual adjustments for this panel. Use Update Image to make changes before continuing.'}
+          </p>
         </div>
 
         <div className="flex-grow space-y-5">
@@ -245,12 +265,12 @@ function AestheticPolishPhase({
           </div>
         </div>
 
-        {isGenerating && (
+        {/* {isGenerating && (
           <div className="flex items-center gap-3 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <Loader size="sm" color="blue" />
             <p className="text-sm font-medium text-blue-700">Regenerating scene...</p>
           </div>
-        )}
+        )} */}
 
         <div className="pt-6 mt-6 border-t border-gray-100 flex flex-row gap-3">
           <button
