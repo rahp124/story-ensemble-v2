@@ -66,7 +66,7 @@ export function CharacterRefinementPhase({
           <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
             {copy.title}
           </h2>
-          <p className="text-sm text-gray-500 mt-1">{copy.subtitle}</p>
+          <p className="text-sm text-gray-700 mt-1">{copy.subtitle}</p>
         </div>
 
         <div className="flex-grow space-y-5">
@@ -74,7 +74,7 @@ export function CharacterRefinementPhase({
             <label className="block text-sm font-semibold text-gray-800 mb-1">
               {copy.face.label}
             </label>
-            <p className="text-xs text-gray-500 mb-2">{copy.face.helper}</p>
+            <p className="text-xs text-gray-700 mb-2">{copy.face.helper}</p>
             <textarea
               className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none"
               placeholder={copy.face.placeholder}
@@ -87,7 +87,7 @@ export function CharacterRefinementPhase({
             <label className="block text-sm font-semibold text-gray-800 mb-1">
               {copy.hairAccessories.label}
             </label>
-            <p className="text-xs text-gray-500 mb-2">{copy.hairAccessories.helper}</p>
+            <p className="text-xs text-gray-700 mb-2">{copy.hairAccessories.helper}</p>
             <textarea
               className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none"
               placeholder={copy.hairAccessories.placeholder}
@@ -100,7 +100,7 @@ export function CharacterRefinementPhase({
             <label className="block text-sm font-semibold text-gray-800 mb-1">
               {copy.clothing.label}
             </label>
-            <p className="text-xs text-gray-500 mb-2">{copy.clothing.helper}</p>
+            <p className="text-xs text-gray-700 mb-2">{copy.clothing.helper}</p>
             <textarea
               className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none"
               placeholder={copy.clothing.placeholder}
@@ -118,12 +118,12 @@ export function CharacterRefinementPhase({
           </div>
         )}
 
-        <div className="pt-6 md:pt-8 mt-6 md:mt-8 border-t border-gray-100 flex flex-col gap-3">
+        <div className="pt-6 mt-6 border-t border-gray-100 flex flex-row gap-3">
           <button
             type="button"
             onClick={handleUpdateClick}
             disabled={disabled}
-            className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {copy.updateButton}
           </button>
@@ -131,7 +131,7 @@ export function CharacterRefinementPhase({
             type="button"
             onClick={() => onContinue(adjustments)}
             disabled={disabled}
-            className="w-full py-3 md:py-4 px-6 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl border border-gray-300 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3 md:py-4 px-6 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl border border-gray-300 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {copy.continueButton}
           </button>

@@ -62,8 +62,8 @@ export function ReflectionPhase({
         <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
           Scene {sceneIndex + 1} — {frameType === 'Action' ? 'Action / Solution' : frameType}
         </h2>
-        <p className="text-sm text-gray-500 mt-1">
-          A quick reflection on this scene. These answers do not change the image yet.
+        <p className="text-sm text-gray-700 mt-1">
+          A quick reflection on this scene.
         </p>
       </div>
 

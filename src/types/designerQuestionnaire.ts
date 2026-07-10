@@ -12,8 +12,8 @@ export type DesignerQuestionFrameType = FrameOutline['frameType'];
 
 export const DESIGNER_CONTENT_QUESTIONS: Record<DesignerQuestionFrameType, DesignerContentQuestion[]> = {
   Context: [
-    { id: 'ctx-setup',         text: '[Setup] What was happening right before your last experience?', phase: 'generation' },
-    { id: 'ctx-goal',          text: '[Goal] What did you want to accomplish in your last experience?', phase: 'generation' },
+    { id: 'ctx-setup',         text: '[Setup] What was happening right before your experience?', phase: 'generation' },
+    { id: 'ctx-goal',          text: '[Goal] What did you want to accomplish in your experience?', phase: 'generation' },
     // { id: 'ctx-mindset',       text: 'What best describes your mindset before this moment?', phase: 'content' },
     // { id: 'ctx-familiarity',   text: 'How familiar does this visualized image feel to your experience? What stands out as similar and different from your experience?', phase: 'content' }
   ],
@@ -38,8 +38,8 @@ export const DESIGNER_CONTENT_QUESTIONS: Record<DesignerQuestionFrameType, Desig
 };
 
 export const DESIGNER_REFLECTION_QUESTIONS: Omit<DesignerContentQuestion, 'phase'>[] = [
-  { id: 'reflect-felt',    text: 'Write ONE WORD that best describes how you\'re feeling, at this moment in your last experience:' },
-  { id: 'reflect-mind',    text: 'Write A SENTENCE describing the main thing on your mind, at this moment in your last experience:' }
+  { id: 'reflect-felt',    text: 'Write ONE WORD that best describes how you\'re feeling, at this moment in your experience:' },
+  { id: 'reflect-mind',    text: 'Write A SENTENCE describing the main thing on your mind, at this moment in your experience:' }
 ];
 
 export function getDesignerAllContentQuestions(

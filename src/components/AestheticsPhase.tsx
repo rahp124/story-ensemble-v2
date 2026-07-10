@@ -224,23 +224,23 @@ function AestheticPolishPhase({
       >
         <div className="mb-6">
           <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Scene {sceneIndex + 1} - Visual Aesthetics</h2>
-          <p className="text-sm text-gray-500 mt-1">Describe visual adjustments for this panel. Use Update to re-generate the current panel before continuing.</p>
+          <p className="text-sm text-gray-700 mt-1">Describe visual adjustments for this panel. Use Update Image to make changes before continuing.</p>
         </div>
 
         <div className="flex-grow space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1">Character adjustment</label>
-            <p className="text-xs text-gray-500 mb-2">Describe how the character's appearance or facial expression should look differently.</p>
+            <label className="block text-sm font-semibold text-gray-800 mb-1">Character adjustment (optional)</label>
+            <p className="text-xs text-gray-700 mb-2">Describe how the character's appearance or facial expression should look differently.</p>
             <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" placeholder="Optional" value={aesthetics.character ?? ''} onChange={(e)=>onChange('character', e.target.value)} disabled={isGenerating || !!comparison} />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1">Action adjustment</label>
-            <p className="text-xs text-gray-500 mb-2">Describe how the character's pose, gesture, or activity should be different.</p>
+            <label className="block text-sm font-semibold text-gray-800 mb-1">Action adjustment (optional)</label>
+            <p className="text-xs text-gray-700 mb-2">Describe how the character's pose, gesture, or activity should be different.</p>
             <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" placeholder="Optional" value={aesthetics.action ?? ''} onChange={(e)=>onChange('action', e.target.value)} disabled={isGenerating || !!comparison} />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1">Environment adjustment</label>
-            <p className="text-xs text-gray-500 mb-2">Adjust background, lighting, or setting details.</p>
+            <label className="block text-sm font-semibold text-gray-800 mb-1">Environment adjustment (optional)</label>
+            <p className="text-xs text-gray-700 mb-2">Adjust background, lighting, or setting details.</p>
             <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" placeholder="Optional" value={aesthetics.environment ?? ''} onChange={(e)=>onChange('environment', e.target.value)} disabled={isGenerating || !!comparison} />
           </div>
         </div>
@@ -252,12 +252,12 @@ function AestheticPolishPhase({
           </div>
         )}
 
-        <div className="pt-6 md:pt-8 mt-6 md:mt-8 border-t border-gray-100 flex flex-col gap-3">
+        <div className="pt-6 mt-6 border-t border-gray-100 flex flex-row gap-3">
           <button
             type="button"
             onClick={handleUpdateClick}
             disabled={isGenerating || !!comparison}
-            className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Update Image
           </button>
@@ -265,7 +265,7 @@ function AestheticPolishPhase({
             type="button"
             onClick={() => onContinue(aesthetics)}
             disabled={isGenerating || !!comparison}
-            className="w-full py-3 md:py-4 px-6 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl border border-gray-300 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3 md:py-4 px-6 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl border border-gray-300 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {continueLabel ?? (isLastScene ? 'Finish & Reveal Full Story' : 'Looks good to me!')}
           </button>

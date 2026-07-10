@@ -120,7 +120,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   const [iterativeAfterStyle, setIterativeAfterStyle] = useState(false);
   const [isFirstFrameGenerating, setIsFirstFrameGenerating] = useState(false);
   const [isPreviewGenerating, setIsPreviewGenerating] = useState(false);
-  const [viewedFrameIndex, setViewedFrameIndex] = useState(0);
   const [sbId, setSbId] = useState<string | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [useGeneratedPanelsFlow, setUseGeneratedPanelsFlow] = useState(false);
@@ -173,9 +172,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     | StoryboardFrame[]
     | undefined;
 
-  const viewedFrame = storyboardFrames?.[viewedFrameIndex];
   const currentSceneFrame = storyboardFrames?.[sceneIndex];
-  const framesGenerated = sceneIndex + 1;
 
   // Designer mode skips the variant picker: create a blank designer storyboard
   // node up front so the per-panel Generation → Aesthetics → Reflection loop can
@@ -187,7 +184,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     setSbId(id);
     setUseGeneratedPanelsFlow(true);
     setWizardState({ ...INITIAL_WIZARD_STATE, phase: 'panel-generate', sceneIndex: 0 });
-    setViewedFrameIndex(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -234,7 +230,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       setWarmUpAnswers(answers);
       setSbId(storyboardId);
       setWizardState(INITIAL_WIZARD_STATE);
-      setViewedFrameIndex(0);
       setIsGenerating(false);
 
       // Generate initial sketches or first frame
@@ -297,7 +292,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     if (sceneIndex < 3) {
       const nextIndex = sceneIndex + 1;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
-      setViewedFrameIndex(nextIndex);
       return;
     }
     setWizardState({ ...updatedState, phase: 'story-lock', sceneIndex: 0 });
@@ -334,7 +328,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       speculativeRef.current = { frameIndex: nextIndex, promise: p, resolved: false, hasAesthetics: false };
 
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
-      setViewedFrameIndex(nextIndex);
       return;
     }
 
@@ -470,7 +463,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
       const nextIndex = sceneIndex + 1;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'aesthetics' });
-      setViewedFrameIndex(nextIndex);
       return;
     }
 
@@ -503,7 +495,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     if (hasSpec && spec.resolved && (!aestheticsEntered || spec.hasAesthetics)) {
       speculativeRef.current = null;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
-      setViewedFrameIndex(nextIndex);
       return;
     }
 
@@ -532,7 +523,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
       speculativeRef.current = null;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
-      setViewedFrameIndex(nextIndex);
     } catch (error) {
       console.error(error);
       speculativeRef.current = null;
@@ -613,7 +603,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     try {
       const nextIndex = sceneIndex + 1;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
-      setViewedFrameIndex(nextIndex);
     } catch (error) {
       console.error(error);
     } finally {
@@ -657,7 +646,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     // Mark that we want to iterate on each panel with aesthetics before final rendering
     setIterativeAfterStyle(true);
     setWizardState(prev => ({ ...prev, phase: 'aesthetics', sceneIndex: 0 }));
-    setViewedFrameIndex(0);
   };
 
   // ─── Designer storyboard mode handlers ────────────────────────────────────────
@@ -674,6 +662,16 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   )?.[sceneIndex];
 
   const captionTheme: WizardPhaseTheme = phase === 'aesthetics' ? 'aesthetics' : 'content';
+
+  const showLeftImagePanel = !(
+    ENABLE_DESIGNER_STORYBOARD_MODE &&
+    phase === 'panel-generate' &&
+    !isGenerating &&
+    !isFirstFrameGenerating &&
+    !isPreviewGenerating &&
+    !currentSceneFrame?.image &&
+    !(ENABLE_SKETCH_MODE && currentSceneFrame?.sketch)
+  );
 
   useEffect(() => {
     if (ENABLE_DESIGNER_STORYBOARD_MODE && phase === 'variant-select') {
@@ -729,7 +727,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       data: { variantId, pickType: 'full' }
     });
     setWizardState(prev => ({ ...prev, phase: 'content', sceneIndex: 0 }));
-    setViewedFrameIndex(0);
   };
 
   const onDesignerPanelPick = ({ variantId }: { variantId: string }) => {
@@ -751,7 +748,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       data: { variantId, pickType: 'panel', sceneIndex }
     });
     setWizardState((prev) => ({ ...prev, phase: 'content' }));
-    setViewedFrameIndex(sceneIndex);
   };
 
   const onGenerateNewPanel = () => {
@@ -767,7 +763,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     }
 
     setWizardState((prev) => ({ ...prev, phase: 'panel-generate' }));
-    setViewedFrameIndex(sceneIndex);
     addStudyEvent({
       initiator: 'user',
       type: 'DESIGNER_START_FROM_SCRATCH',
@@ -822,12 +817,23 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       });
       // Panel image is generated — advance to the Aesthetics page for this panel.
       setWizardState((prev) => ({ ...prev, phase: 'aesthetics' }));
-      setViewedFrameIndex(sceneIndex);
     } catch (err) {
       console.error('[designer panel generate]', err);
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const onDesignerPanelGenerateDebugSkip = (answers: DesignerSceneAnswers) => {
+    if (!sbId || !designerFrame) return;
+    const characterRef = useStore.getState().characterProfile?.image?.trim() ?? '';
+    applyDesignerSceneUpdate(sbId, sceneIndex, {
+      stage: 'content',
+      image: characterRef,
+      caption: designerFrame.caption ?? '',
+      contentAnswers: answers
+    });
+    setWizardState((prev) => ({ ...prev, phase: 'aesthetics' }));
   };
 
   const onDesignerContentFinalized = async (answers: DesignerSceneAnswers) => {
@@ -911,7 +917,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     const nextIndex = sceneIndex + 1;
     clearDesignerFrameSlot(nextIndex);
     setWizardState(prev => ({ ...prev, sceneIndex: nextIndex, phase: 'panel-generate' }));
-    setViewedFrameIndex(nextIndex);
   };
 
   const onDesignerAestheticPreview = async (aesthetics: SceneAesthetics): Promise<AestheticPreviewResult | void> => {
@@ -986,7 +991,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     });
     // Accepting the aesthetics advances to the Reflection page for this panel.
     setWizardState(prev => ({ ...prev, phase: 'reflection' }));
-    setViewedFrameIndex(sceneIndex);
   };
 
   // ─── Render path 1: warm-up / variant select ─────────────────────────────────
@@ -1144,153 +1148,89 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
 
             {/* LEFT: IMAGE + CAPTION */}
-            <div className="lg:col-span-5 flex flex-col gap-4 md:gap-6">
+            {showLeftImagePanel && (
+              <div className="lg:col-span-5">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="w-full aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                    {(() => {
+                      const isActiveGenerateScene =
+                        ENABLE_DESIGNER_STORYBOARD_MODE && phase === 'panel-generate';
+                      const showSkeleton =
+                        (isGenerating && isActiveGenerateScene) ||
+                        isFirstFrameGenerating ||
+                        isPreviewGenerating;
+                      const skeletonLabel =
+                        isGenerating && isActiveGenerateScene
+                          ? 'Generating panel…'
+                          : isPreviewGenerating
+                            ? 'Regenerating scene…'
+                            : 'Painting your scene…';
 
-              {/* IMAGE CAROUSEL */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative group">
-                {framesGenerated > 1 && (
-                  <>
-                    <button
-                      onClick={() => setViewedFrameIndex(Math.max(0, viewedFrameIndex - 1))}
-                      disabled={viewedFrameIndex === 0}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow hover:bg-white z-10 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 disabled:cursor-not-allowed"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setViewedFrameIndex(Math.min(framesGenerated - 1, viewedFrameIndex + 1))}
-                      disabled={viewedFrameIndex === framesGenerated - 1}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow hover:bg-white z-10 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 disabled:cursor-not-allowed"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </>
-                )}
+                      if (currentSceneFrame?.image && !showSkeleton) {
+                        return (
+                          <img
+                            src={currentSceneFrame.image}
+                            alt={`Scene ${sceneIndex + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        );
+                      }
 
-                <div className="w-full aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
-                  {(() => {
-                    const isActiveGenerateScene =
-                      ENABLE_DESIGNER_STORYBOARD_MODE &&
-                      phase === 'panel-generate' &&
-                      viewedFrameIndex === sceneIndex;
-                    const showSkeleton =
-                      (isGenerating && isActiveGenerateScene) ||
-                      isFirstFrameGenerating ||
-                      (isPreviewGenerating && viewedFrameIndex === sceneIndex);
-                    const skeletonLabel =
-                      isGenerating && isActiveGenerateScene
-                        ? 'Generating panel…'
-                        : isPreviewGenerating
-                          ? 'Regenerating scene…'
-                          : 'Painting your scene…';
-
-                    if (isActiveGenerateScene && !showSkeleton) {
-                      return (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-gray-400 bg-gray-50 p-8">
-                          <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="1.5"
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                          <p className="text-xs text-center max-w-[200px]">
-                            Your panel will appear here after you answer the questions
-                          </p>
-                        </div>
-                      );
-                    }
-
-                    // Priority 1: High-fidelity image data (show this after visual-style render)
-                    if (viewedFrame?.image && !showSkeleton) {
-                      return (
-                        <img
-                          src={viewedFrame.image}
-                          alt={`Scene ${viewedFrameIndex + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      );
-                    }
-
-                    // Priority 2: Sketch mode fallback (only when no image is available)
-                    if (ENABLE_SKETCH_MODE && viewedFrame?.sketch && !showSkeleton) {
-                      return (
-                        <div className="w-full h-full bg-white">
-                          <SketchFrameRenderer frame={viewedFrame.sketch} />
-                        </div>
-                      );
-                    }
-
-                    // Priority 3: Loading/placeholder state
-                    if (showSkeleton) {
-                      return (
-                        <div className="w-full h-full relative bg-gradient-to-br from-gray-100 via-gray-200 to-gray-150">
-                          <div className="absolute inset-0 animate-pulse bg-gradient-to-tr from-blue-100/20 via-white/30 to-blue-100/20" />
-                          <div className="absolute inset-0 p-5 flex flex-col gap-3">
-                            <div className="flex-1 rounded-xl bg-gray-300/40 animate-pulse" />
-                            <div className="h-3 rounded bg-gray-300/50 animate-pulse w-4/5" />
-                            <div className="h-3 rounded bg-gray-300/40 animate-pulse w-3/5" />
+                      if (ENABLE_SKETCH_MODE && currentSceneFrame?.sketch && !showSkeleton) {
+                        return (
+                          <div className="w-full h-full bg-white">
+                            <SketchFrameRenderer frame={currentSceneFrame.sketch} />
                           </div>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-400 tracking-wide bg-white/60 px-3 py-1.5 rounded-full">
-                              {skeletonLabel}
-                            </span>
+                        );
+                      }
+
+                      if (showSkeleton) {
+                        return (
+                          <div className="w-full h-full relative bg-gradient-to-br from-gray-100 via-gray-200 to-gray-150">
+                            <div className="absolute inset-0 animate-pulse bg-gradient-to-tr from-blue-100/20 via-white/30 to-blue-100/20" />
+                            <div className="absolute inset-0 p-5 flex flex-col gap-3">
+                              <div className="flex-1 rounded-xl bg-gray-300/40 animate-pulse" />
+                              <div className="h-3 rounded bg-gray-300/50 animate-pulse w-4/5" />
+                              <div className="h-3 rounded bg-gray-300/40 animate-pulse w-3/5" />
+                            </div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className="text-xs font-medium text-gray-400 tracking-wide bg-white/60 px-3 py-1.5 rounded-full">
+                                {skeletonLabel}
+                              </span>
+                            </div>
                           </div>
+                        );
+                      }
+
+                      return (
+                        <div className="flex flex-col items-center gap-2 text-gray-600">
+                          <Loader size="md" />
+                          <p className="text-xs">Loading scene...</p>
                         </div>
                       );
-                    }
-                    return (
-                      <div className="flex flex-col items-center gap-2 text-gray-600">
-                        <Loader size="md" />
-                        <p className="text-xs">Loading scene...</p>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {framesGenerated > 1 && (
-                  <div className="flex justify-center gap-2 py-3 bg-gray-50 border-t border-gray-100">
-                    {Array.from({ length: framesGenerated }).map((_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setViewedFrameIndex(idx)}
-                        className={`w-2 h-2 rounded-full transition-colors ${
-                          idx === viewedFrameIndex ? 'bg-blue-600' : 'bg-gray-300 hover:bg-gray-400'
-                        }`}
-                      />
-                    ))}
+                    })()}
                   </div>
-                )}
-              </div>
 
-              {/* CAPTION */}
-              <div
-                className="rounded-lg p-4 border"
-                style={{
-                  ...panelCardStyle(captionTheme),
-                  ...panelCardBorderStyle(captionTheme)
-                }}
-              >
-                <p className="text-gray-700 italic text-sm leading-relaxed">
-                  "
-                  {ENABLE_DESIGNER_STORYBOARD_MODE &&
-                  phase === 'panel-generate' &&
-                  viewedFrameIndex === sceneIndex
-                    ? 'Answer the questions to generate your panel...'
-                    : viewedFrame?.caption || 'Waiting for the AI to describe the scene...'}
-                  "
-                </p>
+                  <div
+                    className="p-4 border-t"
+                    style={{
+                      ...panelCardStyle(captionTheme),
+                      ...panelCardBorderStyle(captionTheme)
+                    }}
+                  >
+                    <p className="text-gray-700 italic leading-relaxed">
+                      "
+                      {currentSceneFrame?.caption ||
+                        'Waiting for the AI to describe the scene...'}
+                      "
+                    </p>
+                  </div>
+                </div>
               </div>
-
-            </div>
+            )}
 
             {/* RIGHT: CONTENT OR AESTHETICS PHASE */}
-            <div className="lg:col-span-7">
+            <div className={showLeftImagePanel ? 'lg:col-span-7' : 'lg:col-span-12'}>
               {ENABLE_DESIGNER_STORYBOARD_MODE ? (
                 (phase === 'panel-generate' || phase === 'content') && designerFrame ? (
                   <DesignerContentPhase
@@ -1305,6 +1245,11 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                       phase === 'panel-generate'
                         ? onDesignerPanelGenerateFinalized
                         : onDesignerContentFinalized
+                    }
+                    onDebugSkipGenerate={
+                      phase === 'panel-generate'
+                        ? onDesignerPanelGenerateDebugSkip
+                        : undefined
                     }
                   />
                 ) : phase === 'reflection' && designerFrame ? (

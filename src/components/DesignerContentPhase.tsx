@@ -25,6 +25,8 @@ interface DesignerContentPhaseProps {
   isGenerating: boolean;
   phaseTheme?: WizardPhaseTheme;
   onContentFinalized: (answers: DesignerSceneAnswers) => Promise<void> | void;
+  /** Debug: skip generation validation/image gen (PgUp). */
+  onDebugSkipGenerate?: (answers: DesignerSceneAnswers) => void;
 }
 
 function questionLabel(q: DesignerContentQuestion, reword: boolean): string {
@@ -41,6 +43,13 @@ function resolveQuestions(
   return getDesignerContentOnlyQuestions(frameType);
 }
 
+const DEFAULT_CONTENT_SUBTITLES: Record<FrameOutline['frameType'], string> = {
+  Context: 'Set the scene...',
+  Problem: 'What went wrong...',
+  Action: 'What you tried...',
+  Resolution: 'What happened as a result...',
+};
+
 export function DesignerContentPhase({
   sceneIndex,
   frameType,
@@ -50,7 +59,8 @@ export function DesignerContentPhase({
   initialContent,
   isGenerating,
   phaseTheme = 'content',
-  onContentFinalized
+  onContentFinalized,
+  onDebugSkipGenerate
 }: DesignerContentPhaseProps) {
   const contentQuestions = useMemo(
     () => resolveQuestions(frameType, questionSet),
@@ -67,10 +77,7 @@ export function DesignerContentPhase({
     contentQuestions.length > 0 &&
     contentQuestions.every((q) => (contentAnswers[q.id] ?? '').trim().length > 0);
 
-  const defaultContentSubtitle =
-    questionSet === 'generation'
-      ? 'Answer these questions to create a new panel image for this scene.'
-      : 'Tell us about what you see in this scene. Your answers will update the panel image.';
+  const defaultContentSubtitle = DEFAULT_CONTENT_SUBTITLES[frameType];
 
   const handleContentContinue = async () => {
     if (!allContentAnswered || isGenerating) return;
@@ -91,13 +98,30 @@ export function DesignerContentPhase({
     (e) => {
       e.preventDefault();
       if (isGenerating) return;
+      if (questionSet === 'generation' && onDebugSkipGenerate) {
+        const debugAnswers = Object.fromEntries(
+          contentQuestions.map((q) => [
+            q.id,
+            (contentAnswers[q.id] ?? '').trim() || 'debug'
+          ])
+        );
+        onDebugSkipGenerate(debugAnswers);
+        return;
+      }
       void handleContentContinue();
     },
     {
       preventDefault: true,
       enableOnFormTags: true
     },
-    [isGenerating, allContentAnswered, contentAnswers]
+    [
+      isGenerating,
+      allContentAnswered,
+      contentAnswers,
+      questionSet,
+      onDebugSkipGenerate,
+      contentQuestions
+    ]
   );
 
   return (
@@ -109,7 +133,7 @@ export function DesignerContentPhase({
         <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
           Scene {sceneIndex + 1} — {frameType === 'Action' ? 'Action / Solution' : frameType}
         </h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-700 mt-1">
           {subtitle ?? defaultContentSubtitle}
         </p>
       </div>
