@@ -3,12 +3,15 @@ import {
   generateImageWithOpenAI,
   generateStructured,
   generateDesignerContentCaption,
-  buildDesignerImageEditPrompt
+  buildDesignerImageEditPrompt,
+  buildCharacterProfileEditPrompt,
+  buildComicHeadshotPrompt
 } from './openai';
 import { generateImage } from './stableDiffusion';
 import { editImageWithFluxKontext, generateImageWithFlux } from './fal';
 import { resolveImageProvider } from '@/lib/envUtils';
 import type { FrameOutline, DesignerAestheticNotes } from '@/types';
+import type { CharacterProfileAdjustments } from '@/store';
 
 const NO_TEXT_IN_IMAGE =
   'Do not render any text, words, letters, numbers, labels, captions, signs with readable writing, speech bubbles, or UI chrome inside the image.';
@@ -102,7 +105,7 @@ ${JSON.stringify(idea)}
   return await generateStoryboardImage(imagePrompt);
 }
 
-async function toDataUrl(input: string): Promise<string> {
+export async function toDataUrl(input: string): Promise<string> {
   if (!input) return input;
   if (input.startsWith('data:')) return input;
   const resp = await fetch(input);
@@ -145,11 +148,13 @@ export async function generateDesignerSceneImage(args: {
   createFromScratch?: boolean;
   referenceImage?: string;
   referenceCaption?: string;
+  hasPriorPanelReference?: boolean;
+  hasCharacterProfileReference?: boolean;
 }): Promise<DesignerSceneImageResult> {
   const createFromScratch =
     args.createFromScratch ?? (!args.currentImage.trim() && args.stage === 'content');
 
-  const hasPriorPanelReference = !!args.referenceImage?.trim();
+  const hasPriorPanelReference = args.hasPriorPanelReference ?? false;
 
   const prompt = buildDesignerImageEditPrompt({
     frameType: args.frameType,
@@ -160,6 +165,7 @@ export async function generateDesignerSceneImage(args: {
     aestheticNotes: args.aestheticNotes,
     createFromScratch,
     hasPriorPanelReference,
+    hasCharacterProfileReference: args.hasCharacterProfileReference,
     referenceCaption: args.referenceCaption
   });
 
@@ -169,9 +175,11 @@ export async function generateDesignerSceneImage(args: {
       : (args.referenceImage?.trim() ?? '');
   const refDataUrl = refSource ? await toDataUrl(refSource) : '';
   const modeLabel = createFromScratch
-    ? hasPriorPanelReference
-      ? 'create+anchor'
-      : 'create'
+    ? args.hasCharacterProfileReference
+      ? 'create+character'
+      : hasPriorPanelReference
+        ? 'create+anchor'
+        : 'create'
     : 'edit';
   console.log(
     `[DesignerMode] preparing image ${modeLabel} (stage=${args.stage}, refIsDataUrl=${refDataUrl.startsWith('data:')})`
@@ -213,4 +221,35 @@ export async function generateDesignerSceneImage(args: {
 
   const image = await imagePromise;
   return { image, generation };
+}
+
+export async function generateCharacterProfileImage(args: {
+  currentImage: string;
+  adjustments: CharacterProfileAdjustments;
+}): Promise<{ image: string; imagePrompt: string }> {
+  const refDataUrl = await toDataUrl(args.currentImage);
+  const imagePrompt = buildCharacterProfileEditPrompt(args.adjustments);
+
+  const image = await generateStoryboardImage({
+    prompt: imagePrompt,
+    referenceImage: refDataUrl
+  });
+
+  return { image, imagePrompt };
+}
+
+export async function generateComicHeadshotFromPhoto(
+  photoDataUrl: string
+): Promise<{ image: string; imagePrompt: string }> {
+  const refDataUrl = await toDataUrl(photoDataUrl);
+  const imagePrompt = buildComicHeadshotPrompt();
+
+  const image = await generateStoryboardImage({
+    prompt: imagePrompt,
+    referenceImage: refDataUrl,
+    applyNoText: true,
+    provider: 'openai'
+  });
+
+  return { image, imagePrompt };
 }

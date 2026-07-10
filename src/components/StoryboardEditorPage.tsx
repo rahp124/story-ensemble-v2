@@ -1,44 +1,13 @@
-import { StylePreset } from '@/api/stableDiffusion';
 import { buildStudyUsageExport, downloadStudyUsageData, studyUsageDownloadBasename } from '@/lib/studyUsageData';
 import { NodeType } from '@/rf-components';
 import { useStore } from '@/store';
 import { StoryboardNodeData } from '@/types';
-import {
-  ActionIcon,
-  Button,
-  CloseButton,
-  Input,
-  Popover,
-  Select,
-  Tooltip
-} from '@mantine/core';
-import { DownloadIcon, Settings } from 'lucide-react';
+import { Button, Input } from '@mantine/core';
 import { toJpeg } from 'html-to-image';
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Node } from 'reactflow';
 import { StoryboardPanelStrip } from './StoryboardPanelStrip';
-import { StoryboardFrameAestheticModal } from './StoryboardFrameAestheticModal';
-
-const STYLE_PRESETS: StylePreset[] = [
-  '3d-model',
-  'analog-film',
-  'anime',
-  'cinematic',
-  'comic-book',
-  'digital-art',
-  'enhance',
-  'fantasy-art',
-  'isometric',
-  'line-art',
-  'low-poly',
-  'modeling-compound',
-  'neon-punk',
-  'origami',
-  'photographic',
-  'pixel-art',
-  'tile-texture'
-];
 
 function useActiveStoryboardNode(): Node<StoryboardNodeData> | undefined {
   return useStore((state) => {
@@ -53,32 +22,19 @@ export function StoryboardEditorPage() {
   const node = useActiveStoryboardNode();
   const updateStoryboardTitle = useStore((s) => s.updateStoryboardTitle);
   const updateStoryboardCaption = useStore((s) => s.updateStoryboardCaption);
-  const updateStoryboardImageStyle = useStore((s) => s.updateStoryboardImageStyle);
-  const generateStoryboardImages = useStore((s) => s.generateStoryboardImages);
   const addStudyEvent = useStore((s) => s.addStudyEvent);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState('');
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [loadingMap, setLoadingMap] = useState<boolean[]>([]);
-  const [aestheticFrameIndex, setAestheticFrameIndex] = useState<number | null>(
-    null
-  );
   const [expandCaptionsForCapture, setExpandCaptionsForCapture] = useState(false);
 
   const storyboard = node?.data.storyboard;
-  const someLoading = loadingMap.some((loading) => loading);
 
   useEffect(() => {
     if (storyboard?.title !== undefined) {
       setTitle(storyboard.title);
     }
   }, [storyboard?.title]);
-
-  useEffect(() => {
-    const len = storyboard?.outline.length ?? 0;
-    setLoadingMap(Array(len).fill(false));
-  }, [storyboard?.outline.length]);
 
   if (!node || !storyboard) {
     return (
@@ -108,39 +64,6 @@ export function StoryboardEditorPage() {
       data: { frameIndex: frameIdx, caption }
     });
     updateStoryboardCaption(node.id, frameIdx, caption);
-  };
-
-  const handleFrameClick = (frameIndex: number) => {
-    addStudyEvent({
-      initiator: 'user',
-      type: 'OPEN_FRAME_AESTHETICS',
-      count: 1,
-      data: { frameIndex }
-    });
-    setAestheticFrameIndex(frameIndex);
-  };
-
-  const regenerateAllImages = () => {
-    if (someLoading) return;
-
-    setLoadingMap(Array(storyboard.outline.length).fill(true));
-
-    generateStoryboardImages(node.id).then((imagePromises) => {
-      imagePromises.forEach((imagePromise) => {
-        imagePromise.then((idx) => {
-          setLoadingMap((prev) =>
-            prev.map((loading, i) => (i === idx ? false : loading))
-          );
-        });
-      });
-    });
-
-    addStudyEvent({
-      initiator: 'user',
-      type: 'ALL_IMAGES_REGENERATE_STORYBOARD_FRAMES',
-      count: storyboard.outline.length,
-      data: {}
-    });
   };
 
   async function downloadStoryboard() {
@@ -200,87 +123,28 @@ export function StoryboardEditorPage() {
   return (
     <div className="min-h-screen w-full bg-gray-50 flex flex-col items-center p-6 pt-24">
       <div className="max-w-6xl w-full">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div className="flex-1">
-            <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">
-              Your storyboard
-            </p>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.currentTarget.value)}
-              onBlur={handleTitleBlur}
-              placeholder="Storyboard title"
-              size="lg"
-              styles={{
-                input: {
-                  fontWeight: 700,
-                  fontSize: '1.5rem',
-                  border: 'none',
-                  background: 'transparent',
-                  paddingLeft: 0
-                }
-              }}
-              className="max-w-xl"
-            />
-          </div>
-          <div className="hide-in-screenshot flex gap-2 items-center">
-            <Popover
-              width={350}
-              withArrow
-              shadow="md"
-              disabled={someLoading}
-              opened={settingsOpen}
-              onChange={setSettingsOpen}
-            >
-              <Popover.Target>
-                <ActionIcon
-                  variant="subtle"
-                  disabled={someLoading}
-                  onClick={() => setSettingsOpen((prev) => !prev)}
-                >
-                  <Settings />
-                </ActionIcon>
-              </Popover.Target>
-              <Popover.Dropdown>
-                <div className="flex justify-between">
-                  <h4 className="font-bold mb-4">Storyboard settings</h4>
-                  <CloseButton onClick={() => setSettingsOpen(false)} />
-                </div>
-                <Select
-                  label="Image style"
-                  comboboxProps={{ withinPortal: false }}
-                  allowDeselect={false}
-                  disabled={someLoading}
-                  data={STYLE_PRESETS}
-                  value={storyboard.artStyle}
-                  onChange={(value) => {
-                    if (!value) return;
-                    addStudyEvent({
-                      initiator: 'user',
-                      type: 'EDIT_STORYBOARD_IMAGE_STYLE',
-                      count: 1,
-                      data: { artStyle: value }
-                    });
-                    updateStoryboardImageStyle(node.id, value as StylePreset);
-                  }}
-                />
-                <Button
-                  className="mt-4"
-                  fullWidth
-                  loading={someLoading}
-                  disabled={someLoading}
-                  onClick={regenerateAllImages}
-                >
-                  Re-generate
-                </Button>
-              </Popover.Dropdown>
-            </Popover>
-            <Tooltip label="Download storyboard image">
-              <ActionIcon variant="subtle" onClick={downloadStoryboard}>
-                <DownloadIcon />
-              </ActionIcon>
-            </Tooltip>
-          </div>
+        <div className="mb-6">
+          <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">
+            Preview Storyboard
+          </p>
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.currentTarget.value)}
+            onBlur={handleTitleBlur}
+            placeholder="Storyboard title"
+            size="lg"
+            styles={{
+              input: {
+                fontWeight: 700,
+                fontSize: '1.5rem',
+                border: 'none',
+                background: 'transparent',
+                paddingLeft: 0
+              }
+            }}
+            className="max-w-xl"
+          />
+          <p className="text-gray-700 mt-3">Here's your storyboard! Make any adjustments you want to the captions before submitting.</p>
         </div>
 
         <div
@@ -299,18 +163,16 @@ export function StoryboardEditorPage() {
             title={storyboard.title || 'Storyboard'}
             editableCaptions
             expandCaptions={expandCaptionsForCapture}
-            loadingIndices={loadingMap}
             onCaptionChange={handleCaptionChange}
-            onFrameClick={handleFrameClick}
           />
         </div>
-      </div>
 
-      <StoryboardFrameAestheticModal
-        storyboardId={node.id}
-        frameIndex={aestheticFrameIndex}
-        onClose={() => setAestheticFrameIndex(null)}
-      />
+        <div className="hide-in-screenshot mt-6 flex justify-center">
+          <Button size="md" onClick={downloadStoryboard}>
+            Finalize and Submit
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

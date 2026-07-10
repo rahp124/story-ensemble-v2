@@ -80,7 +80,7 @@ export function FinalStoryboardScreen() {
             </button>
           </div>
 
-          <p className="text-xs text-gray-500 mt-6">
+          <p className="text-xs text-gray-700 mt-6">
             Thank you for your participation!
           </p>
         </div>

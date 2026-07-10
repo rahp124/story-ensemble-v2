@@ -6,6 +6,7 @@ import { DependentGenerationModal } from './components/DependentGenerationModal'
 import { StoryWizard } from './components/StoryWizard';
 import { UserLandingPage } from './components/UserLandingPage';
 import { StudyOverviewPage } from './components/StudyOverviewPage';
+import { CharacterCreationPage } from './components/CharacterCreationPage';
 import { AdminSetup } from './components/AdminSetup';
 import { GenerateMoreModal } from './components/GenerateMoreModal';
 import { StoryboardEditorPage } from './components/StoryboardEditorPage';
@@ -35,6 +36,7 @@ export default function App() {
   const [wizardOpened, setWizardOpened] = useState(nodes.length === 0);
   const hasCompletedLanding = useStore((s) => s.hasCompletedLanding);
   const hasCompletedOverview = useStore((s) => s.hasCompletedOverview);
+  const hasCompletedCharacterCreation = useStore((s) => s.hasCompletedCharacterCreation);
   const adminSetupOpen = useStore((s) => s.adminSetupOpen);
   const setAdminSetupOpen = useStore((s) => s.setAdminSetupOpen);
 
@@ -43,7 +45,9 @@ export default function App() {
       nodes: [],
       edges: [],
       hasCompletedLanding: false,
-      hasCompletedOverview: false
+      hasCompletedOverview: false,
+      hasCompletedCharacterCreation: false,
+      characterProfile: null
     });
     setWizardOpened(true);
   };
@@ -56,7 +60,10 @@ export default function App() {
       {wizardOpened && hasCompletedLanding && !hasCompletedOverview && (
         <StudyOverviewPage />
       )}
-      {wizardOpened && hasCompletedLanding && hasCompletedOverview && (
+      {wizardOpened && hasCompletedLanding && hasCompletedOverview && !hasCompletedCharacterCreation && (
+        <CharacterCreationPage />
+      )}
+      {wizardOpened && hasCompletedLanding && hasCompletedOverview && hasCompletedCharacterCreation && (
         <StoryWizard onComplete={() => setWizardOpened(false)} />
       )}
       {!wizardOpened && (

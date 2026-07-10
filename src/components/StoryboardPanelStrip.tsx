@@ -16,9 +16,15 @@ export type StoryboardPanelFrame = {
   caption?: string;
 };
 
-function MissingImageTile({ label }: { label: string }) {
+export type PanelFrameState = 'upcoming' | 'active' | 'complete';
+
+function MissingImageTile({ label, compact }: { label: string; compact?: boolean }) {
   return (
-    <div className="w-full aspect-square bg-gray-100 border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-xs text-gray-400 px-2 text-center">
+    <div
+      className={`w-full aspect-square bg-gray-100 border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 px-2 text-center ${
+        compact ? 'text-[10px]' : 'text-xs'
+      }`}
+    >
       {label}
     </div>
   );
@@ -29,12 +35,18 @@ function FrameThumb({
   alt,
   loading,
   clickable,
+  forcePlaceholder,
+  active,
+  compact,
   onClick
 }: {
   src: string;
   alt: string;
   loading?: boolean;
   clickable?: boolean;
+  forcePlaceholder?: boolean;
+  active?: boolean;
+  compact?: boolean;
   onClick?: () => void;
 }) {
   const [errored, setErrored] = useState(false);
@@ -44,8 +56,11 @@ function FrameThumb({
       <div className="w-full aspect-square bg-gray-100 border border-gray-200 rounded-lg flex items-center justify-center">
         <Loader size="sm" />
       </div>
-    ) : !src || errored ? (
-      <MissingImageTile label={src ? `Missing image` : 'No image'} />
+    ) : forcePlaceholder || !src || errored ? (
+      <MissingImageTile
+        label={forcePlaceholder ? 'Not started' : src ? 'Missing image' : 'No image'}
+        compact={compact}
+      />
     ) : (
       <img
         src={src}
@@ -55,6 +70,16 @@ function FrameThumb({
       />
     );
 
+  const wrapped = (
+    <div
+      className={`rounded-lg ${
+        active ? 'ring-2 ring-blue-600 ring-offset-2' : ''
+      }`}
+    >
+      {content}
+    </div>
+  );
+
   if (clickable && onClick) {
     return (
       <button
@@ -63,12 +88,12 @@ function FrameThumb({
         disabled={loading}
         className="w-full text-left rounded-lg transition ring-offset-2 hover:ring-2 hover:ring-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {content}
+        {wrapped}
       </button>
     );
   }
 
-  return content;
+  return wrapped;
 }
 
 function CaptionField({
@@ -126,6 +151,10 @@ function CaptionField({
 export interface StoryboardPanelStripProps {
   frames: StoryboardPanelFrame[];
   title?: string;
+  variant?: 'editor' | 'progress';
+  activeIndex?: number;
+  frameStates?: PanelFrameState[];
+  clickableCompletedOnly?: boolean;
   editableCaptions?: boolean;
   expandCaptions?: boolean;
   onCaptionChange?: (index: number, caption: string) => void;
@@ -136,43 +165,75 @@ export interface StoryboardPanelStripProps {
 export function StoryboardPanelStrip({
   frames,
   title = 'Storyboard',
+  variant = 'editor',
+  activeIndex,
+  frameStates,
+  clickableCompletedOnly = false,
   editableCaptions = false,
   expandCaptions = false,
   onCaptionChange,
   onFrameClick,
   loadingIndices
 }: StoryboardPanelStripProps) {
+  const isProgress = variant === 'progress';
+  const columnWidth = isProgress ? 'w-20 md:w-24' : 'w-56';
+  const gap = isProgress ? 'gap-2 md:gap-3' : 'gap-4';
+
   return (
     <div className="flex justify-center">
-      <div className="flex gap-4">
-        {frames.map((frame, frameIdx) => (
-          <div
-            key={frame.id ?? frame.frameType}
-            className="w-56 flex-shrink-0 flex flex-col"
-          >
-            <FrameThumb
-              src={frame.image ?? ''}
-              alt={`${title} — ${FRAME_LABEL[frame.frameType]}`}
-              loading={loadingIndices?.[frameIdx]}
-              clickable={Boolean(onFrameClick) && !expandCaptions}
-              onClick={
-                onFrameClick && !expandCaptions
-                  ? () => onFrameClick(frameIdx)
-                  : undefined
-              }
-            />
-            <span className="mt-3 inline-block self-start text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-              {FRAME_LABEL[frame.frameType]}
-            </span>
-            <CaptionField
-              frameIdx={frameIdx}
-              value={frame.caption ?? ''}
-              editable={editableCaptions}
-              expandCaptions={expandCaptions}
-              onCaptionChange={onCaptionChange}
-            />
-          </div>
-        ))}
+      <div className={`flex ${gap}`}>
+        {frames.map((frame, frameIdx) => {
+          const state = frameStates?.[frameIdx];
+          const isActive = isProgress && activeIndex === frameIdx;
+          const isComplete = state === 'complete';
+          const forcePlaceholder = isProgress && state === 'upcoming';
+          const clickable =
+            Boolean(onFrameClick) &&
+            !expandCaptions &&
+            (!clickableCompletedOnly || isComplete);
+
+          return (
+            <div
+              key={frame.id ?? frame.frameType}
+              className={`${columnWidth} flex-shrink-0 flex flex-col`}
+            >
+              <FrameThumb
+                src={frame.image ?? ''}
+                alt={`${title} — ${FRAME_LABEL[frame.frameType]}`}
+                loading={loadingIndices?.[frameIdx]}
+                clickable={clickable}
+                forcePlaceholder={forcePlaceholder}
+                active={isActive}
+                compact={isProgress}
+                onClick={
+                  clickable && onFrameClick
+                    ? () => onFrameClick(frameIdx)
+                    : undefined
+                }
+              />
+              <span
+                className={`mt-2 inline-block self-center text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                  isActive
+                    ? 'text-gray-900 bg-gray-200'
+                    : isComplete
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-400 bg-gray-100'
+                }`}
+              >
+                {FRAME_LABEL[frame.frameType]}
+              </span>
+              {!isProgress && (
+                <CaptionField
+                  frameIdx={frameIdx}
+                  value={frame.caption ?? ''}
+                  editable={editableCaptions}
+                  expandCaptions={expandCaptions}
+                  onCaptionChange={onCaptionChange}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

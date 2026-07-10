@@ -1,15 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import { useStore } from '../store';
+import { useStore, type FrameComputeResult } from '../store';
 import { useDisplayStore } from '@/lib/displayStore';
 import { Loader } from '@mantine/core';
 import { DynamicStoryWizard } from './DynamicStoryWizard';
 import { ContentPhase, SceneContent } from './ContentPhase';
-import { AestheticsPhase, SceneAesthetics, SceneSketchRefinement } from './AestheticsPhase';
+import { AestheticsPhase, SceneAesthetics, SceneSketchRefinement, type AestheticComparisonChoice, type AestheticPreviewResult } from './AestheticsPhase';
 import { StoryLockPhase } from './StoryLockPhase';
 import { VisualStylePhase } from './VisualStylePhase';
 import SketchFrameRenderer from './SketchFrameRenderer';
 import { DesignerVariantPicker } from './DesignerVariantPicker';
 import { DesignerContentPhase, type DesignerSceneAnswers } from './DesignerContentPhase';
+import { ReflectionPhase } from './ReflectionPhase';
 import { StudyProgressStepper } from './StudyProgressStepper';
 import { panelCardBorderStyle, panelCardStyle, type WizardPhaseTheme } from '@/lib/wizardPhaseTheme';
 import { getDesignerVariant } from '@/data/designerStoryboards';
@@ -38,7 +39,7 @@ type StoryboardFrame = {
 
 type WizardState = {
   sceneIndex: number;
-  phase: 'variant-select' | 'panel-generate' | 'content' | 'aesthetics' | 'story-lock' | 'visual-style' | 'error';
+  phase: 'variant-select' | 'panel-generate' | 'content' | 'aesthetics' | 'reflection' | 'story-lock' | 'visual-style' | 'error';
   scenes: SceneState[];
   errorMessage?: string;
 };
@@ -106,7 +107,7 @@ const DESIGNER_SCENE_FRAME_TYPES: FrameOutline['frameType'][] = [
 
 const INITIAL_WIZARD_STATE: WizardState = {
   sceneIndex: 0,
-  phase: ENABLE_DESIGNER_STORYBOARD_MODE ? 'variant-select' : 'content',
+  phase: ENABLE_DESIGNER_STORYBOARD_MODE ? 'panel-generate' : 'content',
   scenes: Array.from({ length: 4 }, () => ({ content: {}, aesthetics: {} }))
 };
 
@@ -119,7 +120,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   const [iterativeAfterStyle, setIterativeAfterStyle] = useState(false);
   const [isFirstFrameGenerating, setIsFirstFrameGenerating] = useState(false);
   const [isPreviewGenerating, setIsPreviewGenerating] = useState(false);
-  const [viewedFrameIndex, setViewedFrameIndex] = useState(0);
   const [sbId, setSbId] = useState<string | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [useGeneratedPanelsFlow, setUseGeneratedPanelsFlow] = useState(false);
@@ -132,6 +132,8 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     resolved: boolean;
     hasAesthetics: boolean; // true only when restarted after Preview Update with real aesthetics
   } | null>(null);
+  const legacyPreviewResultRef = useRef<FrameComputeResult | null>(null);
+  const legacyPreviewWizardStateRef = useRef<WizardState | null>(null);
 
   const {
     addProjectNode,
@@ -147,6 +149,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     consumeWarmUpPrefetch,
     preCacheImagePrompt,
     generateSingleStoryboardFrame,
+    writeComputedStoryboardFrame,
     generateInitialSketchStoryboard,
     refineSketchStoryboardFrame,
     generateFinalStoryboardImages, // Used to trigger final render when implemented in canvas
@@ -169,8 +172,20 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     | StoryboardFrame[]
     | undefined;
 
-  const viewedFrame = storyboardFrames?.[viewedFrameIndex];
-  const framesGenerated = sceneIndex + 1;
+  const currentSceneFrame = storyboardFrames?.[sceneIndex];
+
+  // Designer mode skips the variant picker: create a blank designer storyboard
+  // node up front so the per-panel Generation → Aesthetics → Reflection loop can
+  // begin immediately at scene 0.
+  useEffect(() => {
+    if (!ENABLE_DESIGNER_STORYBOARD_MODE || sbId !== null) return;
+    useStore.setState({ nodes: [], edges: [] });
+    const id = createDesignerStoryboardNode();
+    setSbId(id);
+    setUseGeneratedPanelsFlow(true);
+    setWizardState({ ...INITIAL_WIZARD_STATE, phase: 'panel-generate', sceneIndex: 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ─── Warm-up submit (existing behavior, unchanged) ───────────────────────────
 
@@ -215,7 +230,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       setWarmUpAnswers(answers);
       setSbId(storyboardId);
       setWizardState(INITIAL_WIZARD_STATE);
-      setViewedFrameIndex(0);
       setIsGenerating(false);
 
       // Generate initial sketches or first frame
@@ -278,7 +292,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     if (sceneIndex < 3) {
       const nextIndex = sceneIndex + 1;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
-      setViewedFrameIndex(nextIndex);
       return;
     }
     setWizardState({ ...updatedState, phase: 'story-lock', sceneIndex: 0 });
@@ -315,7 +328,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       speculativeRef.current = { frameIndex: nextIndex, promise: p, resolved: false, hasAesthetics: false };
 
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
-      setViewedFrameIndex(nextIndex);
       return;
     }
 
@@ -355,12 +367,13 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     });
   };
 
-  const onAestheticPreview = async (aesthetics: SceneAesthetics) => {
+  const onAestheticPreview = async (aesthetics: SceneAesthetics): Promise<AestheticPreviewResult | void> => {
     const updatedScenes = scenes.map((s, i) =>
       i === sceneIndex ? { ...s, aesthetics } : s
     );
     const nextState = { ...wizardState, scenes: updatedScenes };
     setWizardState(nextState);
+    legacyPreviewWizardStateRef.current = nextState;
 
     // Discard speculative — it was generated with the pre-preview caption.
     // invalidateFrameImageGen bumps the seq (so any in-flight round-1 write is
@@ -372,41 +385,66 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
     setIsPreviewGenerating(true);
     try {
+      if (!sbId) return;
       const captions = (storyboardFrames ?? []).slice(0, sceneIndex).map(f => f.caption ?? '');
       const ctx = buildFlatContext(warmUpAnswers, nextState, sceneIndex, true, captions);
-      await generateFrame(sceneIndex, ctx, { forcePromptRegeneration: true });
-
-      // Restart speculative for the next frame using the updated caption from this preview.
-      // Read directly from the store — the closure's storyboardFrames is stale here.
-      if (sceneIndex < 3 && sbId) {
-        const nextIndex = sceneIndex + 1;
-        const freshNode = useStore.getState().nodes.find(n => n.id === sbId);
-        const freshOutline = (freshNode?.data?.storyboard?.outline ?? []) as Array<{ caption: string }>;
-        const updatedCaptions = freshOutline.slice(0, nextIndex).map(f => f.caption ?? '');
-        const nextCtx = buildFlatContext(warmUpAnswers, nextState, nextIndex, true, updatedCaptions);
-
-        preCacheImagePrompt(sbId, nextIndex, nextCtx);
-
-        const p = generateSingleStoryboardFrame(sbId, nextIndex, nextCtx)
-          .then(() => {
-            if (speculativeRef.current?.frameIndex === nextIndex) {
-              speculativeRef.current.resolved = true;
-            }
-          })
-          .catch(err => {
-            console.warn('[speculative after preview] frame generation failed:', err);
-            if (speculativeRef.current?.frameIndex === nextIndex) {
-              speculativeRef.current = null;
-            }
-          });
-
-        speculativeRef.current = { frameIndex: nextIndex, promise: p, resolved: false, hasAesthetics: true };
+      const result = await generateSingleStoryboardFrame(sbId, sceneIndex, ctx, {
+        awaitImage: true,
+        forcePromptRegeneration: true,
+        skipStoreWrite: true,
+      });
+      if (result?.image) {
+        legacyPreviewResultRef.current = result;
+        return { image: result.image, caption: result.caption };
       }
     } catch (error) {
       console.error(error);
     } finally {
       setIsPreviewGenerating(false);
     }
+  };
+
+  const restartSpeculativeAfterPreview = (nextState: WizardState) => {
+    if (!sbId || sceneIndex >= 3) return;
+
+    const nextIndex = sceneIndex + 1;
+    const freshNode = useStore.getState().nodes.find(n => n.id === sbId);
+    const freshOutline = (freshNode?.data?.storyboard?.outline ?? []) as Array<{ caption: string }>;
+    const updatedCaptions = freshOutline.slice(0, nextIndex).map(f => f.caption ?? '');
+    const nextCtx = buildFlatContext(warmUpAnswers, nextState, nextIndex, true, updatedCaptions);
+
+    preCacheImagePrompt(sbId, nextIndex, nextCtx);
+
+    const p = generateSingleStoryboardFrame(sbId, nextIndex, nextCtx)
+      .then(() => {
+        if (speculativeRef.current?.frameIndex === nextIndex) {
+          speculativeRef.current.resolved = true;
+        }
+      })
+      .catch(err => {
+        console.warn('[speculative after preview] frame generation failed:', err);
+        if (speculativeRef.current?.frameIndex === nextIndex) {
+          speculativeRef.current = null;
+        }
+      });
+
+    speculativeRef.current = { frameIndex: nextIndex, promise: p, resolved: false, hasAesthetics: true };
+  };
+
+  const onAestheticPreviewChoice = (
+    choice: AestheticComparisonChoice,
+    _aesthetics: SceneAesthetics,
+    _preview: AestheticPreviewResult
+  ) => {
+    if (choice === 'updated' && sbId && legacyPreviewResultRef.current) {
+      writeComputedStoryboardFrame(sbId, sceneIndex, legacyPreviewResultRef.current);
+      const nextState = legacyPreviewWizardStateRef.current;
+      if (nextState) {
+        restartSpeculativeAfterPreview(nextState);
+      }
+    }
+    legacyPreviewResultRef.current = null;
+    legacyPreviewWizardStateRef.current = null;
   };
 
   const onAestheticContinue = async (aesthetics: SceneAesthetics) => {
@@ -425,7 +463,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
       const nextIndex = sceneIndex + 1;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'aesthetics' });
-      setViewedFrameIndex(nextIndex);
       return;
     }
 
@@ -458,7 +495,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     if (hasSpec && spec.resolved && (!aestheticsEntered || spec.hasAesthetics)) {
       speculativeRef.current = null;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
-      setViewedFrameIndex(nextIndex);
       return;
     }
 
@@ -487,7 +523,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
       speculativeRef.current = null;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
-      setViewedFrameIndex(nextIndex);
     } catch (error) {
       console.error(error);
       speculativeRef.current = null;
@@ -568,7 +603,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     try {
       const nextIndex = sceneIndex + 1;
       setWizardState({ ...updatedState, sceneIndex: nextIndex, phase: 'content' });
-      setViewedFrameIndex(nextIndex);
     } catch (error) {
       console.error(error);
     } finally {
@@ -612,7 +646,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     // Mark that we want to iterate on each panel with aesthetics before final rendering
     setIterativeAfterStyle(true);
     setWizardState(prev => ({ ...prev, phase: 'aesthetics', sceneIndex: 0 }));
-    setViewedFrameIndex(0);
   };
 
   // ─── Designer storyboard mode handlers ────────────────────────────────────────
@@ -629,6 +662,13 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   )?.[sceneIndex];
 
   const captionTheme: WizardPhaseTheme = phase === 'aesthetics' ? 'aesthetics' : 'content';
+
+  const showLeftImagePanel = !(
+    ENABLE_DESIGNER_STORYBOARD_MODE &&
+    phase === 'panel-generate' &&
+    !currentSceneFrame?.image &&
+    !(ENABLE_SKETCH_MODE && currentSceneFrame?.sketch)
+  );
 
   useEffect(() => {
     if (ENABLE_DESIGNER_STORYBOARD_MODE && phase === 'variant-select') {
@@ -684,7 +724,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       data: { variantId, pickType: 'full' }
     });
     setWizardState(prev => ({ ...prev, phase: 'content', sceneIndex: 0 }));
-    setViewedFrameIndex(0);
   };
 
   const onDesignerPanelPick = ({ variantId }: { variantId: string }) => {
@@ -706,7 +745,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       data: { variantId, pickType: 'panel', sceneIndex }
     });
     setWizardState((prev) => ({ ...prev, phase: 'content' }));
-    setViewedFrameIndex(sceneIndex);
   };
 
   const onGenerateNewPanel = () => {
@@ -722,7 +760,6 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     }
 
     setWizardState((prev) => ({ ...prev, phase: 'panel-generate' }));
-    setViewedFrameIndex(sceneIndex);
     addStudyEvent({
       initiator: 'user',
       type: 'DESIGNER_START_FROM_SCRATCH',
@@ -736,24 +773,17 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
     console.log(`[DesignerMode] panel generate frame ${sceneIndex} (${designerFrame.frameType})`);
     setIsGenerating(true);
     try {
-      const prevImage =
-        sceneIndex > 0
-          ? (storyboardFrames?.[sceneIndex - 1]?.image?.trim() ?? '')
-          : '';
-      const prevCaption =
-        sceneIndex > 0
-          ? (storyboardFrames?.[sceneIndex - 1]?.caption?.trim() ?? '')
-          : '';
+      const characterRef = useStore.getState().characterProfile?.image?.trim() ?? '';
 
       const { image, caption, generation } = await generateDesignerSceneImage({
         currentImage: '',
         currentCaption: '',
-        referenceImage: prevImage || undefined,
-        referenceCaption: prevCaption || undefined,
+        referenceImage: characterRef || undefined,
         frameType: designerFrame.frameType,
         contentAnswers: answers,
         stage: 'content',
-        createFromScratch: true
+        createFromScratch: true,
+        hasCharacterProfileReference: !!characterRef
       });
       addStudyEvent({
         initiator: 'user',
@@ -782,12 +812,25 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         createFromScratch: generation.createFromScratch,
         hasReferenceImage: generation.hasReferenceImage
       });
-      setWizardState((prev) => ({ ...prev, phase: 'content' }));
+      // Panel image is generated — advance to the Aesthetics page for this panel.
+      setWizardState((prev) => ({ ...prev, phase: 'aesthetics' }));
     } catch (err) {
       console.error('[designer panel generate]', err);
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const onDesignerPanelGenerateDebugSkip = (answers: DesignerSceneAnswers) => {
+    if (!sbId || !designerFrame) return;
+    const characterRef = useStore.getState().characterProfile?.image?.trim() ?? '';
+    applyDesignerSceneUpdate(sbId, sceneIndex, {
+      stage: 'content',
+      image: characterRef,
+      caption: designerFrame.caption ?? '',
+      contentAnswers: answers
+    });
+    setWizardState((prev) => ({ ...prev, phase: 'aesthetics' }));
   };
 
   const onDesignerContentFinalized = async (answers: DesignerSceneAnswers) => {
@@ -798,12 +841,14 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       : answers;
     setIsGenerating(true);
     try {
+      const characterRef = useStore.getState().characterProfile?.image?.trim() ?? '';
       const { image, caption, generation } = await generateDesignerSceneImage({
         currentImage: designerFrame.image ?? '',
         currentCaption: designerFrame.caption ?? '',
         frameType: designerFrame.frameType,
         contentAnswers: mergedAnswers,
-        stage: 'content'
+        stage: 'content',
+        hasCharacterProfileReference: !!characterRef
       });
       addStudyEvent({
         initiator: 'user',
@@ -852,26 +897,31 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       data: { sceneIndex, answers }
     });
 
+    // Reflection is the last step of the per-panel loop. After the final panel,
+    // finish the wizard (revealing the summary editor); otherwise restart the
+    // loop for the next panel at its Generation step.
     if (sceneIndex === 3) {
-      setWizardState(prev => ({ ...prev, phase: 'aesthetics', sceneIndex: 0 }));
-      setViewedFrameIndex(0);
+      addStudyEvent({
+        initiator: 'user',
+        type: 'WIZARD_COMPLETE',
+        count: 1,
+        data: { storyboardId: sbId }
+      });
+      onComplete();
       return;
     }
 
     const nextIndex = sceneIndex + 1;
-    const nextPhase = useGeneratedPanelsFlow ? 'panel-generate' : 'variant-select';
-    if (useGeneratedPanelsFlow) {
-      clearDesignerFrameSlot(nextIndex);
-    }
-    setWizardState(prev => ({ ...prev, sceneIndex: nextIndex, phase: nextPhase }));
-    setViewedFrameIndex(nextIndex);
+    clearDesignerFrameSlot(nextIndex);
+    setWizardState(prev => ({ ...prev, sceneIndex: nextIndex, phase: 'panel-generate' }));
   };
 
-  const onDesignerAestheticPreview = async (aesthetics: SceneAesthetics) => {
+  const onDesignerAestheticPreview = async (aesthetics: SceneAesthetics): Promise<AestheticPreviewResult | void> => {
     if (!sbId || !designerFrame) return;
     console.log(`[DesignerMode] aesthetic update frame ${sceneIndex} (${designerFrame.frameType})`);
     setIsPreviewGenerating(true);
     try {
+      const characterRef = useStore.getState().characterProfile?.image?.trim() ?? '';
       const { image, generation } = await generateDesignerSceneImage({
         currentImage: designerFrame.image ?? '',
         currentCaption: designerFrame.caption ?? '',
@@ -879,18 +929,8 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         contentAnswers: designerFrame.contentAnswers ?? {},
         reflectionAnswers: designerFrame.reflectionAnswers ?? {},
         aestheticNotes: aesthetics,
-        stage: 'aesthetic'
-      });
-      addStudyEvent({
-        initiator: 'user',
-        type: 'DESIGNER_AESTHETIC_PREVIEW',
-        count: 1,
-        data: { sceneIndex, aestheticNotes: aesthetics }
-      });
-      applyDesignerSceneUpdate(sbId, sceneIndex, {
-        stage: 'aesthetics',
-        image,
-        aestheticNotes: aesthetics
+        stage: 'aesthetic',
+        hasCharacterProfileReference: !!characterRef
       });
       logSystemPanelGeneration(addStudyEvent, {
         storyboardId: sbId,
@@ -907,11 +947,31 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         createFromScratch: generation.createFromScratch,
         hasReferenceImage: generation.hasReferenceImage
       });
+      return { image, caption: designerFrame.caption ?? '' };
     } catch (err) {
       console.error('[designer aesthetic preview]', err);
     } finally {
       setIsPreviewGenerating(false);
     }
+  };
+
+  const onDesignerAestheticPreviewChoice = (
+    choice: AestheticComparisonChoice,
+    aesthetics: SceneAesthetics,
+    preview: AestheticPreviewResult
+  ) => {
+    if (choice !== 'updated' || !sbId || !designerFrame) return;
+    applyDesignerSceneUpdate(sbId, sceneIndex, {
+      stage: 'aesthetics',
+      image: preview.image,
+      aestheticNotes: aesthetics
+    });
+    addStudyEvent({
+      initiator: 'user',
+      type: 'DESIGNER_AESTHETIC_PREVIEW',
+      count: 1,
+      data: { sceneIndex, aestheticNotes: aesthetics }
+    });
   };
 
   const onDesignerAestheticContinue = (aesthetics: SceneAesthetics) => {
@@ -920,26 +980,14 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       stage: 'aesthetics',
       aestheticNotes: aesthetics
     });
-
-    if (sceneIndex === 3) {
-      addStudyEvent({
-        initiator: 'user',
-        type: 'WIZARD_COMPLETE',
-        count: 1,
-        data: { storyboardId: sbId }
-      });
-      onComplete();
-      return;
-    }
     addStudyEvent({
       initiator: 'user',
       type: 'DESIGNER_AESTHETIC_CONTINUE',
       count: 1,
       data: { sceneIndex, aestheticNotes: aesthetics }
     });
-    const nextIndex = sceneIndex + 1;
-    setWizardState(prev => ({ ...prev, sceneIndex: nextIndex, phase: 'aesthetics' }));
-    setViewedFrameIndex(nextIndex);
+    // Accepting the aesthetics advances to the Reflection page for this panel.
+    setWizardState(prev => ({ ...prev, phase: 'reflection' }));
   };
 
   // ─── Render path 1: warm-up / variant select ─────────────────────────────────
@@ -962,6 +1010,15 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   }
 
   if (sbId === null) {
+    if (ENABLE_DESIGNER_STORYBOARD_MODE) {
+      // The mount effect is creating the designer storyboard node; show a loader
+      // for the brief moment before the per-panel loop can render.
+      return (
+        <div className="fixed inset-0 bg-gray-50 z-50 flex items-center justify-center p-4">
+          <Loader size="lg" color="blue" />
+        </div>
+      );
+    }
     return (
       <div className="fixed inset-0 bg-gray-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
         <DynamicStoryWizard
@@ -1029,9 +1086,18 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         {ENABLE_DESIGNER_STORYBOARD_MODE ? (
           <div className="w-full mb-8 md:mb-10">
             <StudyProgressStepper
-              phase={phase === 'aesthetics' ? 'aesthetics' : 'content'}
+              phase={phase}
               sceneIndex={sceneIndex}
-              totalScenes={4}
+              storyboardId={sbId}
+              frames={DESIGNER_SCENE_FRAME_TYPES.map((frameType, i) => {
+                const frame = storyboardFrames?.[i];
+                return {
+                  id: frame?.id ?? String(i),
+                  frameType,
+                  image: frame?.image,
+                  caption: frame?.caption ?? ''
+                };
+              })}
             />
           </div>
         ) : (
@@ -1079,153 +1145,89 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
 
             {/* LEFT: IMAGE + CAPTION */}
-            <div className="lg:col-span-5 flex flex-col gap-4 md:gap-6">
+            {showLeftImagePanel && (
+              <div className="lg:col-span-5">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="w-full aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                    {(() => {
+                      const isActiveGenerateScene =
+                        ENABLE_DESIGNER_STORYBOARD_MODE && phase === 'panel-generate';
+                      const showSkeleton =
+                        (isGenerating && isActiveGenerateScene) ||
+                        isFirstFrameGenerating ||
+                        isPreviewGenerating;
+                      const skeletonLabel =
+                        isGenerating && isActiveGenerateScene
+                          ? 'Generating panel…'
+                          : isPreviewGenerating
+                            ? 'Regenerating scene…'
+                            : 'Painting your scene…';
 
-              {/* IMAGE CAROUSEL */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative group">
-                {framesGenerated > 1 && (
-                  <>
-                    <button
-                      onClick={() => setViewedFrameIndex(Math.max(0, viewedFrameIndex - 1))}
-                      disabled={viewedFrameIndex === 0}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow hover:bg-white z-10 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 disabled:cursor-not-allowed"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setViewedFrameIndex(Math.min(framesGenerated - 1, viewedFrameIndex + 1))}
-                      disabled={viewedFrameIndex === framesGenerated - 1}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow hover:bg-white z-10 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 disabled:cursor-not-allowed"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </>
-                )}
+                      if (currentSceneFrame?.image && !showSkeleton) {
+                        return (
+                          <img
+                            src={currentSceneFrame.image}
+                            alt={`Scene ${sceneIndex + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        );
+                      }
 
-                <div className="w-full aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
-                  {(() => {
-                    const isActiveGenerateScene =
-                      ENABLE_DESIGNER_STORYBOARD_MODE &&
-                      phase === 'panel-generate' &&
-                      viewedFrameIndex === sceneIndex;
-                    const showSkeleton =
-                      (isGenerating && isActiveGenerateScene) ||
-                      isFirstFrameGenerating ||
-                      (isPreviewGenerating && viewedFrameIndex === sceneIndex);
-                    const skeletonLabel =
-                      isGenerating && isActiveGenerateScene
-                        ? 'Generating panel…'
-                        : isPreviewGenerating
-                          ? 'Regenerating scene…'
-                          : 'Painting your scene…';
-
-                    if (isActiveGenerateScene && !showSkeleton) {
-                      return (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-gray-400 bg-gray-50 p-8">
-                          <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="1.5"
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                          <p className="text-xs text-center max-w-[200px]">
-                            Your panel will appear here after you answer the questions
-                          </p>
-                        </div>
-                      );
-                    }
-
-                    // Priority 1: High-fidelity image data (show this after visual-style render)
-                    if (viewedFrame?.image && !showSkeleton) {
-                      return (
-                        <img
-                          src={viewedFrame.image}
-                          alt={`Scene ${viewedFrameIndex + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      );
-                    }
-
-                    // Priority 2: Sketch mode fallback (only when no image is available)
-                    if (ENABLE_SKETCH_MODE && viewedFrame?.sketch && !showSkeleton) {
-                      return (
-                        <div className="w-full h-full bg-white">
-                          <SketchFrameRenderer frame={viewedFrame.sketch} />
-                        </div>
-                      );
-                    }
-
-                    // Priority 3: Loading/placeholder state
-                    if (showSkeleton) {
-                      return (
-                        <div className="w-full h-full relative bg-gradient-to-br from-gray-100 via-gray-200 to-gray-150">
-                          <div className="absolute inset-0 animate-pulse bg-gradient-to-tr from-blue-100/20 via-white/30 to-blue-100/20" />
-                          <div className="absolute inset-0 p-5 flex flex-col gap-3">
-                            <div className="flex-1 rounded-xl bg-gray-300/40 animate-pulse" />
-                            <div className="h-3 rounded bg-gray-300/50 animate-pulse w-4/5" />
-                            <div className="h-3 rounded bg-gray-300/40 animate-pulse w-3/5" />
+                      if (ENABLE_SKETCH_MODE && currentSceneFrame?.sketch && !showSkeleton) {
+                        return (
+                          <div className="w-full h-full bg-white">
+                            <SketchFrameRenderer frame={currentSceneFrame.sketch} />
                           </div>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-400 tracking-wide bg-white/60 px-3 py-1.5 rounded-full">
-                              {skeletonLabel}
-                            </span>
+                        );
+                      }
+
+                      if (showSkeleton) {
+                        return (
+                          <div className="w-full h-full relative bg-gradient-to-br from-gray-100 via-gray-200 to-gray-150">
+                            <div className="absolute inset-0 animate-pulse bg-gradient-to-tr from-blue-100/20 via-white/30 to-blue-100/20" />
+                            <div className="absolute inset-0 p-5 flex flex-col gap-3">
+                              <div className="flex-1 rounded-xl bg-gray-300/40 animate-pulse" />
+                              <div className="h-3 rounded bg-gray-300/50 animate-pulse w-4/5" />
+                              <div className="h-3 rounded bg-gray-300/40 animate-pulse w-3/5" />
+                            </div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className="text-xs font-medium text-gray-400 tracking-wide bg-white/60 px-3 py-1.5 rounded-full">
+                                {skeletonLabel}
+                              </span>
+                            </div>
                           </div>
+                        );
+                      }
+
+                      return (
+                        <div className="flex flex-col items-center gap-2 text-gray-600">
+                          <Loader size="md" />
+                          <p className="text-xs">Loading scene...</p>
                         </div>
                       );
-                    }
-                    return (
-                      <div className="flex flex-col items-center gap-2 text-gray-600">
-                        <Loader size="md" />
-                        <p className="text-xs">Loading scene...</p>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {framesGenerated > 1 && (
-                  <div className="flex justify-center gap-2 py-3 bg-gray-50 border-t border-gray-100">
-                    {Array.from({ length: framesGenerated }).map((_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setViewedFrameIndex(idx)}
-                        className={`w-2 h-2 rounded-full transition-colors ${
-                          idx === viewedFrameIndex ? 'bg-blue-600' : 'bg-gray-300 hover:bg-gray-400'
-                        }`}
-                      />
-                    ))}
+                    })()}
                   </div>
-                )}
-              </div>
 
-              {/* CAPTION */}
-              <div
-                className="rounded-lg p-4 border"
-                style={{
-                  ...panelCardStyle(captionTheme),
-                  ...panelCardBorderStyle(captionTheme)
-                }}
-              >
-                <p className="text-gray-700 italic text-sm leading-relaxed">
-                  "
-                  {ENABLE_DESIGNER_STORYBOARD_MODE &&
-                  phase === 'panel-generate' &&
-                  viewedFrameIndex === sceneIndex
-                    ? 'Answer the questions to generate your panel...'
-                    : viewedFrame?.caption || 'Waiting for the AI to describe the scene...'}
-                  "
-                </p>
+                  <div
+                    className="p-4 border-t"
+                    style={{
+                      ...panelCardStyle(captionTheme),
+                      ...panelCardBorderStyle(captionTheme)
+                    }}
+                  >
+                    <p className="text-gray-700 italic leading-relaxed">
+                      "
+                      {currentSceneFrame?.caption ||
+                        'Waiting for the AI to describe the scene...'}
+                      "
+                    </p>
+                  </div>
+                </div>
               </div>
-
-            </div>
+            )}
 
             {/* RIGHT: CONTENT OR AESTHETICS PHASE */}
-            <div className="lg:col-span-7">
+            <div className={showLeftImagePanel ? 'lg:col-span-7' : 'lg:col-span-12'}>
               {ENABLE_DESIGNER_STORYBOARD_MODE ? (
                 (phase === 'panel-generate' || phase === 'content') && designerFrame ? (
                   <DesignerContentPhase
@@ -1233,17 +1235,27 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                     frameType={designerFrame.frameType}
                     rewordAsImagined={priorExperience === 'no'}
                     questionSet={phase === 'panel-generate' ? 'generation' : 'content'}
-                    isFinalContentRound={phase === 'content'}
                     phaseTheme="content"
                     initialContent={designerFrame.contentAnswers}
-                    initialReflection={designerFrame.reflectionAnswers}
                     isGenerating={isGenerating}
-                    isLastScene={sceneIndex === 3}
                     onContentFinalized={
                       phase === 'panel-generate'
                         ? onDesignerPanelGenerateFinalized
                         : onDesignerContentFinalized
                     }
+                    onDebugSkipGenerate={
+                      phase === 'panel-generate'
+                        ? onDesignerPanelGenerateDebugSkip
+                        : undefined
+                    }
+                  />
+                ) : phase === 'reflection' && designerFrame ? (
+                  <ReflectionPhase
+                    sceneIndex={sceneIndex}
+                    frameType={designerFrame.frameType}
+                    initialReflection={designerFrame.reflectionAnswers}
+                    isLastScene={sceneIndex === 3}
+                    phaseTheme="content"
                     onReflectionFinalized={onDesignerReflectionFinalized}
                   />
                 ) : (
@@ -1252,11 +1264,15 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                     mode="aesthetic"
                     phaseTheme="aesthetics"
                     aesthetics={scenes[sceneIndex].aesthetics}
+                    currentImage={currentSceneFrame?.image ?? ''}
+                    currentCaption={currentSceneFrame?.caption ?? ''}
                     onChange={onAestheticsChange as (field: keyof SceneAesthetics | keyof SceneSketchRefinement, value: string) => void}
                     onPreview={onDesignerAestheticPreview as (aesthetics: SceneAesthetics | SceneSketchRefinement) => void}
+                    onPreviewChoice={onDesignerAestheticPreviewChoice}
                     onContinue={onDesignerAestheticContinue as (aesthetics: SceneAesthetics | SceneSketchRefinement) => void}
                     isGenerating={isPreviewGenerating}
                     isLastScene={sceneIndex === 3}
+                    continueLabel="Looks good to me!"
                   />
                 )
               ) : phase === 'content' ? (
@@ -1275,10 +1291,13 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                   phaseTheme="aesthetics"
                   sketchRefinement={scenes[sceneIndex].sketchRefinement}
                   aesthetics={scenes[sceneIndex].aesthetics}
+                  currentImage={currentSceneFrame?.image ?? ''}
+                  currentCaption={currentSceneFrame?.caption ?? ''}
                   content={scenes[sceneIndex].content}
                   onContentChange={(field, value) => onContentChange(field as keyof SceneContent, value)}
                   onChange={onAestheticsChange as (field: keyof SceneAesthetics | keyof SceneSketchRefinement, value: string) => void}
                   onPreview={onAestheticPreview as (aesthetics: SceneAesthetics | SceneSketchRefinement) => void}
+                  onPreviewChoice={onAestheticPreviewChoice}
                   onContinue={onAestheticContinue as (aesthetics: SceneAesthetics | SceneSketchRefinement) => void}
                   isGenerating={isPreviewGenerating}
                   isLastScene={sceneIndex === 3}

@@ -2,8 +2,8 @@ adminSetup: Admin Setup
 
 header:
   eyebrow: Welcome
-  title: Tell us your story
-  subtitle: Thank you for taking the time to help out with this study! We will ask you about your experiences, so that we can better design solutions for people like you.
+  title: Consent Form
+  subtitle:
 
 informedContext:
   heading: About this study

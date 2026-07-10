@@ -1,0 +1,44 @@
+adminSetup: Admin Setup
+
+pick:
+  eyebrow: Character
+  title: Choose your character
+  subtitle: Create or select a portrait that most closely resembles you. You can refine it on the next screen.
+  continueButton: Continue
+  continueDisabledHint: Select a portrait to continue.
+  uploadDividerLabel: Or start with an example photo
+  uploadButton: Upload or take a picture
+
+upload:
+  modalTitle: Upload a photo
+  takeSelfieButton: Take a picture
+  chooseFileButton: Choose a file
+  captureButton: Capture photo
+  retakeButton: Retake photo
+  chooseDifferentButton: Choose a different photo
+  backButton: Back
+  continueButton: Continue
+  cancelButton: Cancel
+  processing: Creating your comic-style headshot...
+  cameraError: We couldn't access your camera. Try choosing a file instead.
+  genericError: Something went wrong generating your headshot. Please try again.
+
+refine:
+  eyebrow: Character
+  title: Refine your portrait
+  subtitle: Keeping your scenario in mind, describe adjustments to your character's face, hair, or clothing. Use Update Image to make changes before continuing.
+  face:
+    label: Face adjustment (optional)
+    helper: Describe how your face should look differently (e.g. skin tone, facial features, eye color).
+    placeholder: Optional
+  hairAccessories:
+    label: Hair / accessories adjustment (optional)
+    helper: Describe changes to hairstyle, glasses, jewelry, or other accessories.
+    placeholder: Optional
+  clothing:
+    label: Clothing adjustment (optional)
+    helper: Describe how your outfit should look differently.
+    placeholder: Optional
+  updateButton: Update Image
+  continueButton: Continue to story
+  generating: Regenerating portrait...

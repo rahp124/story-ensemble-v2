@@ -1082,6 +1082,7 @@ export function buildDesignerImageEditPrompt(args: {
   aestheticNotes?: { character?: string; action?: string; environment?: string; custom?: string };
   createFromScratch?: boolean;
   hasPriorPanelReference?: boolean;
+  hasCharacterProfileReference?: boolean;
   referenceCaption?: string;
 }): string {
   const blocks: string[] = [];
@@ -1098,10 +1099,20 @@ export function buildDesignerImageEditPrompt(args: {
         );
       }
     }
+    if (args.hasCharacterProfileReference) {
+      blocks.push(
+        'The attached reference image is the participant\'s character portrait headshot. Use it as the sole visual anchor for the protagonist\'s face, hair, and clothing identity. Do NOT copy scene composition, pose, props, or setting from the portrait — it is a headshot only. Use the participant\'s content answers to determine the scene, setting, and what the character is doing; use the portrait only for who the character looks like. Render the new storyboard panel scene from the participant\'s answers while keeping the character recognizable.'
+      );
+    }
   } else {
     blocks.push(`Edit this storyboard panel (frame type: ${args.frameType}) to better match the participant's perspective.`);
     if (args.currentCaption.trim()) {
       blocks.push(`Current caption: "${args.currentCaption}"`);
+    }
+    if (args.hasCharacterProfileReference) {
+      blocks.push(
+        'The participant has a saved character portrait. Preserve the protagonist\'s face, hair, and clothing identity from that portrait while applying the requested edits.'
+      );
     }
   }
 
@@ -1144,4 +1155,46 @@ export function buildDesignerImageEditPrompt(args: {
   }
 
   return blocks.join('\n\n');
+}
+
+export function buildCharacterProfileEditPrompt(adjustments: {
+  face?: string;
+  hairAccessories?: string;
+  clothing?: string;
+}): string {
+  const blocks: string[] = [
+    'Edit this character portrait headshot to better match the participant.',
+    'Keep a clean portrait composition: head and shoulders, neutral or simple background, facing the camera.',
+    'Do NOT change the framing to a full scene, action shot, or storyboard panel.'
+  ];
+
+  const noteLines = [
+    adjustments.face?.trim() ? `Face adjustment: ${adjustments.face.trim()}` : '',
+    adjustments.hairAccessories?.trim()
+      ? `Hair / accessories adjustment: ${adjustments.hairAccessories.trim()}`
+      : '',
+    adjustments.clothing?.trim() ? `Clothing adjustment: ${adjustments.clothing.trim()}` : ''
+  ].filter(Boolean);
+
+  if (noteLines.length > 0) {
+    blocks.push(`Apply only these adjustments:\n${noteLines.join('\n')}`);
+  } else {
+    blocks.push('Make subtle refinements while preserving the overall likeness from the reference image.');
+  }
+
+  blocks.push(
+    'Preserve the participant\'s identity. Apply only the described changes to face, hair/accessories, and clothing.'
+  );
+
+  return blocks.join('\n\n');
+}
+
+export function buildComicHeadshotPrompt(): string {
+  return [
+    'Redraw this photo as an abstract comic book style character portrait headshot (style: Scott Pilgrim comic style).',
+    'Clean portrait composition: head and shoulders only, facing directly forward toward the camera, simple neutral background.',
+    'Impressionist comic book illustration style: clean linework with symbolic facial features reminiscient of American indie comics and Japanese manga, like Scott Pilgrim.',
+    "Preserve the person's general likeness: skin tone, hairstyle and color, and any glasses or accessories visible in the photo. Do NOT include details such as realistic teeth or shading.",
+    'Do NOT change the framing to a full-body shot, action scene, or storyboard panel.'
+  ].join('\n\n');
 }

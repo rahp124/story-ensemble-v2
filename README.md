@@ -7,15 +7,18 @@ npm install
 npm run dev
 ```
 
-Open the Vite URL printed by the dev server.
+Open the Vite URL printed by the dev server. `npm run dev` starts both the frontend and the local API shim for image edits (`/api/generate-edit`).
 
-For the image edit API route, run the local Vercel style API server in another terminal concurrently:
+### Running servers separately (optional)
+
+For debugging, you can run each server on its own:
 
 ```bash
-npm run dev:api
+npm run dev:vite   # frontend only (image edit API will not be available)
+npm run dev:api    # API shim only on http://localhost:3000
 ```
 
-`vite.config.ts` proxies `/api/*` to `http://localhost:3000`, so the frontend dev server and the API dev server are expected to run side by side when testing image edits.
+`vite.config.ts` proxies `/api/*` to `http://localhost:3000` when using `dev:vite` alongside `dev:api`.
 
 ## Environment
 
@@ -38,7 +41,8 @@ Important notes:
 ## Scripts
 
 ```bash
-npm run dev       # Vite frontend dev server
+npm run dev       # API shim + Vite frontend (default)
+npm run dev:vite  # Vite frontend only
 npm run dev:api   # Local Node API shim for /api routes
 npm run build     # TypeScript check + Vite production build
 npm run lint      # ESLint

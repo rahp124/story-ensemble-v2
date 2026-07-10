@@ -1,17 +1,11 @@
 import { parse } from 'yaml';
 import userLandingRaw from './userLandingCopy.yaml?raw';
 import studyOverviewRaw from './studyOverviewCopy.yaml?raw';
-
-export type OnboardingFeature = {
-  icon: string;
-  title: string;
-  description: string;
-};
+import characterCreationRaw from './characterCreationCopy.yaml?raw';
 
 export type PriorExperienceOption = {
   value: 'yes' | 'no';
   title: string;
-  description: string;
 };
 
 export type UserLandingCopy = {
@@ -40,7 +34,11 @@ export type StudyOverviewCopy = {
     eyebrow: string;
     title: string;
   };
-  features: OnboardingFeature[];
+  intro: {
+    pre_paragraphs: string[];
+    post_paragraphs: string[];
+    steps: string[];
+  };
   topic: {
     label: string;
     defaultTopic: string;
@@ -50,18 +48,51 @@ export type StudyOverviewCopy = {
     helper: string;
     options: PriorExperienceOption[];
   };
-  experienceSummary: {
-    label: string;
-    optional: string;
-    placeholder: string;
-    helper: string;
-  };
   continueButton: string;
   continueDisabledHint: string;
 };
 
+export type CharacterCreationCopy = {
+  adminSetup: string;
+  pick: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    continueButton: string;
+    continueDisabledHint: string;
+    uploadDividerLabel: string;
+    uploadButton: string;
+  };
+  upload: {
+    modalTitle: string;
+    takeSelfieButton: string;
+    chooseFileButton: string;
+    captureButton: string;
+    retakeButton: string;
+    chooseDifferentButton: string;
+    backButton: string;
+    continueButton: string;
+    cancelButton: string;
+    processing: string;
+    cameraError: string;
+    genericError: string;
+  };
+  refine: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    face: { label: string; helper: string; placeholder: string };
+    hairAccessories: { label: string; helper: string; placeholder: string };
+    clothing: { label: string; helper: string; placeholder: string };
+    updateButton: string;
+    continueButton: string;
+    generating: string;
+  };
+};
+
 export const USER_LANDING_COPY = parse(userLandingRaw) as UserLandingCopy;
 export const STUDY_OVERVIEW_COPY = parse(studyOverviewRaw) as StudyOverviewCopy;
+export const CHARACTER_CREATION_COPY = parse(characterCreationRaw) as CharacterCreationCopy;
 
 export function interpolate(
   template: string,
