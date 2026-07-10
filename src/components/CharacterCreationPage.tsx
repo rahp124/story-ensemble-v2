@@ -206,7 +206,7 @@ export function CharacterCreationPage() {
               <h1 className="mt-3 text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
                 {copy.pick.title}
               </h1>
-              <p className="mt-2 text-sm text-slate-500 max-w-xl mx-auto">
+              <p className="mt-2 text-sm max-w-xl mx-auto">
                 {copy.pick.subtitle}
               </p>
             </div>

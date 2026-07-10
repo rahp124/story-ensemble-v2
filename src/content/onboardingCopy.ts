@@ -3,16 +3,9 @@ import userLandingRaw from './userLandingCopy.yaml?raw';
 import studyOverviewRaw from './studyOverviewCopy.yaml?raw';
 import characterCreationRaw from './characterCreationCopy.yaml?raw';
 
-export type OnboardingFeature = {
-  icon: string;
-  title: string;
-  description: string;
-};
-
 export type PriorExperienceOption = {
   value: 'yes' | 'no';
   title: string;
-  description: string;
 };
 
 export type UserLandingCopy = {
@@ -41,7 +34,11 @@ export type StudyOverviewCopy = {
     eyebrow: string;
     title: string;
   };
-  features: OnboardingFeature[];
+  intro: {
+    pre_paragraphs: string[];
+    post_paragraphs: string[];
+    steps: string[];
+  };
   topic: {
     label: string;
     defaultTopic: string;
@@ -50,12 +47,6 @@ export type StudyOverviewCopy = {
     legend: string;
     helper: string;
     options: PriorExperienceOption[];
-  };
-  experienceSummary: {
-    label: string;
-    optional: string;
-    placeholder: string;
-    helper: string;
   };
   continueButton: string;
   continueDisabledHint: string;

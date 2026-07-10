@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { useStore } from '../store';
 import {
   STUDY_OVERVIEW_COPY,
   interpolate
 } from '../content/onboardingCopy';
-import { OnboardingFeatureCard } from './onboarding/OnboardingFeatureCard';
 import { PriorExperienceOption } from './onboarding/PriorExperienceOption';
 
 export function StudyOverviewPage() {
@@ -13,8 +11,6 @@ export function StudyOverviewPage() {
   const setPriorExperience = useStore((s) => s.setPriorExperience);
   const setHasCompletedOverview = useStore((s) => s.setHasCompletedOverview);
   const setAdminSetupOpen = useStore((s) => s.setAdminSetupOpen);
-
-  const [experienceSummary, setExperienceSummary] = useState('');
 
   const copy = STUDY_OVERVIEW_COPY;
   const topicLabel =
@@ -28,8 +24,7 @@ export function StudyOverviewPage() {
       type: 'STUDY_OVERVIEW_COMPLETE',
       count: 1,
       data: {
-        priorExperience,
-        experienceSummary: experienceSummary.trim()
+        priorExperience
       }
     });
     setHasCompletedOverview(true);
@@ -57,14 +52,38 @@ export function StudyOverviewPage() {
             </h1>
           </div>
 
-          <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {copy.features.map((feature) => (
-              <OnboardingFeatureCard
-                key={feature.title}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-              />
+          <div className="mt-10 space-y-3">
+            {copy.intro.pre_paragraphs.map((paragraph) => (
+              <p
+                key={paragraph}
+                className="leading-relaxed"
+              >
+                {interpolate(paragraph, { topic: topicLabel })}
+              </p>
+            ))}
+            <ol className="list-decimal list-inside space-y-1.5 leading-relaxed">
+              {copy.intro.steps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>            
+          </div>
+
+          <div className="mt-5">
+            <img
+              src="/storyboards/example/example_storyboard_1.jpg"
+              alt="Example storyboard with context, problem, action, and resolution panels"
+              className="w-full rounded-2xl ring-1 ring-slate-200/60"
+            />
+          </div>
+
+          <div className="mt-10 space-y-3">
+            {copy.intro.post_paragraphs.map((paragraph) => (
+              <p
+                key={paragraph}
+                className="leading-relaxed"
+              >
+                {interpolate(paragraph, { topic: topicLabel })}
+              </p>
             ))}
           </div>
 
@@ -77,7 +96,7 @@ export function StudyOverviewPage() {
             </div>
           </div>
 
-          <fieldset className="mt-10">
+          <fieldset className="mt-5">
             <legend className="text-base font-semibold text-slate-900">
               {interpolate(copy.priorExperience.legend, { topic: topicLabel })}
             </legend>
@@ -93,38 +112,10 @@ export function StudyOverviewPage() {
                   name="prior-experience"
                   value={option.value}
                   title={option.title}
-                  description={option.description}
                 />
               ))}
             </div>
           </fieldset>
-
-          <div className="mt-8">
-            <label
-              htmlFor="experience-summary"
-              className="block text-base font-semibold text-slate-900"
-            >
-              {copy.experienceSummary.label}{' '}
-              <span className="font-normal text-slate-500">
-                {copy.experienceSummary.optional}
-              </span>
-            </label>
-            <textarea
-              id="experience-summary"
-              value={experienceSummary}
-              onChange={(e) => setExperienceSummary(e.target.value)}
-              rows={3}
-              placeholder={copy.experienceSummary.placeholder}
-              aria-describedby="experience-summary-help"
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition resize-none"
-            />
-            <p
-              id="experience-summary-help"
-              className="mt-2 text-xs text-slate-500"
-            >
-              {copy.experienceSummary.helper}
-            </p>
-          </div>
 
           <button
             type="button"

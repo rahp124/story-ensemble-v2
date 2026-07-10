@@ -7,7 +7,7 @@ pick:
   continueButton: Continue
   continueDisabledHint: Select a portrait to continue.
   uploadDividerLabel: Or start with an example photo
-  uploadButton: Upload a photo
+  uploadButton: Upload or take a picture
 
 upload:
   modalTitle: Upload a photo

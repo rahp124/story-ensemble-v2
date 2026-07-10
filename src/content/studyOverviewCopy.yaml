@@ -4,37 +4,33 @@ header:
   eyebrow: Overview
   title: Here's what you'll do
 
-features:
-  - icon: "👥"
-    title: Content
-    description: Starting from some default storyboards, you will answer questions detailing your personal experience.
-  - icon: "🎨"
-    title: Aesthetics
-    description: You will get the chance to reflect on your experiences and edit each generated scene to visually match your own experiences.
-  - icon: "🎞️"
-    title: Storyboard
-    description: See your storyboard and adjust the narrative to tell your story in your own words.
-
 topic:
   label: Topic
   defaultTopic: using the recreation gym on campus
+
+intro:
+  pre_paragraphs:
+    - "In this study, you will answer a series of questions about a recent experience related to {{topic}}. Your responses will be used to create a visual storyboard that helps designers understand your experience and identify opportunities to improve it."
+    - "The study takes approximately 30-45 minutes, followed by a 5-minute survey."
+    - "A design storyboard is a sequence of images that illustrates an experience. It is typically organized into four panels:"
+
+  steps:
+    - "Context: what happened before the experience"
+    - "Problem: the challenge or issue you encountered"
+    - "Solution/Action: how the situation was addressed"
+    - "Resolution: the outcome"
+
+  post_paragraphs:
+    - "Before you begin, take a moment to recall the most recent time you experienced an issue related to {{topic}}. Try to remember the events in as much detail as possible. If you have not experienced this yourself, imagine a realistic situation in which you encounter this type of issue."
 
 priorExperience:
   legend: "Have you had a previous experience with {{topic}}?"
   helper: Either is fine — your answer just helps frame what comes next.
   options:
     - value: yes
-      title: Yes, I've experienced this
-      description: I can recall the last time this happened to me.
+      title: Yes, I can recall a particular experience
     - value: no
-      title: No, but I'll picture myself in this context
-      description: I'll imagine the most realistic scenario for me.
-
-experienceSummary:
-  label: Briefly describe your experience
-  optional: (optional)
-  placeholder: 1-2 sentences is sufficient
-  helper:
+      title: No, but I can imagine a realistic scenario
 
 continueButton: Continue
 continueDisabledHint: Pick an answer to continue.
