@@ -9,7 +9,11 @@ import { StudyOverviewPage } from './components/StudyOverviewPage';
 import { CharacterCreationPage } from './components/CharacterCreationPage';
 import { AdminSetup } from './components/AdminSetup';
 import { GenerateMoreModal } from './components/GenerateMoreModal';
-import { StoryboardEditorPage } from './components/StoryboardEditorPage';
+import {
+  StoryboardEditorPage,
+  type StoryboardFinalizeArtifact
+} from './components/StoryboardEditorPage';
+import { PostStoryboardSurveyPage } from './components/PostStoryboardSurveyPage';
 import { NodeType } from './rf-components';
 import { useStore } from './store';
 
@@ -34,6 +38,8 @@ export default function App() {
   >('Persona');
 
   const [wizardOpened, setWizardOpened] = useState(nodes.length === 0);
+  const [storyboardArtifact, setStoryboardArtifact] =
+    useState<StoryboardFinalizeArtifact | null>(null);
   const hasCompletedLanding = useStore((s) => s.hasCompletedLanding);
   const hasCompletedOverview = useStore((s) => s.hasCompletedOverview);
   const hasCompletedCharacterCreation = useStore((s) => s.hasCompletedCharacterCreation);
@@ -49,6 +55,7 @@ export default function App() {
       hasCompletedCharacterCreation: false,
       characterProfile: null
     });
+    setStoryboardArtifact(null);
     setWizardOpened(true);
   };
 
@@ -66,24 +73,27 @@ export default function App() {
       {wizardOpened && hasCompletedLanding && hasCompletedOverview && hasCompletedCharacterCreation && (
         <StoryWizard onComplete={() => setWizardOpened(false)} />
       )}
+      {!wizardOpened && storyboardArtifact && (
+        <PostStoryboardSurveyPage artifact={storyboardArtifact} />
+      )}
+      {!wizardOpened && !storyboardArtifact && (
+        <StoryboardEditorPage onFinalizeComplete={setStoryboardArtifact} />
+      )}
       {!wizardOpened && (
-        <>
-          <StoryboardEditorPage />
-          <div className="fixed top-6 left-6 z-50 flex items-center gap-3">
-            <button
-              onClick={handleStartOver}
-              className="bg-white border border-gray-200 shadow-lg px-6 py-3 rounded-xl font-bold text-gray-800 hover:bg-gray-50 transition-all flex items-center gap-2"
-            >
-              <span>✨</span> Start New Story
-            </button>
-            <button
-              onClick={() => setAdminSetupOpen(true)}
-              className="bg-white border border-gray-200 shadow-lg px-5 py-3 rounded-xl font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-            >
-              Admin Setup
-            </button>
-          </div>
-        </>
+        <div className="fixed top-6 left-6 z-[60] flex items-center gap-3">
+          <button
+            onClick={handleStartOver}
+            className="bg-white border border-gray-200 shadow-lg px-6 py-3 rounded-xl font-bold text-gray-800 hover:bg-gray-50 transition-all flex items-center gap-2"
+          >
+            <span>✨</span> Start New Story
+          </button>
+          <button
+            onClick={() => setAdminSetupOpen(true)}
+            className="bg-white border border-gray-200 shadow-lg px-5 py-3 rounded-xl font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            Admin Setup
+          </button>
+        </div>
       )}
       {adminSetupOpen && <AdminSetup />}
       <DependentGenerationModal

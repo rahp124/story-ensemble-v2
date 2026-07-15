@@ -1,13 +1,18 @@
-import { buildStudyUsageExport, downloadStudyUsageData, studyUsageDownloadBasename } from '@/lib/studyUsageData';
+import { studyUsageDownloadBasename, buildStudyUsageExport } from '@/lib/studyUsageData';
 import { NodeType } from '@/rf-components';
 import { useStore } from '@/store';
 import { StoryboardNodeData } from '@/types';
-import { Button, Input } from '@mantine/core';
+import { Button, Input, Loader } from '@mantine/core';
 import { toJpeg } from 'html-to-image';
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Node } from 'reactflow';
 import { StoryboardPanelStrip } from './StoryboardPanelStrip';
+
+export type StoryboardFinalizeArtifact = {
+  imageDataUrl: string;
+  filename: string;
+};
 
 function useActiveStoryboardNode(): Node<StoryboardNodeData> | undefined {
   return useStore((state) => {
@@ -18,7 +23,11 @@ function useActiveStoryboardNode(): Node<StoryboardNodeData> | undefined {
   });
 }
 
-export function StoryboardEditorPage() {
+type StoryboardEditorPageProps = {
+  onFinalizeComplete: (artifact: StoryboardFinalizeArtifact) => void;
+};
+
+export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPageProps) {
   const node = useActiveStoryboardNode();
   const updateStoryboardTitle = useStore((s) => s.updateStoryboardTitle);
   const updateStoryboardCaption = useStore((s) => s.updateStoryboardCaption);
@@ -27,6 +36,7 @@ export function StoryboardEditorPage() {
   const cardRef = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState('');
   const [expandCaptionsForCapture, setExpandCaptionsForCapture] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
   const storyboard = node?.data.storyboard;
 
@@ -66,8 +76,10 @@ export function StoryboardEditorPage() {
     updateStoryboardCaption(node.id, frameIdx, caption);
   };
 
-  async function downloadStoryboard() {
-    if (!cardRef.current) return;
+  async function finalizeStoryboard() {
+    if (!cardRef.current || isFinalizing) return;
+
+    setIsFinalizing(true);
 
     addStudyEvent({
       initiator: 'user',
@@ -88,7 +100,6 @@ export function StoryboardEditorPage() {
         priorExperience: state.priorExperience
       });
       downloadBasename = studyUsageDownloadBasename(exportData);
-      downloadStudyUsageData(exportData);
     }
 
     flushSync(() => setExpandCaptionsForCapture(true));
@@ -109,12 +120,18 @@ export function StoryboardEditorPage() {
         }
       });
 
+      const filename = `${downloadBasename}.jpg`;
       const a = document.createElement('a');
       a.setAttribute('href', image);
-      a.setAttribute('download', `${downloadBasename}.jpg`);
+      a.setAttribute('download', filename);
       document.body.appendChild(a);
       a.click();
       a.remove();
+
+      onFinalizeComplete({ imageDataUrl: image, filename });
+    } catch (err) {
+      console.error('[storyboard finalize]', err);
+      setIsFinalizing(false);
     } finally {
       setExpandCaptionsForCapture(false);
     }
@@ -168,8 +185,15 @@ export function StoryboardEditorPage() {
         </div>
 
         <div className="hide-in-screenshot mt-6 flex justify-center">
-          <Button size="md" onClick={downloadStoryboard}>
-            Finalize and Submit
+          <Button size="md" onClick={finalizeStoryboard} disabled={isFinalizing}>
+            {isFinalizing ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader size="sm" color="white" />
+                Finalizing...
+              </span>
+            ) : (
+              'Finalize and Submit'
+            )}
           </Button>
         </div>
       </div>

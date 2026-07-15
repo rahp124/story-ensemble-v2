@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Loader } from '@mantine/core';
 import type { CharacterProfileAdjustments } from '@/store';
 import type { CharacterCreationCopy } from '@/content/onboardingCopy';
 import {

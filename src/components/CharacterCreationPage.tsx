@@ -43,7 +43,6 @@ function HeadshotThumb({ src, alt }: { src: string; alt: string }) {
 }
 
 export function CharacterCreationPage() {
-  const setAdminSetupOpen = useStore((s) => s.setAdminSetupOpen);
   const setCharacterProfile = useStore((s) => s.setCharacterProfile);
   const setHasCompletedCharacterCreation = useStore((s) => s.setHasCompletedCharacterCreation);
   const designTopic = useStore((s) => s.designTopic);

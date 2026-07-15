@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Loader } from '@mantine/core';
 import SketchRefinementForm from './SketchRefinementForm';
 import { AestheticUpdateComparisonModal } from './AestheticUpdateComparisonModal';
 import type { WizardPhaseTheme } from '@/lib/wizardPhaseTheme';
