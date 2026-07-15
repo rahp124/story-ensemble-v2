@@ -191,13 +191,13 @@ export function CharacterCreationPage() {
       <div className="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-blue-50">
         <div className="min-h-full flex items-center justify-center p-4 py-10 sm:py-14">
           <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-xl ring-1 ring-slate-200/60 p-6 sm:p-10 md:p-14">
-            <button
+            {/* <button
               type="button"
               onClick={() => setAdminSetupOpen(true)}
               className="absolute top-4 right-4 sm:top-6 sm:right-6 text-xs font-semibold text-slate-500 hover:text-blue-600 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
             >
               {copy.adminSetup}
-            </button>
+            </button> */}
 
             <div className="text-center">
               <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-blue-600">
@@ -211,24 +211,19 @@ export function CharacterCreationPage() {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setPhotoError(null);
-                setIsPhotoModalOpen(true);
-              }}
-              className="mt-4 w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border-2 border-dashed border-slate-300 text-slate-600 font-semibold text-sm hover:border-blue-400 hover:text-blue-600 transition-colors"
-            >
-              {copy.pick.uploadButton}
-            </button>
-
-            <div className="mt-8 flex items-center gap-3">
-              <div className="h-px flex-1 bg-slate-200" />
-              <span className="text-xs font-medium text-slate-400">{copy.pick.uploadDividerLabel}</span>
-              <div className="h-px flex-1 bg-slate-200" />
-            </div>
-
             <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setPhotoError(null);
+                  setIsPhotoModalOpen(true);
+                }}
+                className={cardClass(false)}
+              >
+                <div className="w-full aspect-square bg-gray-50 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center text-sm font-semibold text-slate-600 px-3 text-center hover:border-blue-400 hover:text-blue-600 transition-colors">
+                  {copy.pick.uploadButton}
+                </div>
+              </button>
               {CHARACTER_HEADSHOTS.map((headshot) => (
                 <button
                   key={headshot.id}

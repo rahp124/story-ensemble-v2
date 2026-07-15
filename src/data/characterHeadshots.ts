@@ -3,7 +3,7 @@ export type CharacterHeadshot = {
   image: string;
 };
 
-const HEADSHOT_COUNT = 12;
+const HEADSHOT_COUNT = 11;
 
 export const CHARACTER_HEADSHOTS: CharacterHeadshot[] = Array.from(
   { length: HEADSHOT_COUNT },

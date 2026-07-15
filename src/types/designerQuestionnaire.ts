@@ -19,7 +19,7 @@ export const DESIGNER_CONTENT_QUESTIONS: Record<DesignerQuestionFrameType, Desig
   ],
   Problem: [
     { id: 'prob-frustrating',  text: '[Pain Point] What was most frustrating about this experience?', phase: 'generation' },
-    { id: 'prob-difficult',    text: '[Problem] What made it difficult for you to accomplish what you wanted? What caused this problem?', phase: 'generation' },
+    { id: 'prob-difficult',    text: '[Cause] What made it difficult for you to accomplish what you wanted? What caused this problem?', phase: 'generation' },
     // { id: 'prob-familiarity',  text: 'How familiar does this visualized image feel to your experience? What stands out as similar and different from your experience?', phase: 'content' }
   ],
   Action: [
