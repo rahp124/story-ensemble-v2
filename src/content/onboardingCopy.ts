@@ -42,6 +42,7 @@ export type StudyOverviewCopy = {
   topic: {
     label: string;
     defaultTopic: string;
+    descriptor: string;
   };
   priorExperience: {
     legend: string;
@@ -65,6 +66,7 @@ export type CharacterCreationCopy = {
   };
   upload: {
     modalTitle: string;
+    modalDescription: string;
     takeSelfieButton: string;
     chooseFileButton: string;
     captureButton: string;

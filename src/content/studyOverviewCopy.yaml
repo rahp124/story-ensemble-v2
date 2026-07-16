@@ -6,25 +6,27 @@ header:
 
 topic:
   label: Topic
-  defaultTopic: using the recreation gym on campus
+  defaultTopic: using campus recreation resources
+  descriptor: working out in the campus gyms, taking rec classes, renting equipment, etc.
 
 intro:
   pre_paragraphs:
-    - "In this study, you will answer a series of questions about a recent experience related to {{topic}}. Your responses will be used to create a visual storyboard that helps designers understand your experience and identify opportunities to improve it."
-    - "The study takes approximately 30-45 minutes, followed by a 5-minute survey."
+    - "Imagine your school is asking students to share their experiences with {{topic}}. They want to understand the issues that students face so they can work with designers to improve the student experience."
+    - "In this study, you will answer some questions about your most recent experience with {{topic}}. Your responses will be used to create a visual storyboard that helps designers understand your experience and identify opportunities to improve."
+    - "The study takes approximately 30-45 minutes, followed by a 5-minute survey. You must create a storyboard and answer the survey at the end to receive full participation credit."
     - "A design storyboard is a sequence of images that illustrates an experience. It is typically organized into four panels:"
 
   steps:
-    - "Context: what happened before the experience"
-    - "Problem: the challenge or issue you encountered"
+    - "Context: the setup for the experience"
+    - "Problem: the challenge or issue"
     - "Solution/Action: how the situation was addressed"
     - "Resolution: the outcome"
 
   post_paragraphs:
-    - "Before you begin, take a moment to recall the most recent time you experienced an issue related to {{topic}}. Try to remember the events in as much detail as possible. If you have not experienced this yourself, imagine a realistic situation in which you encounter this type of issue."
+    - "Before you begin, take a moment to recall the most recent time you experienced an issue related to {{topic}}. Try to remember the events in as much detail as possible. If you have not experienced this yourself, imagine a realistic situation in which you encounter this topic."
 
 priorExperience:
-  legend: "Have you had a previous experience with {{topic}}?"
+  legend: "Have you had a previous experience with {{topic}} ({{descriptor}})? "
   helper: Either is fine — your answer just helps frame what comes next.
   options:
     - value: yes

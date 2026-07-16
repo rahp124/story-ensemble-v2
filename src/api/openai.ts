@@ -16,7 +16,28 @@ async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
   return result;
 }
 
-// TODO retry on failure
+async function withRetry<T>(
+  label: string,
+  fn: () => Promise<T>,
+  attempts = 3,
+  baseDelayMs = 150
+): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (i < attempts - 1) {
+        const delay = baseDelayMs * 2 ** i;
+        console.warn(`[retry] ${label} attempt ${i + 1}/${attempts} failed, retrying in ${delay}ms:`, err);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastErr;
+}
+
 // TODO handle max token length error
 export async function generateStructured<
   // Restrict to objects as OpenAI JSON mode struggles to generate arrays
@@ -335,31 +356,35 @@ export async function generateImageWithOpenAI({
 
   if (referenceImage) {
     try {
-      const { b64_json } = await timed('generateImageWithOpenAI/edit (proxy → gpt-image-2)', async () => {
-        const resp = await fetch('/api/generate-edit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: referenceImage, prompt: combinedPrompt, size, apiKey: getOpenAiKey() })
-        });
-        if (!resp.ok) {
-          const body = await resp.json().catch(() => ({})) as { error?: string };
-          throw new Error(`Proxy error ${resp.status}: ${body.error ?? 'unknown'}`);
-        }
-        return resp.json() as Promise<{ b64_json: string }>;
-      });
+      const { b64_json } = await withRetry('generateImageWithOpenAI/edit', () =>
+        timed('generateImageWithOpenAI/edit (proxy → gpt-image-2)', async () => {
+          const resp = await fetch('/api/generate-edit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: referenceImage, prompt: combinedPrompt, size, apiKey: getOpenAiKey() })
+          });
+          if (!resp.ok) {
+            const body = await resp.json().catch(() => ({})) as { error?: string };
+            throw new Error(`Proxy error ${resp.status}: ${body.error ?? 'unknown'}`);
+          }
+          return resp.json() as Promise<{ b64_json: string }>;
+        })
+      );
       return `data:image/png;base64,${b64_json}`;
     } catch (err) {
       console.warn('[generateImageWithOpenAI] proxy edit failed, falling back to generate:', err);
     }
   }
 
-  const response = await timed('generateImageWithOpenAI/generate (gpt-image-1)', () =>
-    openai.images.generate({
-      model: 'gpt-image-1',
-      prompt: combinedPrompt,
-      n: 1,
-      size
-    })
+  const response = await withRetry('generateImageWithOpenAI/generate', () =>
+    timed('generateImageWithOpenAI/generate (gpt-image-1)', () =>
+      openai.images.generate({
+        model: 'gpt-image-1',
+        prompt: combinedPrompt,
+        n: 1,
+        size
+      })
+    )
   );
 
   const first = response.data?.[0];
