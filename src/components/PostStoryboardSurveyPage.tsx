@@ -8,6 +8,7 @@ import {
   buildStudyUsageExport,
   downloadStudyUsageData
 } from '@/lib/studyUsageData';
+import { uploadStudyUsageData } from '@/lib/studyDataUpload';
 import { POST_SURVEY_COPY } from '@/content/postSurveyCopy';
 import type { StoryboardFinalizeArtifact } from './StoryboardEditorPage';
 
@@ -22,6 +23,7 @@ export function PostStoryboardSurveyPage({ artifact }: PostStoryboardSurveyPageP
     Object.fromEntries(copy.questions.map((q) => [q.id, '']))
   );
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canSubmit = useMemo(
     () =>
@@ -45,8 +47,10 @@ export function PostStoryboardSurveyPage({ artifact }: PostStoryboardSurveyPageP
     a.remove();
   };
 
-  const handleSubmit = () => {
-    if (!canSubmit || submitted) return;
+  const handleSubmit = async () => {
+    if (!canSubmit || submitted || isSubmitting) return;
+
+    setIsSubmitting(true);
 
     addStudyEvent({
       initiator: 'user',
@@ -65,9 +69,15 @@ export function PostStoryboardSurveyPage({ artifact }: PostStoryboardSurveyPageP
         designTopic: state.designTopic,
         priorExperience: state.priorExperience
       });
-      downloadStudyUsageData(exportData);
+      try {
+        await uploadStudyUsageData(exportData, artifact.embedImageDataUrl);
+      } catch (err) {
+        console.error('[study usage upload]', err);
+        downloadStudyUsageData(exportData);
+      }
     }
 
+    setIsSubmitting(false);
     setSubmitted(true);
   };
 
@@ -184,10 +194,10 @@ export function PostStoryboardSurveyPage({ artifact }: PostStoryboardSurveyPageP
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!canSubmit}
+                disabled={!canSubmit || isSubmitting}
                 className="mt-8 w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-blue-600 text-white font-semibold text-base shadow-md hover:bg-blue-700 hover:shadow-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none disabled:cursor-not-allowed transition-all"
               >
-                {copy.submitButton}
+                {isSubmitting ? 'Submitting…' : copy.submitButton}
               </button>
               {!canSubmit && (
                 <p className="mt-3 text-center text-xs text-slate-500">

@@ -11,6 +11,7 @@ import { StoryboardPanelStrip } from './StoryboardPanelStrip';
 
 export type StoryboardFinalizeArtifact = {
   imageDataUrl: string;
+  embedImageDataUrl: string;
   filename: string;
 };
 
@@ -105,19 +106,28 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
     flushSync(() => setExpandCaptionsForCapture(true));
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
+    const captureFilter = (domNode: HTMLElement | Node) => {
+      if (
+        domNode instanceof HTMLElement &&
+        domNode.classList.contains('hide-in-screenshot')
+      ) {
+        return false;
+      }
+      return true;
+    };
+
     try {
       const image = await toJpeg(cardRef.current, {
         backgroundColor: 'white',
         pixelRatio: 2,
-        filter: (domNode) => {
-          if (
-            domNode instanceof HTMLElement &&
-            domNode.classList.contains('hide-in-screenshot')
-          ) {
-            return false;
-          }
-          return true;
-        }
+        filter: captureFilter
+      });
+
+      const embedImage = await toJpeg(cardRef.current, {
+        backgroundColor: 'white',
+        pixelRatio: 1,
+        quality: 0.7,
+        filter: captureFilter
       });
 
       const filename = `${downloadBasename}.jpg`;
@@ -128,7 +138,7 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
       a.click();
       a.remove();
 
-      onFinalizeComplete({ imageDataUrl: image, filename });
+      onFinalizeComplete({ imageDataUrl: image, embedImageDataUrl: embedImage, filename });
     } catch (err) {
       console.error('[storyboard finalize]', err);
       setIsFinalizing(false);
