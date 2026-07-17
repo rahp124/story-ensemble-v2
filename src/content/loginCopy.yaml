@@ -1,0 +1,14 @@
+header:
+  eyebrow: Study Access
+  title: Enter your access ID
+  subtitle: Use the access ID provided by the study team to continue.
+accessId:
+  label: Access ID
+  placeholder: e.g. pilot01
+submitButton: Continue
+submitDisabledHint: Enter your access ID to continue.
+errors:
+  invalid: That access ID is not recognized.
+  rateLimited: Too many attempts. Please wait and try again.
+  network: Unable to reach the server. Check your connection and try again.
+  generic: Something went wrong. Please try again.

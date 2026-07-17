@@ -130,7 +130,12 @@ export function PhotoCaptureModal({
     <Modal
       opened
       onClose={handleCancel}
-      title={<span className="text-lg font-bold">{copy.modalTitle}</span>}
+      title={
+        <div>
+          <span className="text-lg font-bold">{copy.modalTitle}</span>
+          <p className="mt-1 text-sm font-normal text-gray-500">{copy.modalDescription}</p>
+        </div>
+      }
       centered
     >
       {view === 'choose' && (

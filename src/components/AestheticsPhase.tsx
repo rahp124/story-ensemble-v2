@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Loader } from '@mantine/core';
 import SketchRefinementForm from './SketchRefinementForm';
 import { AestheticUpdateComparisonModal } from './AestheticUpdateComparisonModal';
 import type { WizardPhaseTheme } from '@/lib/wizardPhaseTheme';
@@ -264,13 +263,6 @@ function AestheticPolishPhase({
             <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm min-h-[70px] resize-none" placeholder="Optional" value={aesthetics.environment ?? ''} onChange={(e)=>onChange('environment', e.target.value)} disabled={isGenerating || !!comparison} />
           </div>
         </div>
-
-        {/* {isGenerating && (
-          <div className="flex items-center gap-3 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <Loader size="sm" color="blue" />
-            <p className="text-sm font-medium text-blue-700">Regenerating scene...</p>
-          </div>
-        )} */}
 
         <div className="pt-6 mt-6 border-t border-gray-100 flex flex-row gap-3">
           <button

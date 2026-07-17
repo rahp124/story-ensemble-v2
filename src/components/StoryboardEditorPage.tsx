@@ -1,13 +1,19 @@
-import { buildStudyUsageExport, downloadStudyUsageData, studyUsageDownloadBasename } from '@/lib/studyUsageData';
+import { studyUsageDownloadBasename, buildStudyUsageExport } from '@/lib/studyUsageData';
 import { NodeType } from '@/rf-components';
 import { useStore } from '@/store';
 import { StoryboardNodeData } from '@/types';
-import { Button, Input } from '@mantine/core';
+import { Button, Input, Loader } from '@mantine/core';
 import { toJpeg } from 'html-to-image';
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Node } from 'reactflow';
 import { StoryboardPanelStrip } from './StoryboardPanelStrip';
+
+export type StoryboardFinalizeArtifact = {
+  imageDataUrl: string;
+  embedImageDataUrl: string;
+  filename: string;
+};
 
 function useActiveStoryboardNode(): Node<StoryboardNodeData> | undefined {
   return useStore((state) => {
@@ -18,7 +24,11 @@ function useActiveStoryboardNode(): Node<StoryboardNodeData> | undefined {
   });
 }
 
-export function StoryboardEditorPage() {
+type StoryboardEditorPageProps = {
+  onFinalizeComplete: (artifact: StoryboardFinalizeArtifact) => void;
+};
+
+export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPageProps) {
   const node = useActiveStoryboardNode();
   const updateStoryboardTitle = useStore((s) => s.updateStoryboardTitle);
   const updateStoryboardCaption = useStore((s) => s.updateStoryboardCaption);
@@ -27,6 +37,7 @@ export function StoryboardEditorPage() {
   const cardRef = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState('');
   const [expandCaptionsForCapture, setExpandCaptionsForCapture] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
   const storyboard = node?.data.storyboard;
 
@@ -66,8 +77,10 @@ export function StoryboardEditorPage() {
     updateStoryboardCaption(node.id, frameIdx, caption);
   };
 
-  async function downloadStoryboard() {
-    if (!cardRef.current) return;
+  async function finalizeStoryboard() {
+    if (!cardRef.current || isFinalizing) return;
+
+    setIsFinalizing(true);
 
     addStudyEvent({
       initiator: 'user',
@@ -85,36 +98,48 @@ export function StoryboardEditorPage() {
     if (activeNode) {
       const exportData = buildStudyUsageExport(activeNode, state.studyEvents, {
         designTopic: state.designTopic,
-        priorExperience: state.priorExperience
+        priorExperience: state.priorExperience,
+        accessId: state.accessId
       });
       downloadBasename = studyUsageDownloadBasename(exportData);
-      downloadStudyUsageData(exportData);
     }
 
     flushSync(() => setExpandCaptionsForCapture(true));
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
+    const captureFilter = (domNode: HTMLElement | Node) => {
+      if (
+        domNode instanceof HTMLElement &&
+        domNode.classList.contains('hide-in-screenshot')
+      ) {
+        return false;
+      }
+      return true;
+    };
+
     try {
       const image = await toJpeg(cardRef.current, {
         backgroundColor: 'white',
         pixelRatio: 2,
-        filter: (domNode) => {
-          if (
-            domNode instanceof HTMLElement &&
-            domNode.classList.contains('hide-in-screenshot')
-          ) {
-            return false;
-          }
-          return true;
-        }
+        filter: captureFilter
       });
 
+      const filename = `${downloadBasename}.jpg`;
       const a = document.createElement('a');
       a.setAttribute('href', image);
-      a.setAttribute('download', `${downloadBasename}.jpg`);
+      a.setAttribute('download', filename);
       document.body.appendChild(a);
       a.click();
       a.remove();
+
+      onFinalizeComplete({
+        imageDataUrl: image,
+        embedImageDataUrl: image,
+        filename
+      });
+    } catch (err) {
+      console.error('[storyboard finalize]', err);
+      setIsFinalizing(false);
     } finally {
       setExpandCaptionsForCapture(false);
     }
@@ -127,24 +152,10 @@ export function StoryboardEditorPage() {
           <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">
             Preview Storyboard
           </p>
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.currentTarget.value)}
-            onBlur={handleTitleBlur}
-            placeholder="Storyboard title"
-            size="lg"
-            styles={{
-              input: {
-                fontWeight: 700,
-                fontSize: '1.5rem',
-                border: 'none',
-                background: 'transparent',
-                paddingLeft: 0
-              }
-            }}
-            className="max-w-xl"
-          />
-          <p className="text-gray-700 mt-3">Here's your storyboard! Make any adjustments you want to the captions before submitting.</p>
+          <p className="text-gray-700 mt-3">
+            Here's your storyboard! Make any adjustments you want to the title and captions
+            before submitting.
+          </p>
         </div>
 
         <div
@@ -153,6 +164,27 @@ export function StoryboardEditorPage() {
             expandCaptionsForCapture ? 'overflow-visible' : 'overflow-x-auto'
           }`}
         >
+          <div className="mb-4">
+            {expandCaptionsForCapture ? (
+              <h2 className="text-center text-xl font-bold text-gray-900">
+                {title || 'Storyboard'}
+              </h2>
+            ) : (
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.currentTarget.value)}
+                onBlur={handleTitleBlur}
+                placeholder="Storyboard title"
+                size="lg"
+                styles={{
+                  input: {
+                    textAlign: 'center',
+                    fontWeight: 'bold'
+                  }
+                }}
+              />
+            )}
+          </div>
           <StoryboardPanelStrip
             frames={storyboard.outline.map((frame) => ({
               id: frame.id,
@@ -160,7 +192,7 @@ export function StoryboardEditorPage() {
               image: frame.image,
               caption: frame.caption
             }))}
-            title={storyboard.title || 'Storyboard'}
+            title={title || 'Storyboard'}
             editableCaptions
             expandCaptions={expandCaptionsForCapture}
             onCaptionChange={handleCaptionChange}
@@ -168,8 +200,15 @@ export function StoryboardEditorPage() {
         </div>
 
         <div className="hide-in-screenshot mt-6 flex justify-center">
-          <Button size="md" onClick={downloadStoryboard}>
-            Finalize and Submit
+          <Button size="md" onClick={finalizeStoryboard} disabled={isFinalizing}>
+            {isFinalizing ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader size="sm" color="white" />
+                Finalizing...
+              </span>
+            ) : (
+              'Finalize and Submit'
+            )}
           </Button>
         </div>
       </div>

@@ -63,7 +63,7 @@ export function StudyOverviewPage() {
             ))}
             <ol className="list-decimal list-inside space-y-1.5 leading-relaxed">
               {copy.intro.steps.map((step) => (
-                <li key={step}>{step}</li>
+                <li key={step}><i>{step}</i></li>
               ))}
             </ol>            
           </div>
@@ -98,7 +98,10 @@ export function StudyOverviewPage() {
 
           <fieldset className="mt-5">
             <legend className="text-base font-semibold text-slate-900">
-              {interpolate(copy.priorExperience.legend, { topic: topicLabel })}
+              {interpolate(copy.priorExperience.legend, {
+                topic: topicLabel,
+                descriptor: copy.topic.descriptor,
+              })}
             </legend>
             <p className="mt-1 text-sm text-slate-500">
               {copy.priorExperience.helper}

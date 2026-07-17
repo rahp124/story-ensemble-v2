@@ -11,14 +11,13 @@ export function UserLandingPage({ onComplete }: UserLandingPageProps) {
   const setAdminSetupOpen = useStore((s) => s.setAdminSetupOpen);
 
   const [consent, setConsent] = useState(false);
-  const [participantName, setParticipantName] = useState('');
 
   useEffect(() => {
     useStore.getState().clearStudyEvents();
   }, []);
 
   const copy = USER_LANDING_COPY;
-  const canBegin = consent && participantName.trim().length > 0;
+  const canBegin = consent;
 
   const handleBegin = () => {
     if (!canBegin) return;
@@ -26,7 +25,7 @@ export function UserLandingPage({ onComplete }: UserLandingPageProps) {
       initiator: 'user',
       type: 'LANDING_BEGIN',
       count: 1,
-      data: { consent: true, participantName: participantName.trim() }
+      data: { consent: true }
     });
     setHasCompletedLanding(true);
     onComplete();
@@ -73,20 +72,6 @@ export function UserLandingPage({ onComplete }: UserLandingPageProps) {
                 </p>
               ))}
             </div>
-          </div>
-
-          <div className="mt-8">
-            <label htmlFor="participant-name" className="block text-sm font-semibold text-slate-800 mb-2">
-              {copy.participantName.label}
-            </label>
-            <input
-              id="participant-name"
-              type="text"
-              value={participantName}
-              onChange={(e) => setParticipantName(e.target.value)}
-              placeholder={copy.participantName.placeholder}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
-            />
           </div>
 
           <label className="mt-8 flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50/60 cursor-pointer hover:bg-slate-50 transition-colors">

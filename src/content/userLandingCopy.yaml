@@ -15,11 +15,7 @@ informedContext:
     - By participating in this research you are indicating that you are at least 18 years old, have read this consent form, and agree to participate in this research study.
 
 
-consent: By writing my name and checking this box, I give my informed consent to participate in this research study.
-
-participantName:
-  label: Your name
-  placeholder: Enter your full name
+consent: By checking this box, I give my informed consent to participate in this research study.
 
 beginButton: Begin study
-beginDisabledHint: Enter your name and confirm consent to continue.
+beginDisabledHint: Confirm consent to continue.

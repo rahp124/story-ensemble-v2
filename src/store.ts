@@ -160,6 +160,9 @@ type RFState = {
   setCharacterProfile: (profile: CharacterProfile | null) => void;
   hasCompletedCharacterCreation: boolean;
   setHasCompletedCharacterCreation: (v: boolean) => void;
+  /** Allowlisted access ID from server session; not persisted to IndexedDB. */
+  accessId: string | null;
+  setAccessId: (id: string | null) => void;
 
   /* Evaluation State Machine */
   evaluation: EvaluationState;
@@ -426,7 +429,6 @@ function partialize(state: RFState): Partial<RFState> {
   return {
     nodes: state.nodes,
     edges: state.edges,
-    studyEvents: state.studyEvents,
     evaluation: state.evaluation,
     characterProfile: state.characterProfile
   };
@@ -780,7 +782,7 @@ const createStore: StateCreator<
     iterateModalTab: null,
     setIterateModalTab: (tab) => set({ iterateModalTab: tab }),
 
-    designTopic: 'using the recreation gym on campus',
+    designTopic: 'using campus recreation resources',
     setDesignTopic: (topic) => set({ designTopic: topic }),
     priorExperience: null,
     setPriorExperience: (v) => set({ priorExperience: v }),
@@ -792,6 +794,8 @@ const createStore: StateCreator<
     setCharacterProfile: (profile) => set({ characterProfile: profile }),
     hasCompletedCharacterCreation: false,
     setHasCompletedCharacterCreation: (v) => set({ hasCompletedCharacterCreation: v }),
+    accessId: null,
+    setAccessId: (id) => set({ accessId: id }),
 
     addCommentNode: (comment = '') => {
       const center = get().centerPosition;
@@ -2481,8 +2485,8 @@ const createStore: StateCreator<
 
     addStoryboardFrame: (id, frameIndex) => {
       updateNode<StoryboardNodeData>(id, (draft) => {
-        const prevNode = draft.data.storyboard.outline.at(frameIndex - 1);
-        const nextNode = draft.data.storyboard.outline.at(frameIndex);
+        const prevNode = draft.data.storyboard.outline[frameIndex - 1];
+        const nextNode = draft.data.storyboard.outline[frameIndex];
         const frameType =
           prevNode?.frameType || nextNode?.frameType || 'Context';
 
@@ -2769,12 +2773,13 @@ const createStore: StateCreator<
     pastStates: [],
     futureStates: [],
     undo: () => {
-      const nextState = get().pastStates.at(-1);
+      const pastStates = get().pastStates;
+      const nextState = pastStates[pastStates.length - 1];
       if (!nextState) return;
 
       const currentState = partialize(get());
 
-      const newPastStates = get().pastStates.slice(0, -1);
+      const newPastStates = pastStates.slice(0, -1);
       const newFutureStates = [currentState, ...get().futureStates];
 
       set({
@@ -2784,7 +2789,7 @@ const createStore: StateCreator<
       });
     },
     redo: () => {
-      const nextState = get().futureStates.at(0);
+      const nextState = get().futureStates[0];
       if (!nextState) return;
 
       const currentState = partialize(get());
@@ -2906,7 +2911,10 @@ export const useStore = create<RFState>()(
     persist(createStore, {
       name: 'story-ensemble',
       storage: createJSONStorage(() => indexDbStorage),
-      partialize
+      partialize,
+      onRehydrateStorage: () => () => {
+        useStore.setState({ studyEvents: [] });
+      }
     })
   )
 );
