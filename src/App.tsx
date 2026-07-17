@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { IterateModal } from './components/IterateModal';
 import { DependentGenerationModal } from './components/DependentGenerationModal';
 import { StoryWizard } from './components/StoryWizard';
+import { LoginPage } from './components/LoginPage';
 import { UserLandingPage } from './components/UserLandingPage';
 import { StudyOverviewPage } from './components/StudyOverviewPage';
 import { CharacterCreationPage } from './components/CharacterCreationPage';
@@ -16,6 +17,9 @@ import {
 import { PostStoryboardSurveyPage } from './components/PostStoryboardSurveyPage';
 import { NodeType } from './rf-components';
 import { useStore } from './store';
+import { fetchSession, logout } from './lib/accessSession';
+
+type AccessStatus = 'loading' | 'authenticated' | 'anonymous';
 
 export default function App() {
   const { nodes, selectedNodes, selectNodes } = useStore(
@@ -40,16 +44,55 @@ export default function App() {
   const [wizardOpened, setWizardOpened] = useState(nodes.length === 0);
   const [storyboardArtifact, setStoryboardArtifact] =
     useState<StoryboardFinalizeArtifact | null>(null);
+  const [accessStatus, setAccessStatus] = useState<AccessStatus>('loading');
+
   const hasCompletedLanding = useStore((s) => s.hasCompletedLanding);
   const hasCompletedOverview = useStore((s) => s.hasCompletedOverview);
   const hasCompletedCharacterCreation = useStore((s) => s.hasCompletedCharacterCreation);
   const adminSetupOpen = useStore((s) => s.adminSetupOpen);
   const setAdminSetupOpen = useStore((s) => s.setAdminSetupOpen);
+  const setAccessId = useStore((s) => s.setAccessId);
 
-  const handleStartOver = () => {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const session = await fetchSession();
+        if (cancelled) return;
+        if (session) {
+          setAccessId(session.accessId);
+          setAccessStatus('authenticated');
+        } else {
+          setAccessId(null);
+          setAccessStatus('anonymous');
+        }
+      } catch {
+        if (cancelled) return;
+        setAccessId(null);
+        setAccessStatus('anonymous');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [setAccessId]);
+
+  const handleLoginSuccess = (accessId: string) => {
+    setAccessId(accessId);
+    setAccessStatus('authenticated');
+  };
+
+  const handleStartOver = async () => {
+    try {
+      await logout();
+    } catch {
+      // Still reset local state even if logout request fails
+    }
     useStore.setState({
       nodes: [],
       edges: [],
+      studyEvents: [],
+      accessId: null,
       hasCompletedLanding: false,
       hasCompletedOverview: false,
       hasCompletedCharacterCreation: false,
@@ -57,7 +100,20 @@ export default function App() {
     });
     setStoryboardArtifact(null);
     setWizardOpened(true);
+    setAccessStatus('anonymous');
   };
+
+  if (accessStatus === 'loading') {
+    return (
+      <div className="h-[100vh] w-[100vw] flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50 text-slate-500">
+        Checking access…
+      </div>
+    );
+  }
+
+  if (accessStatus === 'anonymous') {
+    return <LoginPage onSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <div className="h-[100vh] w-[100vw]">

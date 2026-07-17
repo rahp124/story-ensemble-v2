@@ -98,7 +98,8 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
     if (activeNode) {
       const exportData = buildStudyUsageExport(activeNode, state.studyEvents, {
         designTopic: state.designTopic,
-        priorExperience: state.priorExperience
+        priorExperience: state.priorExperience,
+        accessId: state.accessId
       });
       downloadBasename = studyUsageDownloadBasename(exportData);
     }
@@ -123,13 +124,6 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
         filter: captureFilter
       });
 
-      const embedImage = await toJpeg(cardRef.current, {
-        backgroundColor: 'white',
-        pixelRatio: 1,
-        quality: 0.7,
-        filter: captureFilter
-      });
-
       const filename = `${downloadBasename}.jpg`;
       const a = document.createElement('a');
       a.setAttribute('href', image);
@@ -138,7 +132,11 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
       a.click();
       a.remove();
 
-      onFinalizeComplete({ imageDataUrl: image, embedImageDataUrl: embedImage, filename });
+      onFinalizeComplete({
+        imageDataUrl: image,
+        embedImageDataUrl: image,
+        filename
+      });
     } catch (err) {
       console.error('[storyboard finalize]', err);
       setIsFinalizing(false);
@@ -154,24 +152,10 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
           <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">
             Preview Storyboard
           </p>
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.currentTarget.value)}
-            onBlur={handleTitleBlur}
-            placeholder="Storyboard title"
-            size="lg"
-            styles={{
-              input: {
-                fontWeight: 700,
-                fontSize: '1.5rem',
-                border: 'none',
-                background: 'transparent',
-                paddingLeft: 0
-              }
-            }}
-            className="max-w-xl"
-          />
-          <p className="text-gray-700 mt-3">Here's your storyboard! Make any adjustments you want to the captions before submitting.</p>
+          <p className="text-gray-700 mt-3">
+            Here's your storyboard! Make any adjustments you want to the title and captions
+            before submitting.
+          </p>
         </div>
 
         <div
@@ -180,6 +164,27 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
             expandCaptionsForCapture ? 'overflow-visible' : 'overflow-x-auto'
           }`}
         >
+          <div className="mb-4">
+            {expandCaptionsForCapture ? (
+              <h2 className="text-center text-xl font-bold text-gray-900">
+                {title || 'Storyboard'}
+              </h2>
+            ) : (
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.currentTarget.value)}
+                onBlur={handleTitleBlur}
+                placeholder="Storyboard title"
+                size="lg"
+                styles={{
+                  input: {
+                    textAlign: 'center',
+                    fontWeight: 'bold'
+                  }
+                }}
+              />
+            )}
+          </div>
           <StoryboardPanelStrip
             frames={storyboard.outline.map((frame) => ({
               id: frame.id,
@@ -187,7 +192,7 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
               image: frame.image,
               caption: frame.caption
             }))}
-            title={storyboard.title || 'Storyboard'}
+            title={title || 'Storyboard'}
             editableCaptions
             expandCaptions={expandCaptionsForCapture}
             onCaptionChange={handleCaptionChange}

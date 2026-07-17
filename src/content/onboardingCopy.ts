@@ -2,6 +2,27 @@ import { parse } from 'yaml';
 import userLandingRaw from './userLandingCopy.yaml?raw';
 import studyOverviewRaw from './studyOverviewCopy.yaml?raw';
 import characterCreationRaw from './characterCreationCopy.yaml?raw';
+import loginRaw from './loginCopy.yaml?raw';
+
+export type LoginCopy = {
+  header: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+  };
+  accessId: {
+    label: string;
+    placeholder: string;
+  };
+  submitButton: string;
+  submitDisabledHint: string;
+  errors: {
+    invalid: string;
+    rateLimited: string;
+    network: string;
+    generic: string;
+  };
+};
 
 export type PriorExperienceOption = {
   value: 'yes' | 'no';
@@ -20,10 +41,6 @@ export type UserLandingCopy = {
     paragraphs: string[];
   };
   consent: string;
-  participantName: {
-    label: string;
-    placeholder: string;
-  };
   beginButton: string;
   beginDisabledHint: string;
 };
@@ -95,6 +112,7 @@ export type CharacterCreationCopy = {
 export const USER_LANDING_COPY = parse(userLandingRaw) as UserLandingCopy;
 export const STUDY_OVERVIEW_COPY = parse(studyOverviewRaw) as StudyOverviewCopy;
 export const CHARACTER_CREATION_COPY = parse(characterCreationRaw) as CharacterCreationCopy;
+export const LOGIN_COPY = parse(loginRaw) as LoginCopy;
 
 export function interpolate(
   template: string,

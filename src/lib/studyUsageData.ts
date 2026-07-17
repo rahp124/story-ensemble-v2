@@ -6,7 +6,6 @@ export type StudyUsageEvent = {
   timestamp: string;
   initiator: 'user' | 'system';
   type: string;
-  count: number;
   data: Record<string, unknown>;
 };
 
@@ -16,7 +15,7 @@ export type StudyUsageExport = {
   storyboardTitle: string;
   designTopic: string | null;
   priorExperience: 'yes' | 'no' | null;
-  artStyle: string;
+  accessId: string | null;
   events: StudyUsageEvent[];
   frames: Array<{
     frameIndex: number;
@@ -45,7 +44,6 @@ export function normalizeStudyEvent(event: StoredStudyEvent): StudyUsageEvent {
     timestamp: event.timestamp ?? '',
     initiator: event.initiator,
     type: event.type,
-    count: event.count,
     data: event.data ?? {}
   };
 }
@@ -56,6 +54,7 @@ export function buildStudyUsageExport(
   meta: {
     designTopic: string | null;
     priorExperience: 'yes' | 'no' | null;
+    accessId?: string | null;
   }
 ): StudyUsageExport {
   const { storyboard } = node.data;
@@ -66,7 +65,7 @@ export function buildStudyUsageExport(
     storyboardTitle: storyboard.title,
     designTopic: meta.designTopic,
     priorExperience: meta.priorExperience,
-    artStyle: storyboard.artStyle,
+    accessId: meta.accessId ?? null,
     events: studyEvents.map(normalizeStudyEvent),
     frames: storyboard.outline.map((frame, frameIndex) => ({
       frameIndex,

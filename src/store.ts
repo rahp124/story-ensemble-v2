@@ -160,6 +160,9 @@ type RFState = {
   setCharacterProfile: (profile: CharacterProfile | null) => void;
   hasCompletedCharacterCreation: boolean;
   setHasCompletedCharacterCreation: (v: boolean) => void;
+  /** Allowlisted access ID from server session; not persisted to IndexedDB. */
+  accessId: string | null;
+  setAccessId: (id: string | null) => void;
 
   /* Evaluation State Machine */
   evaluation: EvaluationState;
@@ -426,7 +429,6 @@ function partialize(state: RFState): Partial<RFState> {
   return {
     nodes: state.nodes,
     edges: state.edges,
-    studyEvents: state.studyEvents,
     evaluation: state.evaluation,
     characterProfile: state.characterProfile
   };
@@ -792,6 +794,8 @@ const createStore: StateCreator<
     setCharacterProfile: (profile) => set({ characterProfile: profile }),
     hasCompletedCharacterCreation: false,
     setHasCompletedCharacterCreation: (v) => set({ hasCompletedCharacterCreation: v }),
+    accessId: null,
+    setAccessId: (id) => set({ accessId: id }),
 
     addCommentNode: (comment = '') => {
       const center = get().centerPosition;
@@ -2907,7 +2911,10 @@ export const useStore = create<RFState>()(
     persist(createStore, {
       name: 'story-ensemble',
       storage: createJSONStorage(() => indexDbStorage),
-      partialize
+      partialize,
+      onRehydrateStorage: () => () => {
+        useStore.setState({ studyEvents: [] });
+      }
     })
   )
 );

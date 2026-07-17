@@ -67,7 +67,8 @@ export function PostStoryboardSurveyPage({ artifact }: PostStoryboardSurveyPageP
     if (activeNode) {
       const exportData = buildStudyUsageExport(activeNode, state.studyEvents, {
         designTopic: state.designTopic,
-        priorExperience: state.priorExperience
+        priorExperience: state.priorExperience,
+        accessId: state.accessId
       });
       try {
         await uploadStudyUsageData(exportData, artifact.embedImageDataUrl);
