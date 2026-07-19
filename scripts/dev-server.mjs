@@ -75,6 +75,10 @@ function cookieSecure() {
   );
 }
 
+function cookiePath() {
+  return process.env.SESSION_COOKIE_PATH || '/storyweaver';
+}
+
 function signPayload(accessId, exp) {
   const secret = getSessionSecret();
   return createHmac('sha256', secret)
@@ -121,7 +125,7 @@ function parseCookies(req) {
 function sessionCookieHeader(value, maxAgeSec) {
   const parts = [
     `${COOKIE_NAME}=${value}`,
-    'Path=/',
+    `Path=${cookiePath()}`,
     'HttpOnly',
     'SameSite=Lax',
     `Max-Age=${maxAgeSec}`
@@ -133,7 +137,7 @@ function sessionCookieHeader(value, maxAgeSec) {
 function clearSessionCookieHeader() {
   const parts = [
     `${COOKIE_NAME}=`,
-    'Path=/',
+    `Path=${cookiePath()}`,
     'HttpOnly',
     'SameSite=Lax',
     'Max-Age=0'

@@ -1,4 +1,5 @@
 import { getOpenAiKey } from '@/lib/envUtils';
+import { apiUrl } from '@/lib/apiBase';
 import OpenAI from 'openai';
 import { z } from 'zod';
 import zodToJsonSchema from 'zod-to-json-schema';
@@ -358,7 +359,7 @@ export async function generateImageWithOpenAI({
     try {
       const { b64_json } = await withRetry('generateImageWithOpenAI/edit', () =>
         timed('generateImageWithOpenAI/edit (proxy → gpt-image-2)', async () => {
-          const resp = await fetch('/api/generate-edit', {
+          const resp = await fetch(apiUrl('generate-edit'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ image: referenceImage, prompt: combinedPrompt, size, apiKey: getOpenAiKey() })

@@ -7,18 +7,43 @@ npm install
 npm run dev
 ```
 
-Open the Vite URL printed by the dev server. `npm run dev` starts both the frontend and the local API shim for image edits (`/api/generate-edit`).
+Open the Vite URL printed by the dev server, then open the `/storyweaver/` path (for example `http://localhost:5173/storyweaver/`). `npm run dev` starts both the frontend and the local API shim (`/storyweaver/api/*` → `http://localhost:3000/api/*`).
 
 ### Running servers separately (optional)
 
 For debugging, you can run each server on its own:
 
 ```bash
-npm run dev:vite   # frontend only (image edit API will not be available)
+npm run dev:vite   # frontend only (API will not be available)
 npm run dev:api    # API shim only on http://localhost:3000
 ```
 
-`vite.config.ts` proxies `/api/*` to `http://localhost:3000` when using `dev:vite` alongside `dev:api`.
+`vite.config.ts` proxies `/storyweaver/api/*` to `http://localhost:3000/api/*` when using `dev:vite` alongside `dev:api`.
+
+### Subpath deploy (NGINX)
+
+The production base path is `/storyweaver/` (see `base` in `vite.config.ts`).
+
+1. Set production env (including `VITE_*` before build, plus server-only `ACCESS_ALLOWLIST`, `SESSION_SECRET`, `SESSION_COOKIE_SECURE=true`, `SESSION_COOKIE_PATH=/storyweaver`).
+2. `npm ci && npm run build`
+3. Serve `dist/` at `https://variationweaver.ucsd.edu/storyweaver/`
+4. Run `node scripts/dev-server.mjs` on localhost (e.g. port 3000) and proxy:
+
+```nginx
+location /storyweaver/api/ {
+  proxy_pass http://127.0.0.1:3000/api/;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+  proxy_read_timeout 120s;
+}
+
+location /storyweaver/ {
+  alias /path/to/story-ensemble-v2/dist/;
+  try_files $uri $uri/ /storyweaver/index.html;
+}
+```
 
 ## Environment
 
@@ -43,7 +68,7 @@ Important notes:
 ```bash
 npm run dev       # API shim + Vite frontend (default)
 npm run dev:vite  # Vite frontend only
-npm run dev:api   # Local Node API shim for /api routes
+npm run dev:api   # Local Node API shim for /api routes (proxied via /storyweaver/api)
 npm run build     # TypeScript check + Vite production build
 npm run lint      # ESLint
 npm run preview   # Preview production build

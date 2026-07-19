@@ -70,7 +70,7 @@ export function StudyOverviewPage() {
 
           <div className="mt-5">
             <img
-              src="/storyboards/example/example_storyboard_1.jpg"
+              src={`${import.meta.env.BASE_URL}storyboards/example/example_storyboard_1.jpg`}
               alt="Example storyboard with context, problem, action, and resolution panels"
               className="w-full rounded-2xl ring-1 ring-slate-200/60"
             />
