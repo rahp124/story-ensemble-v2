@@ -88,7 +88,7 @@ function buildVariant(id: string, title: string): DesignerVariant {
     title,
     frames: FRAME_TYPES.map((frameType) => ({
       frameType,
-      image: `/storyboards/${id}/${FRAME_FILENAMES[frameType]}`,
+      image: `${import.meta.env.BASE_URL}storyboards/${id}/${FRAME_FILENAMES[frameType]}`,
       caption: getDefaultFrameCaption(id, frameType)
     }))
   };

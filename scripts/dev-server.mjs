@@ -30,7 +30,7 @@ if (existsSync(envLocalPath)) {
   }
 }
 
-const PORT = 3000;
+const PORT = 8080;
 const COOKIE_NAME = 'se_session';
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
@@ -73,6 +73,10 @@ function cookieSecure() {
     process.env.SESSION_COOKIE_SECURE === 'true' ||
     process.env.NODE_ENV === 'production'
   );
+}
+
+function cookiePath() {
+  return process.env.SESSION_COOKIE_PATH || '/storyweaver';
 }
 
 function signPayload(accessId, exp) {
@@ -121,7 +125,7 @@ function parseCookies(req) {
 function sessionCookieHeader(value, maxAgeSec) {
   const parts = [
     `${COOKIE_NAME}=${value}`,
-    'Path=/',
+    `Path=${cookiePath()}`,
     'HttpOnly',
     'SameSite=Lax',
     `Max-Age=${maxAgeSec}`
@@ -133,7 +137,7 @@ function sessionCookieHeader(value, maxAgeSec) {
 function clearSessionCookieHeader() {
   const parts = [
     `${COOKIE_NAME}=`,
-    'Path=/',
+    `Path=${cookiePath()}`,
     'HttpOnly',
     'SameSite=Lax',
     'Max-Age=0'

@@ -1,3 +1,5 @@
+import { apiUrl } from '@/lib/apiBase';
+
 export type AccessSession = {
   accessId: string;
 };
@@ -21,7 +23,7 @@ async function parseJson(res: Response): Promise<Record<string, unknown>> {
 }
 
 export async function fetchSession(): Promise<AccessSession | null> {
-  const res = await fetch('/api/session', {
+  const res = await fetch(apiUrl('session'), {
     method: 'GET',
     credentials: 'include'
   });
@@ -39,7 +41,7 @@ export async function fetchSession(): Promise<AccessSession | null> {
 }
 
 export async function login(accessId: string): Promise<AccessSession> {
-  const res = await fetch('/api/login', {
+  const res = await fetch(apiUrl('login'), {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -59,7 +61,7 @@ export async function login(accessId: string): Promise<AccessSession> {
 }
 
 export async function logout(): Promise<void> {
-  await fetch('/api/logout', {
+  await fetch(apiUrl('logout'), {
     method: 'POST',
     credentials: 'include'
   });

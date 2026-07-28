@@ -1,5 +1,9 @@
 # Storyboards
 
+Vite + React study app for guided storyboard creation. Participants log in, complete onboarding, build a storyboard with AI assistance, then submit usage data and a storyboard image.
+
+Deployed under **`/storyweaver/`** (e.g. `https://variationweaver.ucsd.edu/storyweaver/`).
+
 ## Quick Start
 
 ```bash
@@ -7,18 +11,39 @@ npm install
 npm run dev
 ```
 
-Open the Vite URL printed by the dev server. `npm run dev` starts both the frontend and the local API shim for image edits (`/api/generate-edit`).
+Open the Vite URL printed by the dev server, then open the `/storyweaver/` path (for example `http://localhost:5173/storyweaver/`). `npm run dev` starts both the frontend and the local API shim (`/storyweaver/api/*` → `http://localhost:8080/api/*`).
 
-### Running servers separately (optional)
-
-For debugging, you can run each server on its own:
+### Run servers separately (optional)
 
 ```bash
-npm run dev:vite   # frontend only (image edit API will not be available)
-npm run dev:api    # API shim only on http://localhost:3000
+npm run dev:vite   # frontend only
+npm run dev:api    # API shim only on http://localhost:8080
 ```
 
-`vite.config.ts` proxies `/api/*` to `http://localhost:3000` when using `dev:vite` alongside `dev:api`.
+`vite.config.ts` proxies `/storyweaver/api/*` to `http://localhost:8080/api/*` when using `dev:vite` alongside `dev:api`.
+
+### Subpath deploy (NGINX)
+
+1. Set production env (including `VITE_*` before build, plus server-only `ACCESS_ALLOWLIST`, `SESSION_SECRET`, `SESSION_COOKIE_SECURE=true`, `SESSION_COOKIE_PATH=/storyweaver`).
+2. `npm ci && npm run build`
+3. Serve `dist/` at `https://variationweaver.ucsd.edu/storyweaver/`
+4. Run `node scripts/dev-server.mjs` on localhost (e.g. port 8080) and proxy:
+
+```nginx
+location /storyweaver/api/ {
+  proxy_pass http://127.0.0.1:8080/api/;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+  proxy_read_timeout 120s;
+}
+
+location /storyweaver/ {
+  alias /path/to/story-ensemble-v2/dist/;
+  try_files $uri $uri/ /storyweaver/index.html;
+}
+```
 
 ## Environment
 
@@ -41,388 +66,141 @@ Important notes:
 ## Scripts
 
 ```bash
-npm run dev       # API shim + Vite frontend (default)
+npm run dev       # API shim + Vite (default)
 npm run dev:vite  # Vite frontend only
-npm run dev:api   # Local Node API shim for /api routes
-npm run build     # TypeScript check + Vite production build
+npm run dev:api   # Node API shim only
+npm run build     # tsc + Vite production build
 npm run lint      # ESLint
-npm run preview   # Preview production build
+npm run preview   # Preview production build at /storyweaver/
 ```
 
-## Architecture at a Glance
+## Architecture
 
 ```text
-index.html
-  -> src/main.tsx
-      -> ReactFlowProvider
-      -> MantineProvider
-      -> Notifications
-      -> src/App.tsx
-          -> React Flow canvas
-          -> landing/admin/wizard modals
-          -> Zustand store actions
-              -> src/api/* AI providers
-              -> IndexedDB persistence
+Browser (SPA, base /storyweaver/)
+  ├── LoginPage              → POST /storyweaver/api/login
+  ├── UserLandingPage        consent + participant name
+  ├── StudyOverviewPage      study intro
+  ├── CharacterCreationPage  headshot pick / photo upload
+  ├── StoryWizard            panel generation (designer mode by default)
+  ├── StoryboardEditorPage   edit title/captions, finalize JPG download
+  └── PostStoryboardSurveyPage → Firestore upload (+ JSON fallback)
+
+Node API (scripts/dev-server.mjs :8080)
+  ├── /api/login, /api/session, /api/logout   access gate
+  └── /api/generate-edit                      OpenAI image edit proxy
+
+Client AI (src/api/*)
+  └── OpenAI / FAL / Stability called from the browser for text + most images
+
+State (src/store.ts)
+  └── Zustand + IndexedDB (graph, character, onboarding flags)
+  └── studyEvents in memory only (cleared each session)
 ```
 
-The app is a single page canvas. There is no React Router. Top level user flows are controlled with local component state in `App.tsx` and `StoryWizard.tsx`, while graph data and generation actions live in `src/store.ts`.
+There is no React Router. [`App.tsx`](src/App.tsx) gates screens with local state and store flags (`hasCompletedLanding`, etc.).
 
-## Major Runtime Flows
+### Participant flow
 
-### 1. App boot
+1. **Login** — [`LoginPage`](src/components/LoginPage.tsx) validates an allowlisted access ID via the server; session cookie scoped to `/storyweaver`.
+2. **Consent** — [`UserLandingPage`](src/components/UserLandingPage.tsx); clears `studyEvents` for a fresh session.
+3. **Overview** — [`StudyOverviewPage`](src/components/StudyOverviewPage.tsx).
+4. **Character** — [`CharacterCreationPage`](src/components/CharacterCreationPage.tsx); preset headshots from [`public/storyboards/character_headshots/`](public/storyboards/character_headshots/) or photo upload.
+5. **Wizard** — [`StoryWizard`](src/components/StoryWizard.tsx). With `ENABLE_DESIGNER_STORYBOARD_MODE = true` ([`src/lib/designerMode.ts`](src/lib/designerMode.ts)), participants pick a static variant from [`src/data/designerStoryboards.ts`](src/data/designerStoryboards.ts) and refine panels with AI image edits. The standard persona/problem/solution pipeline is bypassed.
+6. **Editor** — [`StoryboardEditorPage`](src/components/StoryboardEditorPage.tsx); downloads a high-res JPG on finalize.
+7. **Survey** — [`PostStoryboardSurveyPage`](src/components/PostStoryboardSurveyPage.tsx); uploads usage log + compressed storyboard image to Firestore via [`src/lib/studyDataUpload.ts`](src/lib/studyDataUpload.ts). Falls back to local JSON download on failure.
 
-1. `index.html` loads `src/main.tsx`.
-2. `src/main.tsx` renders `<App />` inside `ReactFlowProvider`, `MantineProvider`, and Mantine notifications.
-3. `src/App.tsx` reads persisted graph state from `useStore`.
-4. If the graph is empty, `App` opens the landing/wizard flow.
-5. Otherwise, it renders the existing React Flow canvas and modals.
+### Study logging
 
-### 2. Canvas/editor flow
+Events accumulate in `studyEvents` ([`src/store.ts`](src/store.ts)) during the session. They are **not** persisted to IndexedDB. On consent / start-over, the log is cleared.
 
-`src/App.tsx` configures the React Flow canvas:
+Export shape: [`src/lib/studyUsageData.ts`](src/lib/studyUsageData.ts) (`StudyUsageExport`). Upload includes session `accessId`, events, frame metadata, survey answers, and an embedded JPEG (quality-compressed to fit Firestore's ~1MB doc limit).
 
-- Node types come from `src/rf-components/*`.
-- Edge types come from `ContextEdge` and arrow edge helpers.
-- Canvas data comes from `useStore().nodes` and `useStore().edges`.
-- Keyboard shortcuts can add/copy/paste nodes and fit the viewport.
-- The canvas is currently mostly view-oriented: `nodesDraggable` and `nodesConnectable` are disabled.
+### Server API
 
-The graph entities are:
+[`scripts/dev-server.mjs`](scripts/dev-server.mjs) handles:
 
-- `Project`
-- `Persona`
-- `Problem`
-- `Solution`
-- `Storyboard`
-- `Comment`
+| Route | Purpose |
+|---|---|
+| `POST /api/login` | Validate access ID, set `se_session` cookie |
+| `GET /api/session` | Return current session (401 if absent) |
+| `POST /api/logout` | Clear session cookie |
+| `POST /api/generate-edit` | Proxy OpenAI image edit |
 
-### 3. Landing and wizard flow
+Client calls use [`src/lib/apiBase.ts`](src/lib/apiBase.ts) (`/storyweaver/api/...`).
 
-The participant-facing flow starts in `App.tsx`:
+### AI layer
 
-1. `UserLandingPage` collects initial study context and prior experience.
-2. `StoryWizard` takes over after landing completion.
-3. Depending on the feature flag in `src/lib/designerMode.ts`, `StoryWizard` runs either:
-   - designer storyboard mode, currently enabled, or
-   - the standard AI-generated storyboard flow.
+Most generation runs in the browser (`src/api/openai.ts`, `images.ts`, `fal.ts`, `stableDiffusion.ts`). Image edit with a reference photo goes through the server proxy. Provider selection: [`src/lib/envUtils.ts`](src/lib/envUtils.ts) (`resolveImageProvider()`).
 
-### 4. Standard storyboard flow
+## Production deploy (NGINX)
 
-This is the original path. It is currently bypassed when `ENABLE_DESIGNER_STORYBOARD_MODE` is `true`.
+1. Set all env vars (especially `VITE_*` before build).
+2. `npm ci && npm run build`
+3. Serve `dist/` at `/storyweaver/`
+4. Run the API process and proxy `/storyweaver/api/` to it:
 
-Key files:
+```nginx
+# API first — use prefix match, not exact (=)
+location /storyweaver/api/ {
+  proxy_pass http://127.0.0.1:8080/api/;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+  proxy_read_timeout 120s;
+}
 
-- `src/components/DynamicStoryWizard.tsx`
-- `src/types/questionnaire.ts`
-- `src/components/StoryWizard.tsx`
-- `src/store.ts`
-- `src/api/openai.ts`
-- `src/api/images.ts`
-
-Flow:
-
-1. `DynamicStoryWizard` asks the warm-up questions from `STORY_QUESTIONS`.
-2. After question 2 is answered, it calls `startWarmUpPrefetch()` to begin persona generation early.
-3. On submit, `StoryWizard.handleDynamicSubmit()` consumes the prefetch if available.
-4. The store creates the node chain:
-   - project node
-   - persona node
-   - problem node
-   - placeholder solution node
-   - blank storyboard node
-5. The wizard generates or sketches four frames:
-   - `Context`
-   - `Problem`
-   - `Action`
-   - `Resolution`
-6. `StoryWizard` walks through content, aesthetics, story lock, visual style, and final rendering phases.
-7. Generated frame data is written back into the storyboard node in the Zustand store.
-
-### 5. Sketch mode
-
-`StoryWizard.tsx` has `ENABLE_SKETCH_MODE = true`.
-
-In the standard flow, this means the app generates all four initial sketch frames quickly with:
-
-- `useStore().generateInitialSketchStoryboard()`
-- `generateInitialSketchStoryboardFrames()` in `src/api/openai.ts`
-- `SketchFrameRenderer` for display
-- `refineSketchStoryboardFrame()` for per-frame refinement
-
-Sketch data is stored on each storyboard frame under `frame.sketch`, and the frame's `renderMode` is set to `sketch`.
-
-### 6. Designer storyboard mode
-
-Designer mode is currently enabled in `src/lib/designerMode.ts`:
-
-```ts
-export const ENABLE_DESIGNER_STORYBOARD_MODE = true;
-```
-
-When enabled, `StoryWizard` skips the standard persona/problem/solution generation path. Instead:
-
-1. `DesignerVariantPicker` shows predefined storyboard variants.
-2. Variants come from `src/data/designerStoryboards.ts`.
-3. Default panel images live in `public/storyboards/sb1`, `sb2`, and `sb3`.
-4. Picking a variant creates a standalone storyboard node.
-5. The participant refines each panel through content/reflection and aesthetics phases.
-6. `generateDesignerSceneImage()` edits the current panel image using the selected image provider.
-7. Updates are stored back into the storyboard node with `applyDesignerSceneUpdate()`.
-
-Admin overrides for designer mode are managed by `src/components/AdminSetup.tsx` and persisted in the Zustand store. The admin UI can replace the four images for each storyboard variant and update the study topic.
-
-## State Management
-
-The central state file is `src/store.ts`.
-
-It contains:
-
-- React Flow state: `nodes`, `edges`, selection, connection handlers.
-- Node creation actions for personas, problems, solutions, storyboards, projects, and comments.
-- AI generation actions for each node type.
-- Storyboard frame generation and refinement actions.
-- Designer mode storyboard overrides.
-- Landing state and evaluation state.
-- Undo/redo snapshots.
-- Study event logging.
-
-The store uses:
-
-- `zustand`
-- `zustand/middleware/immer`
-- `zustand/middleware/persist`
-- `idb-keyval`
-
-Persistence is configured at the bottom of `src/store.ts`:
-
-```ts
-export const useStore = create<RFState>()(
-  immer(
-    persist(createStore, {
-      name: 'story-ensemble',
-      storage: createJSONStorage(() => indexDbStorage),
-      partialize
-    })
-  )
-);
-```
-
-The persisted key is `story-ensemble`. Because this is browser IndexedDB state, a developer may need to clear site data while debugging old graph state.
-
-## Data Model
-
-Core domain types live in `src/types.ts`.
-
-Important types:
-
-- `NodeData`: base data shared by custom nodes.
-- `Persona`, `Problem`, `Solution`: Zod-backed structured AI outputs.
-- `FrameOutline`: storyboard frame type, description, and caption.
-- `SketchFrameData`: structured sketch representation for sketch-mode rendering.
-- `VisualStylePreferences`: final visual style controls.
-- `StoryboardNodeData`: the full storyboard node shape.
-
-A storyboard node contains:
-
-```ts
-storyboard: {
-  title: string;
-  flowMode?: 'standard' | 'designer_storyboard';
-  outline: Array<{
-    id: string;
-    frameType: 'Context' | 'Problem' | 'Action' | 'Resolution';
-    description: string;
-    caption: string;
-    image?: string;
-    imagePrompt?: string;
-    sketch?: SketchFrameData;
-    renderMode?: 'sketch' | 'image';
-    contentAnswers?: Record<string, string>;
-    reflectionAnswers?: Record<string, string>;
-    aestheticNotes?: DesignerAestheticNotes;
-  }>;
-  artStyle: StylePreset;
-  storyLocked?: boolean;
-  visualStylePreferences?: VisualStylePreferences;
+location /storyweaver/ {
+  alias /path/to/story-ensemble-v2/dist/;
+  try_files $uri $uri/ /storyweaver/index.html;
 }
 ```
 
-## AI and API Layer
+**Verify proxy:** `curl https://your.host/storyweaver/api/session` should return **401** JSON (`Not authenticated`), not **200** HTML.
 
-The `src/api` folder is split by concern:
+## Key files
 
-- `openai.ts`: text generation, structured JSON generation, sketch frame generation/refinement, storyboard titles, prompt construction, OpenAI image helper.
-- `images.ts`: image provider orchestrator and designer image edit wrapper.
-- `fal.ts`: FAL/Flux image generation and edit integration.
-- `stableDiffusion.ts`: Stability image generation.
-- `personas.ts`: persona generation/regeneration prompts.
-- `problems.ts`: problem generation/regeneration prompts.
-- `solutions.ts`: solution generation/regeneration prompts.
-- `storyboards.ts`: storyboard outline and image-prompt generation.
-- `feedback.ts`: critique and design feedback prompts.
-- `recommendations.ts`: recommendation generation.
-- `visualCharacterDescription.ts`: character-description extraction.
+| Area | Files |
+|---|---|
+| App shell / routing | `src/App.tsx`, `src/main.tsx` |
+| Onboarding | `LoginPage`, `UserLandingPage`, `StudyOverviewPage`, `CharacterCreationPage` |
+| Story creation | `StoryWizard.tsx`, `StoryboardEditorPage.tsx`, `PostStoryboardSurveyPage.tsx` |
+| Designer mode | `src/lib/designerMode.ts`, `src/data/designerStoryboards.ts`, `DesignerVariantPicker.tsx` |
+| State | `src/store.ts` |
+| Study export / upload | `src/lib/studyUsageData.ts`, `src/lib/studyDataUpload.ts`, `src/lib/compressImage.ts` |
+| Auth | `src/lib/accessSession.ts`, `scripts/dev-server.mjs` |
+| Static assets | `public/storyboards/` (use `import.meta.env.BASE_URL` for paths) |
+| Build / proxy | `vite.config.ts` (`base: '/storyweaver/'`) |
 
-Most structured text calls use `generateStructured()` in `openai.ts`, which:
+### Legacy React Flow code
 
-1. Converts a Zod schema to JSON schema.
-2. Calls OpenAI chat completions with JSON mode.
-3. Parses and validates the response with Zod.
+The repo still contains React Flow node components (`src/rf-components/*`), graph state in the store, and modals wired in `App.tsx`. These are **not** part of the current participant flow; the study uses full-page screens instead of the canvas editor.
 
-Image generation goes through `generateStoryboardImage()` in `src/api/images.ts`:
+Evaluation components (`src/components/evaluation/*`, `EvaluationRouter.tsx`) exist but are not mounted in the current `App.tsx` flow.
 
-1. Resolve provider with `resolveImageProvider()` from `src/lib/envUtils.ts`.
-2. Use FAL if configured.
-3. Use Stability if configured.
-4. Fall back to OpenAI.
+## Common changes
 
-Image editing can call `api/generate-edit.ts`, which is the only server-side API route in this project.
+- **Access IDs:** edit `ACCESS_ALLOWLIST` in server env.
+- **Designer on/off:** `ENABLE_DESIGNER_STORYBOARD_MODE` in `src/lib/designerMode.ts`.
+- **Designer variants:** images under `public/storyboards/<id>/`, manifest in `src/data/designerStoryboards.ts`, or Admin Setup at runtime.
+- **Survey copy:** `src/content/postSurveyCopy.yaml`.
+- **Onboarding copy:** `src/content/*.yaml` imported via `src/content/onboardingCopy.ts`.
+- **Prompts:** `src/api/openai.ts` and domain files in `src/api/`.
 
-## Key Files
+## Gotchas
 
-### App shell
+- Open **`/storyweaver/`**, not the site root — assets and API paths depend on the Vite base.
+- `studyEvents` reset on consent and start-over; only the current session is exported.
+- IndexedDB persists graph/onboarding state under key `story-ensemble`. Clear site data if debugging stale state.
+- `SESSION_COOKIE_SECURE=true` requires HTTPS; use `false` for local HTTP dev.
+- NGINX must proxy `/storyweaver/api/` to Node **before** the static `/storyweaver/` block. A **200** on `/api/session` usually means HTML is being served instead of the API.
+- Public asset URLs must include the base path (`import.meta.env.BASE_URL`), not bare `/storyboards/...`.
 
-- `src/main.tsx`: provider setup and React root.
-- `src/App.tsx`: top-level canvas, modal orchestration, landing/wizard entry, keyboard shortcuts.
-- `src/index.css`: global CSS and Tailwind layers.
-- `vite.config.ts`: Vite config, alias setup, `/api` proxy.
+## Start here
 
-### Wizard and participant experience
-
-- `src/components/UserLandingPage.tsx`: first participant screen.
-- `src/components/StoryWizard.tsx`: main storyboard flow state machine.
-- `src/components/DynamicStoryWizard.tsx`: standard warm-up questionnaire.
-- `src/components/ContentPhase.tsx`: per-scene content questions.
-- `src/components/AestheticsPhase.tsx`: per-scene visual/aesthetic refinement.
-- `src/components/StoryLockPhase.tsx`: story review before final styling.
-- `src/components/VisualStylePhase.tsx`: final visual style controls.
-- `src/components/ProgressiveStoryboard.tsx`: frame preview during the wizard.
-- `src/components/SketchFrameRenderer.tsx`: renders structured sketch frames.
-
-### Designer mode
-
-- `src/lib/designerMode.ts`: feature flag for designer-storyboard mode.
-- `src/data/designerStoryboards.ts`: static storyboard variant manifest.
-- `public/storyboards/*`: default designer storyboard images.
-- `src/components/DesignerVariantPicker.tsx`: variant selection UI.
-- `src/components/DesignerContentPhase.tsx`: designer-mode content/reflection flow.
-- `src/components/AdminSetup.tsx`: admin overrides for topic and storyboard images.
-
-### Graph nodes and edges
-
-- `src/rf-components/index.ts`: node and edge type enums.
-- `src/rf-components/BaseNode.tsx`: shared node shell.
-- `src/rf-components/PersonaNode.tsx`: persona node renderer.
-- `src/rf-components/ProblemNode.tsx`: problem node renderer.
-- `src/rf-components/SolutionNode.tsx`: solution node renderer.
-- `src/rf-components/StoryboardNode.tsx`: storyboard node renderer.
-- `src/rf-components/ProjectNode.tsx`: project/context node renderer.
-- `src/rf-components/CommentNode.tsx`: comment node renderer.
-- `src/rf-components/ContextEdge.tsx`: custom React Flow edge.
-- `src/rf-components/ArrowEdge.tsx`: helper for creating graph arrows.
-
-### Store and utilities
-
-- `src/store.ts`: central state, generation actions, graph mutation actions, persistence.
-- `src/lib/graphHelper.ts`: dependency/dependent graph traversal helpers.
-- `src/lib/positioningUtils.ts`: layout positions for generated nodes.
-- `src/lib/displayStore.ts`: UI-only display state, such as regeneration indicators.
-- `src/lib/envUtils.ts`: API key lookup, validation, provider selection.
-- `src/lib/getSanitizedNodeContent.ts`: content sanitization before display/use.
-- `src/lib/formatInterviewForAI.ts`: interview/context formatting for prompts.
-
-### Evaluation/study UI
-
-- `src/components/EvaluationRouter.tsx`
-- `src/components/EvalLayout.tsx`
-- `src/components/evaluation/*`
-- Evaluation state is also represented in `src/store.ts`.
-
-These files support study/evaluation flows and are separate from the main canvas/wizard rendering path unless explicitly wired in.
-
-## Common Changes
-
-### Change the standard questionnaire
-
-Edit `src/types/questionnaire.ts`. `DynamicStoryWizard` reads `STORY_QUESTIONS` and supports conditional branching through each question's `dependsOn` field.
-
-### Change the main wizard sequence
-
-Edit `src/components/StoryWizard.tsx`. The local `WizardState` controls the active `phase`, current scene index, and per-scene answers. Be careful here: this file coordinates generation side effects, speculative frame generation, and mode-specific branches.
-
-### Turn designer mode on or off
-
-Edit `src/lib/designerMode.ts`.
-
-When `ENABLE_DESIGNER_STORYBOARD_MODE` is `true`, the app skips standard AI persona/problem/solution generation and starts with static storyboard variants.
-
-### Add or replace designer storyboard variants
-
-1. Add panel images under `public/storyboards/<variant-id>/`.
-2. Update `src/data/designerStoryboards.ts`.
-3. Make sure each variant has four frames: `Context`, `Problem`, `Action`, `Resolution`.
-
-For runtime/admin overrides, use the Admin Setup UI instead of editing the manifest.
-
-### Change prompt behavior
-
-Start in `src/api/openai.ts`.
-
-Useful functions:
-
-- `generateStructured()`
-- `generateDynamicFrameData()`
-- `generateImagePrompt()`
-- `generateInitialSketchStoryboardFrames()`
-- `refineSketchFrameData()`
-- `buildDesignerImageEditPrompt()`
-
-For persona/problem/solution-specific prompts, use the domain files in `src/api`.
-
-### Change image provider behavior
-
-Start in:
-
-- `src/api/images.ts`
-- `src/lib/envUtils.ts`
-- `src/api/fal.ts`
-- `src/api/stableDiffusion.ts`
-- `api/generate-edit.ts`
-
-`generateStoryboardImage()` is the main dispatch point.
-
-### Change graph/node behavior
-
-Start in:
-
-- `src/store.ts` for mutations and generation actions.
-- `src/rf-components/*Node.tsx` for rendering.
-- `src/types.ts` for data shape changes.
-- `src/lib/positioningUtils.ts` for generated node placement.
-
-## Development Notes and Gotchas
-
-- The store file is large and owns both state and side effects. Before changing a node shape, check both `src/types.ts` and all relevant store update functions.
-- Browser state persists in IndexedDB. If UI behavior looks stale, clear site data for the dev URL.
-- Some AI calls are intentionally speculative or backgrounded. For example, standard flow starts persona generation after question 2 and may pre-generate upcoming storyboard frames.
-- `dangerouslyAllowBrowser: true` is used for OpenAI client calls in the browser. Will be modified before production.
-- Designer mode and standard mode share `StoryWizard.tsx` but intentionally skip different parts of the pipeline. Check `ENABLE_DESIGNER_STORYBOARD_MODE` before debugging a generation path.
-- `src/components/QuestionField.tsx` exists, but `DynamicStoryWizard.tsx` currently defines its own local `QuestionField` implementation.
-- `api/generate-edit.ts` is server-side, but most other `src/api` files run in the browser.
-- The graph currently disables dragging and connecting in `App.tsx`. Re-enabling editor behavior will require revisiting React Flow handlers from the store.
-
-## Start Here First
-
-I suggest reading files in this order:
-
-1. `src/main.tsx`
-2. `src/App.tsx`
-3. `src/lib/designerMode.ts`
-4. `src/components/StoryWizard.tsx`
-5. `src/store.ts`
-6. `src/types.ts`
-7. `src/api/images.ts`
-8. `src/api/openai.ts`
-9. `src/rf-components/StoryboardNode.tsx`
-
-Gives the clearest view of how the app starts, how the current default flow is selected, where data is stored, how generation works, and how the result is rendered.
+1. `src/App.tsx` — screen flow and access gate
+2. `src/components/StoryWizard.tsx` — wizard state machine
+3. `src/store.ts` — state and generation actions
+4. `src/lib/studyUsageData.ts` + `src/lib/studyDataUpload.ts` — logging and upload
+5. `scripts/dev-server.mjs` — server routes and session cookies
