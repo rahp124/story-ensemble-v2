@@ -18,7 +18,7 @@ export default defineConfig({
     proxy: {
       // Browser calls /storyweaver/api/*; shim still listens on /api/*
       '/storyweaver/api': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/storyweaver/, '')
       }
