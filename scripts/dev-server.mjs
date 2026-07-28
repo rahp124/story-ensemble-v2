@@ -30,7 +30,7 @@ if (existsSync(envLocalPath)) {
   }
 }
 
-const PORT = 3000;
+const PORT = 8080;
 const COOKIE_NAME = 'se_session';
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
