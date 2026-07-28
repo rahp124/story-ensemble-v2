@@ -9,7 +9,7 @@ export const CHARACTER_HEADSHOTS: CharacterHeadshot[] = Array.from(
   { length: HEADSHOT_COUNT },
   (_, i) => ({
     id: `prof_${i + 1}`,
-    image: `/storyboards/character_headshots/prof_${i + 1}.png`
+    image: `${import.meta.env.BASE_URL}storyboards/character_headshots/prof_${i + 1}.png`
   })
 );
 
