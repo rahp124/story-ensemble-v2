@@ -27,7 +27,7 @@ import {
   generateStoryboardOutline
 } from './api/storyboards';
 import { StylePreset } from './api/stableDiffusion';
-import { generateImagePrompt, generateStoryboardTitle, generateInitialSketchStoryboardFrames, refineSketchFrameData, generateImagePromptFromSketch } from './api/openai';
+import { generateImagePrompt, generateStoryboardTitle, generateInitialSketchStoryboardFrames, refineSketchFrameData, generateImagePromptFromSketch, generateDesignerStoryboardTitle } from './api/openai';
 import { generateStoryboardImage } from './api/images';
 import { generateSolutions, regenerateSolutions } from './api/solutions';
 import { ENABLE_DESIGNER_STORYBOARD_MODE } from './lib/designerMode';
@@ -83,6 +83,8 @@ type StudyEvent = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
 };
+
+export const DEFAULT_DESIGNER_STORYBOARD_TITLE = 'Your storyboard';
 
 export type CharacterProfileAdjustments = {
   face?: string;
@@ -337,6 +339,7 @@ type RFState = {
     id: string,
     answers: Record<string, string>
   ) => Promise<void>;
+  generateAndSetDesignerStoryboardTitle: (id: string) => Promise<void>;
   updateStoryboardDescription: (
     id: string,
     frameIdx: number,
@@ -1676,7 +1679,7 @@ const createStore: StateCreator<
           content: {},
           visualCharacterDescriptions: [],
           storyboard: {
-            title: 'Your storyboard',
+            title: DEFAULT_DESIGNER_STORYBOARD_TITLE,
             flowMode: 'designer_storyboard',
             outline: frameTypes.map((frameType) => ({
               id: nanoid(),
@@ -2415,6 +2418,32 @@ const createStore: StateCreator<
 
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.title = title;
+      });
+    },
+    generateAndSetDesignerStoryboardTitle: async (id) => {
+      const storyboard: Node<StoryboardNodeData> | undefined = get().nodes.find(
+        (node) => node.id === id && node.type === NodeType.Storyboard
+      );
+      if (!storyboard) return;
+
+      const frames = storyboard.data.storyboard.outline.map((frame) => ({
+        frameType: frame.frameType,
+        caption: frame.caption ?? '',
+        contentAnswers: frame.contentAnswers,
+        reflectionAnswers: frame.reflectionAnswers
+      }));
+
+      const title = await generateDesignerStoryboardTitle(frames);
+
+      updateNode<StoryboardNodeData>(id, (draft) => {
+        draft.data.storyboard.title = title;
+      });
+
+      get().addStudyEvent({
+        initiator: 'system',
+        type: 'GENERATE_STORYBOARD_TITLE',
+        count: 1,
+        data: { storyboardId: id, title }
       });
     },
     updateStoryboardDescription: (id, frameIndex, description) => {

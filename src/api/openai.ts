@@ -1031,6 +1031,58 @@ Create a vivid, specific image prompt that brings this sketch to life while resp
 // ─── Designer storyboard mode ─────────────────────────────────────────────────
 
 const designerCaptionSchema = z.object({ caption: z.string().min(1) });
+const designerTitleSchema = z.object({ title: z.string().min(1) });
+
+type DesignerFrameType = 'Context' | 'Problem' | 'Action' | 'Resolution';
+
+export async function generateDesignerStoryboardTitle(
+  frames: {
+    frameType: DesignerFrameType;
+    caption: string;
+    contentAnswers?: Record<string, string>;
+    reflectionAnswers?: Record<string, string>;
+  }[]
+): Promise<string> {
+  const storySummary = frames
+    .map((frame, i) => {
+      const contentAnswers = Object.fromEntries(
+        Object.entries(frame.contentAnswers ?? {}).filter(([, v]) => (v ?? '').trim().length > 0)
+      );
+      const reflectionAnswers = Object.fromEntries(
+        Object.entries(frame.reflectionAnswers ?? {}).filter(([, v]) => (v ?? '').trim().length > 0)
+      );
+      return [
+        `Panel ${i + 1} (${frame.frameType}):`,
+        `  Caption: ${frame.caption || '(none)'}`,
+        Object.keys(contentAnswers).length > 0
+          ? `  Content answers: ${JSON.stringify(contentAnswers, null, 2)}`
+          : '',
+        Object.keys(reflectionAnswers).length > 0
+          ? `  Reflection answers: ${JSON.stringify(reflectionAnswers, null, 2)}`
+          : ''
+      ]
+        .filter(Boolean)
+        .join('\n');
+    })
+    .join('\n\n');
+
+  const userContent = `Summarize this 4-panel UX storyboard into a concise title.
+
+Participant story (captions and answers in order):
+"""
+${storySummary}
+"""
+
+Requirements:
+- 3 to 8 words, Title Case.
+- Capture the persona's journey from problem to resolution.
+- Ground the title only in the supplied captions and answers; do not invent details.
+- No quotes, no trailing punctuation, no markdown, no leading label.
+- Return JSON: { "title": "..." }`;
+
+  const result = await generateStructured(designerTitleSchema, userContent);
+  return result.title;
+}
 
 export async function generateDesignerContentCaption(args: {
   frameType: 'Context' | 'Problem' | 'Action' | 'Resolution';
@@ -1057,8 +1109,6 @@ Requirements:
   const result = await generateStructured(designerCaptionSchema, userContent);
   return result.caption;
 }
-
-type DesignerFrameType = 'Context' | 'Problem' | 'Action' | 'Resolution';
 
 const DESIGNER_SINGLE_FRAME_DIRECTIVE =
   'Render exactly one storyboard frame as a single illustrated panel (same format as the other panels in a 4-frame storyboard). No multi-panel layouts, comic grids, split screens, film strips, or collages.';
