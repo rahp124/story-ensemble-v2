@@ -275,7 +275,7 @@ export async function generateImagePrompt(
   const overrideInstruction = [
     currentCharAdjust ? `character adjustment: ${currentCharAdjust}` : '',
     currentActionAdjust ? `action adjustment: ${currentActionAdjust}` : '',
-    currentEnvAdjust ? `environment adjustment: ${currentEnvAdjust}` : '',
+    currentEnvAdjust ? `background adjustment: ${currentEnvAdjust}` : '',
     currentCustom ? `custom notes: ${currentCustom}` : ''
   ]
     .filter(Boolean)
@@ -1162,7 +1162,7 @@ export function buildDesignerImageEditPrompt(args: {
     const noteLines = [
       notes.character ? `Character adjustment: ${notes.character}` : '',
       notes.action ? `Action adjustment: ${notes.action}` : '',
-      notes.environment ? `Environment adjustment: ${notes.environment}` : '',
+      notes.environment ? `Background adjustment: ${notes.environment}` : '',
       notes.custom ? `Other directives: ${notes.custom}` : ''
     ].filter(Boolean);
     if (noteLines.length > 0) {
