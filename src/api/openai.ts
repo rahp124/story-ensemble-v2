@@ -411,14 +411,14 @@ export function buildDesignerImageEditPrompt(args: {
     blocks.push(`Participant's content answers:\n${JSON.stringify(trimmedContent, null, 2)}`);
   }
 
-  if (args.stage === 'aesthetic') {
-    const trimmedReflection = Object.fromEntries(
-      Object.entries(args.reflectionAnswers ?? {}).filter(([, v]) => (v ?? '').trim().length > 0)
-    );
-    if (Object.keys(trimmedReflection).length > 0) {
-      blocks.push(`Participant's reflection on this scene:\n${JSON.stringify(trimmedReflection, null, 2)}`);
-    }
+  const trimmedReflection = Object.fromEntries(
+    Object.entries(args.reflectionAnswers ?? {}).filter(([, v]) => (v ?? '').trim().length > 0)
+  );
+  if (Object.keys(trimmedReflection).length > 0) {
+    blocks.push(`Participant's reflection on this scene:\n${JSON.stringify(trimmedReflection, null, 2)}`);
+  }
 
+  if (args.stage === 'aesthetic') {
     const notes = args.aestheticNotes ?? {};
     const noteLines = [
       notes.character ? `Character adjustment: ${notes.character}` : '',

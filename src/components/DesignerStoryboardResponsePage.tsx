@@ -1,41 +1,57 @@
-import { ReactNode, useMemo, useState } from 'react';
-import { useStore } from '../store';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { DESIGNER_FLOW_COPY } from '../content/designerFlowCopy';
+import type { DesignerResponseQuestion } from '@/types/designerResponseQuestionnaire';
+import type { FrameOutline } from '@/types';
 
 type DesignerStoryboardResponsePageProps = {
   storyboardPreview: ReactNode;
-  onComplete: () => void;
+  frameIndex: number;
+  frameType: FrameOutline['frameType'];
+  questions: DesignerResponseQuestion[];
+  initialAnswers: Record<string, string>;
+  isLastFrame: boolean;
+  onContinue: (frameAnswers: Record<string, string>) => void;
 };
+
+function frameTypeLabel(frameType: FrameOutline['frameType']): string {
+  return frameType === 'Action' ? 'Action / Solution' : frameType;
+}
 
 export function DesignerStoryboardResponsePage({
   storyboardPreview,
-  onComplete
+  frameIndex,
+  frameType,
+  questions,
+  initialAnswers,
+  isLastFrame,
+  onContinue
 }: DesignerStoryboardResponsePageProps) {
   const copy = DESIGNER_FLOW_COPY.response;
-  const addStudyEvent = useStore((s) => s.addStudyEvent);
   const [answers, setAnswers] = useState<Record<string, string>>(() =>
-    Object.fromEntries(copy.questions.map((q) => [q.id, '']))
+    Object.fromEntries(questions.map((q) => [q.id, initialAnswers[q.id] ?? '']))
   );
+
+  useEffect(() => {
+    setAnswers(
+      Object.fromEntries(questions.map((q) => [q.id, initialAnswers[q.id] ?? '']))
+    );
+  }, [frameIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const canContinue = useMemo(
     () =>
-      copy.questions.every((question) => {
+      questions.every((question) => {
         if (!question.required) return true;
         return answers[question.id]?.trim().length > 0;
       }),
-    [answers, copy.questions]
+    [answers, questions]
   );
 
   const handleContinue = () => {
     if (!canContinue) return;
-    addStudyEvent({
-      initiator: 'user',
-      type: 'DESIGNER_RESPONSES_SUBMITTED',
-      count: 1,
-      data: { answers }
-    });
-    onComplete();
+    onContinue(answers);
   };
+
+  const continueLabel = isLastFrame ? copy.continueButton : 'Continue to next frame';
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-blue-50">
@@ -46,17 +62,20 @@ export function DesignerStoryboardResponsePage({
               {copy.eyebrow}
             </span>
             <h1 className="mt-3 text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
-              {copy.title}
+              {copy.title} — {frameTypeLabel(frameType)}
             </h1>
             <p className="mt-2 text-sm max-w-xl mx-auto text-slate-600">
               {copy.subtitle}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Frame {frameIndex + 1} of 4
             </p>
           </div>
 
           <div className="mt-8">{storyboardPreview}</div>
 
           <div className="mt-10 space-y-8">
-            {copy.questions.map((question) => (
+            {questions.map((question) => (
               <div key={question.id}>
                 <label
                   htmlFor={`designer-response-${question.id}`}
@@ -71,7 +90,7 @@ export function DesignerStoryboardResponsePage({
                 </label>
                 <textarea
                   id={`designer-response-${question.id}`}
-                  value={answers[question.id]}
+                  value={answers[question.id] ?? ''}
                   onChange={(e) =>
                     setAnswers((prev) => ({
                       ...prev,
@@ -92,7 +111,7 @@ export function DesignerStoryboardResponsePage({
             disabled={!canContinue}
             className="mt-8 w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-blue-600 text-white font-semibold text-base shadow-md hover:bg-blue-700 hover:shadow-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none disabled:cursor-not-allowed transition-all"
           >
-            {copy.continueButton} <span aria-hidden>→</span>
+            {continueLabel} <span aria-hidden>→</span>
           </button>
           {!canContinue && (
             <p className="mt-3 text-center text-xs text-slate-500">

@@ -6,6 +6,10 @@ import { DesignerVariantPicker } from './DesignerVariantPicker';
 import { DesignerStoryboardResponsePage } from './DesignerStoryboardResponsePage';
 import { PostStoryboardSurveyPage } from './PostStoryboardSurveyPage';
 import { EnlargeableStoryboardImage } from './EnlargeableStoryboardImage';
+import {
+  DESIGNER_RESPONSE_FRAME_TYPES,
+  getDesignerFrameResponseQuestions
+} from '@/types/designerResponseQuestionnaire';
 
 type DesignerPhase = 'select' | 'respond' | 'survey';
 
@@ -27,6 +31,7 @@ function StoryboardPreview({ storyboard }: { storyboard: DesignerStoryboard }) {
 
 export function DesignerFlow({ onStartOver }: DesignerFlowProps) {
   const hasCompletedOverview = useStore((s) => s.hasCompletedOverview);
+  const addStudyEvent = useStore((s) => s.addStudyEvent);
   const selectedStoryboard = useStore((s) =>
     s.designerSelectedVariantId
       ? s
@@ -36,6 +41,8 @@ export function DesignerFlow({ onStartOver }: DesignerFlowProps) {
   );
 
   const [phase, setPhase] = useState<DesignerPhase>('select');
+  const [respondFrameIndex, setRespondFrameIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
   const handlePick = ({ storyboardId }: { storyboardId: string }) => {
     const state = useStore.getState();
@@ -60,7 +67,27 @@ export function DesignerFlow({ onStartOver }: DesignerFlowProps) {
       data: { variantId: storyboardId, storyboardId: sbId }
     });
 
+    setRespondFrameIndex(0);
+    setAnswers({});
     setPhase('respond');
+  };
+
+  const handleFrameContinue = (frameAnswers: Record<string, string>) => {
+    const mergedAnswers = { ...answers, ...frameAnswers };
+    setAnswers(mergedAnswers);
+
+    if (respondFrameIndex === DESIGNER_RESPONSE_FRAME_TYPES.length - 1) {
+      addStudyEvent({
+        initiator: 'user',
+        type: 'DESIGNER_RESPONSES_SUBMITTED',
+        count: 1,
+        data: { answers: mergedAnswers }
+      });
+      setPhase('survey');
+      return;
+    }
+
+    setRespondFrameIndex((prev) => prev + 1);
   };
 
   if (!hasCompletedOverview) {
@@ -90,11 +117,19 @@ export function DesignerFlow({ onStartOver }: DesignerFlowProps) {
   }
 
   if (phase === 'respond') {
+    const frameType = DESIGNER_RESPONSE_FRAME_TYPES[respondFrameIndex];
+    const questions = getDesignerFrameResponseQuestions(frameType);
+
     return (
       <>
         <DesignerStoryboardResponsePage
           storyboardPreview={<StoryboardPreview storyboard={selectedStoryboard} />}
-          onComplete={() => setPhase('survey')}
+          frameIndex={respondFrameIndex}
+          frameType={frameType}
+          questions={questions}
+          initialAnswers={answers}
+          isLastFrame={respondFrameIndex === DESIGNER_RESPONSE_FRAME_TYPES.length - 1}
+          onContinue={handleFrameContinue}
         />
         {startOverButton}
       </>
