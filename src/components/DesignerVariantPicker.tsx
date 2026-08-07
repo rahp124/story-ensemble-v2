@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '../store';
 import type { DesignerStoryboard } from '@/data/designerStoryboards';
 import { DESIGNER_FLOW_COPY } from '@/content/designerFlowCopy';
+import { EnlargeableStoryboardImage } from './EnlargeableStoryboardImage';
 
 interface DesignerVariantPickerProps {
   /** Called once the participant commits to a storyboard. */
@@ -20,15 +21,24 @@ function StoryboardCard({
 }) {
   const [errored, setErrored] = useState(false);
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect();
+    }
+  };
+
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
+      onKeyDown={handleKeyDown}
       aria-pressed={selected}
-      className={`w-full text-left rounded-2xl border-2 p-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
+      className={`w-full text-left rounded-2xl p-1 transition cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
         selected
-          ? 'border-blue-600 ring-2 ring-blue-600 bg-blue-50/40 shadow-sm'
-          : 'border-gray-200 bg-white hover:border-blue-300'
+          ? 'border-2 border-blue-600 ring-2 ring-blue-600 bg-blue-50/40 shadow-sm'
+          : 'border-2 border-transparent'
       }`}
     >
       {errored ? (
@@ -36,14 +46,14 @@ function StoryboardCard({
           Missing image
         </div>
       ) : (
-        <img
+        <EnlargeableStoryboardImage
           src={storyboard.image}
           alt={storyboard.title}
           onError={() => setErrored(true)}
-          className="w-full h-auto rounded-lg border border-gray-200"
+          imgClassName="w-full h-auto rounded-lg"
         />
       )}
-    </button>
+    </div>
   );
 }
 
@@ -74,7 +84,7 @@ export function DesignerVariantPicker({ onPick }: DesignerVariantPickerProps) {
         </h1>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
             {storyboards.map((storyboard) => (
               <StoryboardCard
                 key={storyboard.id}

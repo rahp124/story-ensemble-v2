@@ -5,6 +5,7 @@ import { StudyOverviewPage } from './StudyOverviewPage';
 import { DesignerVariantPicker } from './DesignerVariantPicker';
 import { DesignerStoryboardResponsePage } from './DesignerStoryboardResponsePage';
 import { PostStoryboardSurveyPage } from './PostStoryboardSurveyPage';
+import { EnlargeableStoryboardImage } from './EnlargeableStoryboardImage';
 
 type DesignerPhase = 'select' | 'respond' | 'survey';
 
@@ -15,10 +16,10 @@ type DesignerFlowProps = {
 function StoryboardPreview({ storyboard }: { storyboard: DesignerStoryboard }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-      <img
+      <EnlargeableStoryboardImage
         src={storyboard.image}
         alt={storyboard.title}
-        className="w-full h-auto rounded-lg"
+        imgClassName="w-full h-auto rounded-lg"
       />
     </div>
   );
