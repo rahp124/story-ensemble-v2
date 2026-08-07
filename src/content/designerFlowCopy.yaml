@@ -5,8 +5,8 @@ picker:
 
 response:
   eyebrow: Reflect on this storyboard
-  title: Tell us about this storyboard
-  subtitle: PLACEHOLDER — replace with the final copy.
+  title: Tell us about your experience
+  subtitle: Answer the following questions while referring to this storyboard.
   continueButton: Continue
   continueDisabledHint: Please answer all required questions.
   questions:
@@ -16,12 +16,12 @@ response:
       placeholder: 1-2 sentences justifying your choice
 
     - id: designer_response_2
-      prompt: How do you relate to this scenario in the storyboard? In what ways is this storyboard similar to your experience?
+      prompt: How do you relate to this scenario in the storyboard? In what ways is this storyboard similar to and different from your experience?
       required: true
-      placeholder: 1-2 sentences about similarities
+      placeholder: 1-2 sentences about similarities and differences
 
     - id: designer_response_3
-      prompt:  In what ways is this storyboard different from your experience?
+      prompt:  How do the storyboard character's emotions compare to your own during your experience?
       required: true
-      placeholder: 1-2 sentences about differences
+      placeholder: 1-2 sentences about your emotions
 

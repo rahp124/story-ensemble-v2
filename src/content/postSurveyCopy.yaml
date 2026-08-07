@@ -1,5 +1,5 @@
 eyebrow: Post-Survey
-title: Reflect on your storyboard creation
+title: Reflect on your your feedback
 subtitle: Your participation is not counted until you complete this survey.
 downloadStoryboardButton: Download storyboard
 submitButton: Submit survey
@@ -10,7 +10,7 @@ completionMessage: Your responses have been recorded. You can close this window.
 questions:
   - id: accuracy_likert
     type: likert
-    prompt: To what extent do you feel your experience is told accurately through this storyboard process?
+    prompt: To what extent did your feedback capture your experience?
     required: true
     points: 7
     minLabel: Not at all
@@ -18,13 +18,13 @@ questions:
 
   - id: accuracy_open
     type: open_response
-    prompt: What makes you say that about accuracy?
+    prompt: What makes you say that?
     required: true
-    placeholder: Share aspects that were or were not accurately represented.
+    placeholder: 1-2 sentences.
 
   - id: comprehensiveness_likert
     type: likert
-    prompt: To what extent do you feel your experience is told comprehensively through this process?
+    prompt: To what extent did this task help you reflect on your experience?
     required: true
     points: 7
     minLabel: Not at all
@@ -32,20 +32,14 @@ questions:
 
   - id: comprehensiveness_open
     type: open_response
-    prompt: What makes you say that about comprehensiveness?
+    prompt: What makes you say that about your reflection?
     required: true
-    placeholder: Share aspects that were or were not comprehensively represented.
+    placeholder: 1-2 sentences.
 
-  - id: nps
-    type: likert
-    prompt: How likely are you to recommend this tool to a friend or colleague?
-    required: true
-    points: 11
-    minLabel: Not at all
-    maxLabel: Completely
-
-  - id: nps_open
-    type: open_response
-    prompt: What makes you say that about recommending this tool?
-    required: true
-    placeholder: Share why you would or wouldn't recommend this tool.
+  # - id: nps
+  #   type: likert
+  #   prompt: How likely are you to recommend this tool to a friend or colleague?
+  #   required: true
+  #   points: 11
+  #   minLabel: Not at all
+  #   maxLabel: Completely
