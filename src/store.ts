@@ -1541,8 +1541,7 @@ const createStore: StateCreator<
               frameType,
               description: '',
               caption: '',
-              image: '',
-              renderMode: 'image' as const
+              image: ''
             })),
             artStyle: 'digital-art'
           }
@@ -1564,7 +1563,6 @@ const createStore: StateCreator<
         target.baseCaption = frame.caption;
         target.image = frame.image;
         target.caption = frame.caption;
-        target.renderMode = 'image';
         target.imageOutOfSync = false;
       });
     },
