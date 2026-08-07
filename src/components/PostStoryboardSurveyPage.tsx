@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import { Button } from '@mantine/core';
 import { NodeType } from '@/rf-components';
 import { useStore } from '@/store';
@@ -13,10 +13,16 @@ import { POST_SURVEY_COPY } from '@/content/postSurveyCopy';
 import type { StoryboardFinalizeArtifact } from './StoryboardEditorPage';
 
 type PostStoryboardSurveyPageProps = {
-  artifact: StoryboardFinalizeArtifact;
+  /** Captured storyboard image; omitted when the storyboard is rendered directly. */
+  artifact?: StoryboardFinalizeArtifact;
+  /** Rendered storyboard shown in place of the captured image. */
+  storyboardPreview?: ReactNode;
 };
 
-export function PostStoryboardSurveyPage({ artifact }: PostStoryboardSurveyPageProps) {
+export function PostStoryboardSurveyPage({
+  artifact,
+  storyboardPreview
+}: PostStoryboardSurveyPageProps) {
   const copy = POST_SURVEY_COPY;
   const addStudyEvent = useStore((s) => s.addStudyEvent);
   const [answers, setAnswers] = useState<Record<string, string>>(() =>
@@ -39,6 +45,7 @@ export function PostStoryboardSurveyPage({ artifact }: PostStoryboardSurveyPageP
   };
 
   const handleDownloadStoryboard = () => {
+    if (!artifact) return;
     const a = document.createElement('a');
     a.setAttribute('href', artifact.imageDataUrl);
     a.setAttribute('download', artifact.filename);
@@ -68,10 +75,11 @@ export function PostStoryboardSurveyPage({ artifact }: PostStoryboardSurveyPageP
       const exportData = buildStudyUsageExport(activeNode, state.studyEvents, {
         designTopic: state.designTopic,
         priorExperience: state.priorExperience,
-        accessId: state.accessId
+        accessId: state.accessId,
+        selectedVariantId: state.designerSelectedVariantId
       });
       try {
-        await uploadStudyUsageData(exportData, artifact.embedImageDataUrl);
+        await uploadStudyUsageData(exportData, artifact?.embedImageDataUrl);
       } catch (err) {
         console.error('[study usage upload]', err);
         downloadStudyUsageData(exportData);
@@ -103,18 +111,22 @@ export function PostStoryboardSurveyPage({ artifact }: PostStoryboardSurveyPageP
           {!submitted && (
             <>
               <div className="mt-8">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  <img
-                    src={artifact.imageDataUrl}
-                    alt="Your completed storyboard"
-                    className="w-full h-auto"
-                  />
-                </div>
-                <div className="mt-4 flex justify-center">
-                  <Button variant="default" onClick={handleDownloadStoryboard}>
-                    {copy.downloadStoryboardButton}
-                  </Button>
-                </div>
+                {storyboardPreview ?? (
+                  <>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                      <img
+                        src={artifact?.imageDataUrl}
+                        alt="Your completed storyboard"
+                        className="w-full h-auto"
+                      />
+                    </div>
+                    <div className="mt-4 flex justify-center">
+                      <Button variant="default" onClick={handleDownloadStoryboard}>
+                        {copy.downloadStoryboardButton}
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="mt-10 space-y-8">

@@ -27,11 +27,10 @@ import {
   generateStoryboardOutline
 } from './api/storyboards';
 import { StylePreset } from './api/stableDiffusion';
-import { generateImagePrompt, generateStoryboardTitle, generateInitialSketchStoryboardFrames, refineSketchFrameData, generateImagePromptFromSketch } from './api/openai';
+import { generateImagePrompt, generateStoryboardTitle, generateDesignerStoryboardTitle } from './api/openai';
 import { generateStoryboardImage } from './api/images';
 import { generateSolutions, regenerateSolutions } from './api/solutions';
-import { ENABLE_DESIGNER_STORYBOARD_MODE } from './lib/designerMode';
-import { DESIGNER_STORYBOARDS, type DesignerVariant } from './data/designerStoryboards';
+import { DESIGNER_STORYBOARDS, type DesignerStoryboard } from './data/designerStoryboards';
 import {
   FrameOutline,
   NodeData,
@@ -84,6 +83,8 @@ type StudyEvent = {
   data: any;
 };
 
+export const DEFAULT_DESIGNER_STORYBOARD_TITLE = 'Your storyboard';
+
 export type CharacterProfileAdjustments = {
   face?: string;
   hairAccessories?: string;
@@ -94,17 +95,6 @@ export type CharacterProfile = {
   image: string;
   sourceHeadshotId: string;
   adjustments: CharacterProfileAdjustments;
-};
-
-// Evaluation Phase Types
-type AppPhase = 'editor' | 'pre-survey' | 'evaluating' | 'final-storyboard';
-type EvalSubStep = 'content-intro' | 'content-q' | 'aesthetics-intro' | 'aesthetics-q';
-
-type EvaluationState = {
-  appPhase: AppPhase;
-  currentSceneIndex: number;
-  evalSubStep: EvalSubStep;
-  questionIndex: number;
 };
 
 export type FrameComputeResult = {
@@ -142,11 +132,6 @@ type RFState = {
   onConnectStart: OnConnectStart;
   onConnectEnd: OnConnectEnd;
 
-  iterateModalOpen: boolean;
-  setIterateModalOpen: (open: boolean) => void;
-  iterateModalTab: 'feedback' | 'regenerate' | 'edit' | null;
-  setIterateModalTab: (tab: 'feedback' | 'regenerate' | 'edit' | null) => void;
-
   /* Participant landing page */
   designTopic: string;
   setDesignTopic: (topic: string) => void;
@@ -160,16 +145,12 @@ type RFState = {
   setCharacterProfile: (profile: CharacterProfile | null) => void;
   hasCompletedCharacterCreation: boolean;
   setHasCompletedCharacterCreation: (v: boolean) => void;
+  /** Designer flow: id of the pre-made storyboard the participant picked. */
+  designerSelectedVariantId: string | null;
+  setDesignerSelectedVariantId: (id: string | null) => void;
   /** Allowlisted access ID from server session; not persisted to IndexedDB. */
   accessId: string | null;
   setAccessId: (id: string | null) => void;
-
-  /* Evaluation State Machine */
-  evaluation: EvaluationState;
-  initializeEvaluation: () => void;
-  beginEvaluation: () => void;
-  advanceEval: () => void;
-
 
   /* Personas */
   addEmptyPersonaNode: () => void;
@@ -180,8 +161,6 @@ type RFState = {
     options?: { skipAutoImage?: boolean }
   ) => Promise<string[]>;
 
-  startWarmUpPrefetch: () => void;
-  consumeWarmUpPrefetch: () => WarmUpPrefetch | null;
   generateMorePersonaNodes: (
     instructions: string,
     personaIds: string[]
@@ -303,11 +282,11 @@ type RFState = {
   /* Admin setup — placeholder storyboard overrides (client-side only) */
   adminSetupOpen: boolean;
   setAdminSetupOpen: (open: boolean) => void;
-  adminStoryboardOverrides: Record<string, DesignerVariant>;
-  setAdminStoryboardOverride: (storyboardId: string, variant: DesignerVariant) => void;
+  adminStoryboardOverrides: Record<string, DesignerStoryboard>;
+  setAdminStoryboardOverride: (storyboardId: string, storyboard: DesignerStoryboard) => void;
   clearAdminStoryboardOverride: (storyboardId: string) => void;
   clearAllAdminStoryboardOverrides: () => void;
-  getEffectiveDesignerStoryboards: () => DesignerVariant[];
+  getEffectiveDesignerStoryboards: () => DesignerStoryboard[];
 
   generateMoreStoryboardNode: (
     instructions: string,
@@ -318,16 +297,6 @@ type RFState = {
     instructions: string,
     setSolutionsOutOfSync?: boolean
   ) => Promise<void>;
-  generateInitialSketchStoryboard: (
-    nodeId: string,
-    answers: Record<string, string>
-  ) => Promise<void>;
-  refineSketchStoryboardFrame: (
-    sbId: string,
-    frameIndex: number,
-    userFeedback: string
-  ) => Promise<void>;
-  generateFinalStoryboardImages: (sbId: string) => Promise<void>;
   updateVisualStylePreferences: (
     sbId: string,
     preferences: import('./types').VisualStylePreferences
@@ -337,6 +306,7 @@ type RFState = {
     id: string,
     answers: Record<string, string>
   ) => Promise<void>;
+  generateAndSetDesignerStoryboardTitle: (id: string) => Promise<void>;
   updateStoryboardDescription: (
     id: string,
     frameIdx: number,
@@ -389,19 +359,6 @@ type RFState = {
     result: FrameComputeResult
   ) => void;
 
-  generateSingleStoryboardFrame: (
-    nodeId: string,
-    frameIndex: number,
-    currentAnswers: Record<string, string>,
-    options?: {
-      awaitImage?: boolean;
-      imageOnly?: boolean;
-      forcePromptRegeneration?: boolean;
-      imageProvider?: 'fal' | 'openai' | 'stability';
-      skipStoreWrite?: boolean;
-    }
-  ) => Promise<FrameComputeResult | void>;
-
   invalidateFrameImageGen: (nodeId: string, frameIndex: number) => void;
 
   pastStates: Partial<RFState>[];
@@ -429,7 +386,6 @@ function partialize(state: RFState): Partial<RFState> {
   return {
     nodes: state.nodes,
     edges: state.edges,
-    evaluation: state.evaluation,
     characterProfile: state.characterProfile
   };
 }
@@ -440,12 +396,6 @@ let positionChangeTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 const imagePromptCache = new Map<string, string>();
 
-type WarmUpPrefetch = {
-  personaIdsPromise: Promise<string[]>;
-  personaIds: string[] | null;
-  imagePromise: Promise<void> | null;
-};
-let warmUpPrefetch: WarmUpPrefetch | null = null;
 // Tracks in-flight generateImagePrompt calls so computeStoryboardFrame can await
 // an already-started request rather than firing a duplicate one.
 const imagePromptInFlight = new Map<string, Promise<string>>();
@@ -504,95 +454,6 @@ const createStore: StateCreator<
 
     edges: [],
     setEdges: (edges) => set({ edges }),
-
-    /* Evaluation State Machine */
-    evaluation: {
-      appPhase: 'editor',
-      currentSceneIndex: 0,
-      evalSubStep: 'content-intro',
-      questionIndex: 0
-    },
-
-    initializeEvaluation: () => {
-      set((state) => {
-        state.evaluation = {
-          appPhase: 'pre-survey',
-          currentSceneIndex: 0,
-          evalSubStep: 'content-intro',
-          questionIndex: 0
-        };
-      });
-    },
-
-    beginEvaluation: () => {
-      set((state) => {
-        state.evaluation = {
-          appPhase: 'evaluating',
-          currentSceneIndex: 0,
-          evalSubStep: 'content-intro',
-          questionIndex: 0
-        };
-      });
-    },
-
-    advanceEval: () => {
-      set((state) => {
-        const evalState = state.evaluation;
-        const TOTAL_SCENES = 4;
-        const QUESTIONS_PER_SECTION = 3;
-
-        // Only proceed if in evaluating phase
-        if (evalState.appPhase !== 'evaluating') return;
-
-        const currentQuestionMax = QUESTIONS_PER_SECTION - 1;
-
-        switch (evalState.evalSubStep) {
-          case 'content-intro':
-            // Move from content-intro to content-q with questionIndex = 0
-            evalState.evalSubStep = 'content-q';
-            evalState.questionIndex = 0;
-            break;
-
-          case 'content-q':
-            if (evalState.questionIndex < currentQuestionMax) {
-              // Move to next question in content (0→1, 1→2)
-              evalState.questionIndex += 1;
-            } else {
-              // After content-q3, move to aesthetics-intro
-              evalState.evalSubStep = 'aesthetics-intro';
-              evalState.questionIndex = 0;
-            }
-            break;
-
-          case 'aesthetics-intro':
-            // Move from aesthetics-intro to aesthetics-q with questionIndex = 0
-            evalState.evalSubStep = 'aesthetics-q';
-            evalState.questionIndex = 0;
-            break;
-
-          case 'aesthetics-q':
-            if (evalState.questionIndex < currentQuestionMax) {
-              // Move to next question in aesthetics (0→1, 1→2)
-              evalState.questionIndex += 1;
-            } else {
-              // After aesthetics-q3, either go to next scene or finish
-              if (evalState.currentSceneIndex < TOTAL_SCENES - 1) {
-                // Move to next scene, start at content-intro
-                evalState.currentSceneIndex += 1;
-                evalState.evalSubStep = 'content-intro';
-                evalState.questionIndex = 0;
-              } else {
-                // All 4 scenes complete, move to final-storyboard
-                evalState.appPhase = 'final-storyboard';
-                evalState.currentSceneIndex = 0;
-                evalState.evalSubStep = 'content-intro';
-                evalState.questionIndex = 0;
-              }
-            }
-            break;
-        }
-      });
-    },
 
     onNodesChange: (changes: NodeChange[]) => {
       const isRemoveChange = changes.some(({ type }) => type === 'remove');
@@ -777,11 +638,6 @@ const createStore: StateCreator<
       set({ connectionInProgress: false });
     },
 
-    iterateModalOpen: false,
-    setIterateModalOpen: (open) => set({ iterateModalOpen: open }),
-    iterateModalTab: null,
-    setIterateModalTab: (tab) => set({ iterateModalTab: tab }),
-
     designTopic: 'using campus recreation resources',
     setDesignTopic: (topic) => set({ designTopic: topic }),
     priorExperience: null,
@@ -794,6 +650,8 @@ const createStore: StateCreator<
     setCharacterProfile: (profile) => set({ characterProfile: profile }),
     hasCompletedCharacterCreation: false,
     setHasCompletedCharacterCreation: (v) => set({ hasCompletedCharacterCreation: v }),
+    designerSelectedVariantId: null,
+    setDesignerSelectedVariantId: (id) => set({ designerSelectedVariantId: id }),
     accessId: null,
     setAccessId: (id) => set({ accessId: id }),
 
@@ -1676,15 +1534,14 @@ const createStore: StateCreator<
           content: {},
           visualCharacterDescriptions: [],
           storyboard: {
-            title: 'Your storyboard',
+            title: DEFAULT_DESIGNER_STORYBOARD_TITLE,
             flowMode: 'designer_storyboard',
             outline: frameTypes.map((frameType) => ({
               id: nanoid(),
               frameType,
               description: '',
               caption: '',
-              image: '',
-              renderMode: 'image' as const
+              image: ''
             })),
             artStyle: 'digital-art'
           }
@@ -1706,7 +1563,6 @@ const createStore: StateCreator<
         target.baseCaption = frame.caption;
         target.image = frame.image;
         target.caption = frame.caption;
-        target.renderMode = 'image';
         target.imageOutOfSync = false;
       });
     },
@@ -1750,9 +1606,9 @@ const createStore: StateCreator<
     adminSetupOpen: false,
     setAdminSetupOpen: (open) => set({ adminSetupOpen: open }),
     adminStoryboardOverrides: {},
-    setAdminStoryboardOverride: (storyboardId, variant) => {
+    setAdminStoryboardOverride: (storyboardId, storyboard) => {
       set((state) => {
-        state.adminStoryboardOverrides[storyboardId] = variant;
+        state.adminStoryboardOverrides[storyboardId] = storyboard;
       });
     },
     clearAdminStoryboardOverride: (storyboardId) => {
@@ -1767,7 +1623,7 @@ const createStore: StateCreator<
     },
     getEffectiveDesignerStoryboards: () => {
       const overrides = get().adminStoryboardOverrides;
-      return DESIGNER_STORYBOARDS.map((variant) => overrides[variant.id] ?? variant);
+      return DESIGNER_STORYBOARDS.map((storyboard) => overrides[storyboard.id] ?? storyboard);
     },
 
     createBlankStoryboardNode: (_personaIds, _problemIds, solutionIds) => {
@@ -2046,219 +1902,6 @@ const createStore: StateCreator<
       await get().generateStoryboardImages(id);
     },
 
-    async generateInitialSketchStoryboard(nodeId, answers) {
-      if (ENABLE_DESIGNER_STORYBOARD_MODE) {
-        console.warn('[DesignerMode] generateInitialSketchStoryboard ignored — standard sketch flow is disabled in designer mode');
-        return;
-      }
-      const storyboardNode: Node<StoryboardNodeData> | undefined = get().nodes.find(
-        (node) => node.id === nodeId && node.type === NodeType.Storyboard
-      );
-      if (!storyboardNode) {
-        throw new Error(`[Sketch] Storyboard node not found: ${nodeId}`);
-      }
-
-      try {
-        // Extract solution context for the sketch generation
-        const solutionIds = findDirectDependencies([nodeId], get().edges).filter(
-          (depId) => depId.startsWith('solution-')
-        );
-        const solutionContext = solutionIds
-          .map((id) => get().nodes.find((n) => n.id === id))
-          .filter(Boolean)
-          .map((node) => JSON.stringify(node?.data?.content || {}))
-          .join('\n');
-
-        // Generate sketch frames
-        const sketchFrames = await generateInitialSketchStoryboardFrames(
-          answers,
-          solutionContext
-        );
-
-        if (!Array.isArray(sketchFrames) || sketchFrames.length !== 4) {
-          throw new Error(`[Sketch] Invalid frame count: expected 4, got ${sketchFrames?.length ?? 0}`);
-        }
-
-        // Update storyboard with sketch data
-        get().takeSnapshot();
-        updateNode<StoryboardNodeData>(nodeId, (draft) => {
-          draft.data.storyboard.outline.forEach((frame, idx) => {
-            if (idx < sketchFrames.length) {
-              const sketchData = sketchFrames[idx];
-              frame.caption = sketchData.caption;
-              frame.sketch = sketchData;
-              frame.renderMode = 'sketch';
-            }
-          });
-        });
-
-        console.log('[Sketch] Successfully generated 4 initial sketch frames');
-      } catch (error) {
-        console.error('[Sketch] Generation failed, will not render sketch mode:', error);
-        throw error;
-      }
-    },
-
-    async refineSketchStoryboardFrame(sbId, frameIndex, userFeedback) {
-      const storyboardNode: Node<StoryboardNodeData> | undefined = get().nodes.find(
-        (node) => node.id === sbId && node.type === NodeType.Storyboard
-      );
-      if (!storyboardNode) return;
-
-      const outline = storyboardNode.data.storyboard.outline;
-      if (frameIndex < 0 || frameIndex >= outline.length) return;
-
-      const frame = outline[frameIndex];
-      if (!frame.sketch) {
-        console.warn(`[refineSketchStoryboardFrame] Frame ${frameIndex} has no sketch data`);
-        return;
-      }
-
-      console.log(`[refineSketchStoryboardFrame] Frame ${frameIndex + 1} old caption: "${frame.caption ?? ''}"`);
-
-      // Build accumulated context from prior frames
-      const priorFrames: Record<string, string> = {};
-      for (let i = 0; i < frameIndex; i++) {
-        const priorFrame = outline[i];
-        priorFrames[`frame${i + 1}_caption`] = priorFrame.caption ?? '';
-        if (priorFrame.sketch?.frameType) {
-          priorFrames[`frame${i + 1}_type`] = priorFrame.sketch.frameType;
-        }
-      }
-
-      // Refine the sketch
-      const refinedSketch = await refineSketchFrameData(
-        frame.sketch,
-        userFeedback,
-        priorFrames
-      );
-
-      // Update storyboard with refined sketch
-      get().takeSnapshot();
-      updateNode<StoryboardNodeData>(sbId, (draft) => {
-        const targetFrame = draft.data.storyboard.outline[frameIndex];
-        targetFrame.sketch = refinedSketch;
-        targetFrame.caption = refinedSketch.caption;
-        targetFrame.renderMode = 'sketch';
-      });
-
-      console.log(`[refineSketchStoryboardFrame] Frame ${frameIndex + 1} new caption: "${refinedSketch.caption}"`);
-    },
-
-    async generateFinalStoryboardImages(sbId) {
-      if (ENABLE_DESIGNER_STORYBOARD_MODE) {
-        console.warn('[DesignerMode] generateFinalStoryboardImages ignored — designer mode does not run the standard final render');
-        return;
-      }
-      const storyboardNode: Node<StoryboardNodeData> | undefined = get().nodes.find(
-        (node) => node.id === sbId && node.type === NodeType.Storyboard
-      );
-      if (!storyboardNode) return;
-
-      if (!storyboardNode.data.storyboard.storyLocked) {
-        throw new Error('[generateFinalStoryboardImages] Story must be locked before final image generation');
-      }
-
-      const visualStylePreferences = storyboardNode.data.storyboard.visualStylePreferences;
-      if (!visualStylePreferences) {
-        console.warn('[generateFinalStoryboardImages] No visual style preferences found');
-        return;
-      }
-
-      const outline = storyboardNode.data.storyboard.outline;
-      if (outline.length === 0) return;
-
-      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🎨 [FINAL RENDER: START]');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log(`Generating ${outline.length} high-fidelity images from sketches`);
-      console.log(`Visual Style: ${visualStylePreferences.visualStyle}`);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-
-      get().takeSnapshot();
-
-      for (let i = 0; i < outline.length; i++) {
-        const frame = outline[i];
-
-        const lockedCaption = frame.caption ?? '';
-        console.log(`[generateFinalStoryboardImages] Frame ${i + 1} locked caption before render: "${lockedCaption}"`);
-
-        try {
-          const imagePrompt = frame.imagePrompt?.trim()
-            || (frame.sketch
-              ? await generateImagePromptFromSketch(
-                frame.sketch,
-                visualStylePreferences,
-                lockedCaption,
-                storyboardNode.data.visualCharacterDescriptions
-              )
-              : `Render this exact storyboard frame. Do not change the story. The caption/narrative must remain: "${lockedCaption}". Use the locked frame type ${frame.frameType} and preserve the existing storyboard structure as the source of truth.`);
-
-          updateNode<StoryboardNodeData>(sbId, (draft) => {
-            const targetFrame = draft.data.storyboard.outline[i];
-            targetFrame.imagePrompt = imagePrompt;
-          });
-
-          const anchorImage = await (() => {
-            const personaIds = findDirectDependencies([sbId], get().edges).filter(
-              (depId) => depId.startsWith('persona-')
-            );
-            if (personaIds.length > 0) {
-              const personaNode = get().nodes.find((n) => n.id === personaIds[0]);
-              return personaNode?.data?.image || '';
-            }
-
-            const solutionIds = findDirectDependencies([sbId], get().edges).filter(
-              (depId) => depId.startsWith('solution-')
-            );
-            const solutionToProblemIds = findDirectDependencies(solutionIds, get().edges).filter(
-              (depId) => depId.startsWith('problem-')
-            );
-            const deepPersonaIds = findDirectDependencies(solutionToProblemIds, get().edges).filter(
-              (depId) => depId.startsWith('persona-')
-            );
-            if (deepPersonaIds.length > 0) {
-              const personaNode = get().nodes.find((n) => n.id === deepPersonaIds[0]);
-              return personaNode?.data?.image || '';
-            }
-
-            return '';
-          })();
-
-          const image = await generateStoryboardImage({
-            prompt: imagePrompt,
-            stylePreset: storyboardNode.data.storyboard.artStyle,
-            referenceImage: anchorImage || undefined,
-            size: '1024x1024'
-          });
-
-          updateNode<StoryboardNodeData>(sbId, (draft) => {
-            const targetFrame = draft.data.storyboard.outline[i];
-            targetFrame.image = image;
-            targetFrame.renderMode = 'image';
-          });
-
-          const afterCaption = get().nodes.find(
-            (node) => node.id === sbId && node.type === NodeType.Storyboard
-          )?.data.storyboard.outline[i]?.caption ?? '';
-
-          console.log(`[generateFinalStoryboardImages] Frame ${i + 1} locked caption after render: "${afterCaption}"`);
-          if (afterCaption !== lockedCaption) {
-            throw new Error(
-              `[generateFinalStoryboardImages] Caption changed during final render for frame ${i + 1}`
-            );
-          }
-        } catch (error) {
-          console.error(`[generateFinalStoryboardImages] Error generating image for frame ${i}:`, error);
-        }
-      }
-
-      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('✨ [FINAL RENDER: COMPLETE]');
-      console.log(`Generated ${outline.length} high-fidelity images`);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-    },
-
     async generateStoryboardImages(id) {
       const storyboard: Node<StoryboardNodeData> | undefined = get().nodes.find(
         (node) => node.id === id && node.type === NodeType.Storyboard
@@ -2417,6 +2060,32 @@ const createStore: StateCreator<
         draft.data.storyboard.title = title;
       });
     },
+    generateAndSetDesignerStoryboardTitle: async (id) => {
+      const storyboard: Node<StoryboardNodeData> | undefined = get().nodes.find(
+        (node) => node.id === id && node.type === NodeType.Storyboard
+      );
+      if (!storyboard) return;
+
+      const frames = storyboard.data.storyboard.outline.map((frame) => ({
+        frameType: frame.frameType,
+        caption: frame.caption ?? '',
+        contentAnswers: frame.contentAnswers,
+        reflectionAnswers: frame.reflectionAnswers
+      }));
+
+      const title = await generateDesignerStoryboardTitle(frames);
+
+      updateNode<StoryboardNodeData>(id, (draft) => {
+        draft.data.storyboard.title = title;
+      });
+
+      get().addStudyEvent({
+        initiator: 'system',
+        type: 'GENERATE_STORYBOARD_TITLE',
+        count: 1,
+        data: { storyboardId: id, title }
+      });
+    },
     updateStoryboardDescription: (id, frameIndex, description) => {
       updateNode<StoryboardNodeData>(id, (draft) => {
         draft.data.storyboard.outline[frameIndex].description = description;
@@ -2542,42 +2211,6 @@ const createStore: StateCreator<
       updateNodes(findDirectDependencies([id], get().edges), (draft) => {
         draft.data.dependentsOutOfSync = true;
       });
-    },
-
-    startWarmUpPrefetch() {
-      if (ENABLE_DESIGNER_STORYBOARD_MODE) {
-        console.warn('[DesignerMode] startWarmUpPrefetch ignored — designer mode does not warm up the standard authoring pipeline');
-        return;
-      }
-      // Reset graph and begin background persona generation as soon as Q2 is answered
-      set({ nodes: [], edges: [] });
-
-      const contextString = 'College student deciding on campus lunch';
-      const projectNodeId = get().addProjectNode({ designContext: contextString });
-
-      const personaIdsPromise = get().generatePersonaNodes(
-        contextString, 1, [projectNodeId], { skipAutoImage: true }
-      );
-
-      warmUpPrefetch = { personaIdsPromise, personaIds: null, imagePromise: null };
-
-      personaIdsPromise
-        .then((personaIds) => {
-          if (!warmUpPrefetch) return;
-          warmUpPrefetch.personaIds = personaIds;
-          if (personaIds[0]) {
-            warmUpPrefetch.imagePromise = get().generatePersonaImage(personaIds[0]);
-          }
-        })
-        .catch(() => {
-          warmUpPrefetch = null;
-        });
-    },
-
-    consumeWarmUpPrefetch() {
-      const p = warmUpPrefetch;
-      warmUpPrefetch = null;
-      return p;
     },
 
     preCacheImagePrompt(nodeId, frameIndex, answers) {
@@ -2745,18 +2378,6 @@ const createStore: StateCreator<
         draft.data.storyboard.outline[frameIndex].imageOutOfSync = false;
         draft.data.storyboard.outline[frameIndex].auditLog = result.auditLog;
       });
-    },
-
-    async generateSingleStoryboardFrame(nodeId, frameIndex, currentAnswers, options) {
-      if (ENABLE_DESIGNER_STORYBOARD_MODE) {
-        console.warn('[DesignerMode] generateSingleStoryboardFrame ignored — designer mode uses generateDesignerSceneImage instead');
-        return;
-      }
-      const result = await get().computeStoryboardFrame(nodeId, frameIndex, currentAnswers, options);
-      if (options?.skipStoreWrite) {
-        return result;
-      }
-      get().writeComputedStoryboardFrame(nodeId, frameIndex, result);
     },
 
     invalidateFrameImageGen(nodeId, frameIndex) {

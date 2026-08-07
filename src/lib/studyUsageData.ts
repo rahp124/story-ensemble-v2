@@ -16,6 +16,8 @@ export type StudyUsageExport = {
   designTopic: string | null;
   priorExperience: 'yes' | 'no' | null;
   accessId: string | null;
+  flow: 'user' | 'designer';
+  selectedVariantId: string | null;
   events: StudyUsageEvent[];
   frames: Array<{
     frameIndex: number;
@@ -55,6 +57,7 @@ export function buildStudyUsageExport(
     designTopic: string | null;
     priorExperience: 'yes' | 'no' | null;
     accessId?: string | null;
+    selectedVariantId?: string | null;
   }
 ): StudyUsageExport {
   const { storyboard } = node.data;
@@ -66,6 +69,8 @@ export function buildStudyUsageExport(
     designTopic: meta.designTopic,
     priorExperience: meta.priorExperience,
     accessId: meta.accessId ?? null,
+    flow: meta.selectedVariantId ? 'designer' : 'user',
+    selectedVariantId: meta.selectedVariantId ?? null,
     events: studyEvents.map(normalizeStudyEvent),
     frames: storyboard.outline.map((frame, frameIndex) => ({
       frameIndex,

@@ -4,6 +4,7 @@ import {
   interpolate
 } from '../content/onboardingCopy';
 import { PriorExperienceOption } from './onboarding/PriorExperienceOption';
+import { ENABLE_ADMIN_SETUP } from '@/lib/featureFlags';
 
 export function StudyOverviewPage() {
   const designTopic = useStore((s) => s.designTopic);
@@ -35,13 +36,15 @@ export function StudyOverviewPage() {
       <div className="min-h-full flex items-center justify-center p-4 py-10 sm:py-14">
         <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-xl ring-1 ring-slate-200/60 p-6 sm:p-10 md:p-14">
 
-          <button
-            type="button"
-            onClick={() => setAdminSetupOpen(true)}
-            className="absolute top-4 right-4 sm:top-6 sm:right-6 text-xs font-semibold text-slate-500 hover:text-blue-600 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
-          >
-            {copy.adminSetup}
-          </button>
+          {ENABLE_ADMIN_SETUP && (
+            <button
+              type="button"
+              onClick={() => setAdminSetupOpen(true)}
+              className="absolute top-4 right-4 sm:top-6 sm:right-6 text-xs font-semibold text-slate-500 hover:text-blue-600 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
+            >
+              {copy.adminSetup}
+            </button>
+          )}
 
           <div className="text-center">
             <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-blue-600">

@@ -7,8 +7,7 @@ import {
   AestheticsPhase,
   type AestheticComparisonChoice,
   type AestheticPreviewResult,
-  type SceneAesthetics,
-  type SceneSketchRefinement
+  type SceneAesthetics
 } from './AestheticsPhase';
 import { DEFAULT_CONTENT_SUBTITLES } from './DesignerContentPhase';
 import { panelCardBorderStyle, panelCardStyle } from '@/lib/wizardPhaseTheme';
@@ -189,30 +188,16 @@ export function StoryboardFrameAestheticModal({
           {frameIndex !== null && (
             <AestheticsPhase
               sceneIndex={frameIndex}
-              mode="aesthetic"
               phaseTheme="content"
               title={contentTitle}
               subtitle={contentSubtitle}
               aesthetics={aesthetics}
               currentImage={frame?.image ?? ''}
               currentCaption={frame?.caption ?? ''}
-              onChange={
-                handleChange as (
-                  field: keyof SceneAesthetics | keyof SceneSketchRefinement,
-                  value: string
-                ) => void
-              }
-              onPreview={
-                handlePreview as (
-                  aesthetics: SceneAesthetics | SceneSketchRefinement
-                ) => void
-              }
+              onChange={handleChange}
+              onPreview={handlePreview}
               onPreviewChoice={handlePreviewChoice}
-              onContinue={
-                handleContinue as (
-                  aesthetics: SceneAesthetics | SceneSketchRefinement
-                ) => void
-              }
+              onContinue={handleContinue}
               isGenerating={isGenerating}
               isLastScene
               continueLabel="Save & Close"

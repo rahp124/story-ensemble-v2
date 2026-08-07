@@ -7,19 +7,7 @@ import {
 } from './StoryboardPanelStrip';
 import { StoryboardFrameAestheticModal } from './StoryboardFrameAestheticModal';
 
-export type StoryWizardPhase =
-  | 'variant-select'
-  | 'panel-generate'
-  | 'content'
-  | 'aesthetics'
-  | 'reflection'
-  | 'story-lock'
-  | 'visual-style'
-  | 'error';
-
 interface StudyProgressStepperProps {
-  /** Current StoryWizard phase (designer flow). */
-  phase: StoryWizardPhase;
   /** Zero-based panel index in the designer flow (0..3). */
   sceneIndex: number;
   storyboardId: string | null;
@@ -30,12 +18,8 @@ interface StudyProgressStepperProps {
 function getFrameState(
   index: number,
   sceneIndex: number,
-  hasImage: boolean,
-  isDone: boolean
+  hasImage: boolean
 ): PanelFrameState {
-  if (isDone) {
-    return hasImage ? 'complete' : 'upcoming';
-  }
   if (index < sceneIndex) {
     return hasImage ? 'complete' : 'upcoming';
   }
@@ -46,7 +30,6 @@ function getFrameState(
 }
 
 export function StudyProgressStepper({
-  phase,
   sceneIndex,
   storyboardId,
   frames,
@@ -55,11 +38,8 @@ export function StudyProgressStepper({
   const addStudyEvent = useStore((s) => s.addStudyEvent);
   const [aestheticFrameIndex, setAestheticFrameIndex] = useState<number | null>(null);
 
-  const isDone = phase === 'story-lock' || phase === 'visual-style';
-  const activeIndex = isDone ? undefined : sceneIndex;
-
   const frameStates = frames.map((frame, index) =>
-    getFrameState(index, sceneIndex, Boolean(frame.image?.trim()), isDone)
+    getFrameState(index, sceneIndex, Boolean(frame.image?.trim()))
   );
 
   const handleFrameClick = (frameIndex: number) => {
@@ -79,7 +59,7 @@ export function StudyProgressStepper({
       <StoryboardPanelStrip
         variant="progress"
         frames={frames}
-        activeIndex={activeIndex}
+        activeIndex={sceneIndex}
         frameStates={frameStates}
         clickableCompletedOnly
         onFrameClick={handleFrameClick}

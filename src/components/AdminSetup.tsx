@@ -2,53 +2,23 @@ import { useMemo, useState } from 'react';
 import { useStore } from '../store';
 import {
   DESIGNER_STORYBOARDS,
-  getDefaultFrameCaption,
-  type DesignerVariant,
-  type DesignerFrame
+  type DesignerStoryboard
 } from '@/data/designerStoryboards';
-import type { FrameOutline } from '@/types';
 
-type FrameType = FrameOutline['frameType'];
-
-const FRAME_ORDER: FrameType[] = ['Context', 'Problem', 'Action', 'Resolution'];
-
-const FRAME_LABEL: Record<FrameType, string> = {
-  Context: 'Context panel',
-  Problem: 'Problem panel',
-  Action: 'Action panel',
-  Resolution: 'Resolution panel'
-};
-
-type PanelDraft = { url: string | null; caption: string };
-type VariantDraft = { replace: boolean; panels: Record<FrameType, PanelDraft> };
-
-function emptyPanels(): Record<FrameType, PanelDraft> {
-  return {
-    Context: { url: null, caption: '' },
-    Problem: { url: null, caption: '' },
-    Action: { url: null, caption: '' },
-    Resolution: { url: null, caption: '' }
-  };
-}
+type StoryboardDraft = { replace: boolean; url: string | null; title: string };
 
 function buildInitialDrafts(
-  overrides: Record<string, DesignerVariant>
-): Record<string, VariantDraft> {
+  overrides: Record<string, DesignerStoryboard>
+): Record<string, StoryboardDraft> {
   return Object.fromEntries(
-    DESIGNER_STORYBOARDS.map((variant) => {
-      const override = overrides[variant.id];
-      if (!override) {
-        return [variant.id, { replace: false, panels: emptyPanels() }];
-      }
-      const panels = emptyPanels();
-      FRAME_ORDER.forEach((frameType) => {
-        const frame = override.frames.find((f) => f.frameType === frameType);
-        panels[frameType] = {
-          url: frame?.image ?? null,
-          caption: frame?.caption ?? ''
-        };
-      });
-      return [variant.id, { replace: true, panels }];
+    DESIGNER_STORYBOARDS.map((storyboard) => {
+      const override = overrides[storyboard.id];
+      return [
+        storyboard.id,
+        override
+          ? { replace: true, url: override.image, title: override.title }
+          : { replace: false, url: null, title: storyboard.title }
+      ];
     })
   );
 }
@@ -63,7 +33,7 @@ export function AdminSetup() {
   const clearAllAdminStoryboardOverrides = useStore((s) => s.clearAllAdminStoryboardOverrides);
 
   const [topic, setTopic] = useState(designTopic ?? '');
-  const [drafts, setDrafts] = useState<Record<string, VariantDraft>>(() =>
+  const [drafts, setDrafts] = useState<Record<string, StoryboardDraft>>(() =>
     buildInitialDrafts(adminStoryboardOverrides)
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -72,72 +42,49 @@ export function AdminSetup() {
   // Effective (saved) storyboards for the "current" preview row.
   const effectiveById = useMemo(() => {
     const merged = DESIGNER_STORYBOARDS.map(
-      (v) => adminStoryboardOverrides[v.id] ?? v
+      (s) => adminStoryboardOverrides[s.id] ?? s
     );
-    return Object.fromEntries(merged.map((v) => [v.id, v]));
+    return Object.fromEntries(merged.map((s) => [s.id, s]));
   }, [adminStoryboardOverrides]);
 
-  const updateDraft = (variantId: string, updater: (d: VariantDraft) => VariantDraft) => {
+  const updateDraft = (
+    storyboardId: string,
+    updater: (d: StoryboardDraft) => StoryboardDraft
+  ) => {
     setSaved(false);
-    setDrafts((prev) => ({ ...prev, [variantId]: updater(prev[variantId]) }));
+    setDrafts((prev) => ({ ...prev, [storyboardId]: updater(prev[storyboardId]) }));
   };
 
-  const toggleReplace = (variantId: string, checked: boolean) => {
-    updateDraft(variantId, (d) => {
-      if (!checked) {
-        return { ...d, replace: false };
-      }
-      const effective = effectiveById[variantId];
-      const panels = emptyPanels();
-      FRAME_ORDER.forEach((frameType) => {
-        const frame = effective?.frames.find((f) => f.frameType === frameType);
-        panels[frameType] = {
-          url: null,
-          caption: frame?.caption ?? getDefaultFrameCaption(variantId, frameType)
-        };
-      });
-      return { ...d, replace: true, panels };
-    });
+  const toggleReplace = (storyboardId: string, checked: boolean) => {
+    updateDraft(storyboardId, (d) => ({
+      ...d,
+      replace: checked,
+      title: checked ? (effectiveById[storyboardId]?.title ?? d.title) : d.title
+    }));
     setErrors((prev) => {
       const next = { ...prev };
-      delete next[variantId];
+      delete next[storyboardId];
       return next;
     });
   };
 
-  const handleFile = (variantId: string, frameType: FrameType, file: File | undefined) => {
+  const handleFile = (storyboardId: string, file: File | undefined) => {
     if (!file) return;
     const url = URL.createObjectURL(file);
-    updateDraft(variantId, (d) => ({
-      ...d,
-      panels: {
-        ...d.panels,
-        [frameType]: { ...d.panels[frameType], url }
-      }
-    }));
+    updateDraft(storyboardId, (d) => ({ ...d, url }));
   };
 
-  const handleCaption = (variantId: string, frameType: FrameType, caption: string) => {
-    updateDraft(variantId, (d) => ({
-      ...d,
-      panels: {
-        ...d.panels,
-        [frameType]: { ...d.panels[frameType], caption }
-      }
-    }));
+  const handleTitle = (storyboardId: string, title: string) => {
+    updateDraft(storyboardId, (d) => ({ ...d, title }));
   };
 
   const handleSave = () => {
     const nextErrors: Record<string, string> = {};
 
-    DESIGNER_STORYBOARDS.forEach((variant) => {
-      const draft = drafts[variant.id];
-      if (draft?.replace) {
-        const missing = FRAME_ORDER.filter((ft) => !draft.panels[ft].url);
-        if (missing.length > 0) {
-          nextErrors[variant.id] =
-            'All 4 panels are required to replace this storyboard.';
-        }
+    DESIGNER_STORYBOARDS.forEach((storyboard) => {
+      const draft = drafts[storyboard.id];
+      if (draft?.replace && !draft.url) {
+        nextErrors[storyboard.id] = 'An image is required to replace this storyboard.';
       }
     });
 
@@ -153,23 +100,16 @@ export function AdminSetup() {
     if (trimmed) setDesignTopic(trimmed);
 
     // Persist (or clear) each storyboard override.
-    DESIGNER_STORYBOARDS.forEach((variant) => {
-      const draft = drafts[variant.id];
+    DESIGNER_STORYBOARDS.forEach((storyboard) => {
+      const draft = drafts[storyboard.id];
       if (draft?.replace) {
-        const frames: DesignerFrame[] = FRAME_ORDER.map((frameType) => ({
-          frameType,
-          image: draft.panels[frameType].url as string,
-          caption: draft.panels[frameType].caption.trim() ||
-            getDefaultFrameCaption(variant.id, frameType)
-        }));
-        const overridden: DesignerVariant = {
-          id: variant.id,
-          title: variant.title,
-          frames
-        };
-        setAdminStoryboardOverride(variant.id, overridden);
+        setAdminStoryboardOverride(storyboard.id, {
+          id: storyboard.id,
+          title: draft.title.trim() || storyboard.title,
+          image: draft.url as string
+        });
       } else {
-        clearAdminStoryboardOverride(variant.id);
+        clearAdminStoryboardOverride(storyboard.id);
       }
     });
 
@@ -199,7 +139,7 @@ export function AdminSetup() {
               Admin Setup
             </h1>
             <p className="mt-2 text-base text-slate-600">
-              Configure the storyboard variants participants will choose from.
+              Configure the storyboards participants will choose from.
             </p>
           </div>
 
@@ -240,27 +180,27 @@ export function AdminSetup() {
               Upload storyboard images
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              To replace a storyboard, upload all 4 panels. Unchecked storyboards keep their
-              default images.
+              Each storyboard is a single image containing all of its panels. Unchecked
+              storyboards keep their default image.
             </p>
           </div>
 
-          {/* Variants */}
+          {/* Storyboards */}
           <div className="mt-6 space-y-6">
-            {DESIGNER_STORYBOARDS.map((variant) => {
-              const draft = drafts[variant.id];
-              const effective = effectiveById[variant.id];
-              const isOverridden = Boolean(adminStoryboardOverrides[variant.id]);
-              const error = errors[variant.id];
+            {DESIGNER_STORYBOARDS.map((storyboard) => {
+              const draft = drafts[storyboard.id];
+              const effective = effectiveById[storyboard.id];
+              const isOverridden = Boolean(adminStoryboardOverrides[storyboard.id]);
+              const error = errors[storyboard.id];
 
               return (
                 <div
-                  key={variant.id}
+                  key={storyboard.id}
                   className="rounded-2xl border border-slate-200 p-5"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-base font-bold text-slate-900">{variant.title}</h4>
+                      <h4 className="text-base font-bold text-slate-900">{effective.title}</h4>
                       <span
                         className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
                           isOverridden
@@ -275,7 +215,7 @@ export function AdminSetup() {
                       <input
                         type="checkbox"
                         checked={draft?.replace ?? false}
-                        onChange={(e) => toggleReplace(variant.id, e.target.checked)}
+                        onChange={(e) => toggleReplace(storyboard.id, e.target.checked)}
                         className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
                       />
                       Replace this storyboard
@@ -287,57 +227,30 @@ export function AdminSetup() {
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
                       Current
                     </p>
-                    <div className="grid grid-cols-4 gap-3">
-                      {FRAME_ORDER.map((frameType) => {
-                        const frame = effective.frames.find((f) => f.frameType === frameType);
-                        return (
-                          <div key={frameType} className="flex flex-col">
-                            <PreviewThumb src={frame?.image} alt={`${variant.title} — ${frameType}`} />
-                            <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-blue-600">
-                              {frameType}
-                            </span>
-                            <p className="mt-1 text-xs text-slate-700 leading-snug">
-                              {frame?.caption ?? getDefaultFrameCaption(variant.id, frameType)}
-                            </p>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <PreviewImage src={effective.image} alt={effective.title} />
                   </div>
 
-                  {/* Upload slots */}
+                  {/* Upload slot */}
                   {draft?.replace && (
                     <div className="mt-5">
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                        New panels (all 4 required)
+                        New storyboard image
+                        <span className="text-red-500"> *</span>
                       </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {FRAME_ORDER.map((frameType) => {
-                          const panel = draft.panels[frameType];
-                          return (
-                            <div key={frameType} className="flex flex-col gap-2">
-                              <PreviewThumb src={panel.url ?? undefined} alt={FRAME_LABEL[frameType]} />
-                              <label className="text-xs font-semibold text-slate-700">
-                                {FRAME_LABEL[frameType]}
-                                <span className="text-red-500"> *</span>
-                              </label>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleFile(variant.id, frameType, e.target.files?.[0])}
-                                className="block w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                              />
-                              <input
-                                type="text"
-                                value={panel.caption}
-                                onChange={(e) => handleCaption(variant.id, frameType, e.target.value)}
-                                placeholder={getDefaultFrameCaption(variant.id, frameType)}
-                                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none"
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <PreviewImage src={draft.url ?? undefined} alt="New storyboard" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFile(storyboard.id, e.target.files?.[0])}
+                        className="mt-3 block w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      <input
+                        type="text"
+                        value={draft.title}
+                        onChange={(e) => handleTitle(storyboard.id, e.target.value)}
+                        placeholder={storyboard.title}
+                        className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none"
+                      />
                     </div>
                   )}
 
@@ -387,10 +300,10 @@ export function AdminSetup() {
   );
 }
 
-function PreviewThumb({ src, alt }: { src?: string; alt: string }) {
+function PreviewImage({ src, alt }: { src?: string; alt: string }) {
   if (!src) {
     return (
-      <div className="w-full aspect-square bg-slate-100 border border-dashed border-slate-300 rounded-lg flex items-center justify-center text-[10px] text-slate-400 px-1 text-center">
+      <div className="w-full aspect-[16/9] bg-slate-100 border border-dashed border-slate-300 rounded-lg flex items-center justify-center text-xs text-slate-400 px-1 text-center">
         No image
       </div>
     );
@@ -399,7 +312,7 @@ function PreviewThumb({ src, alt }: { src?: string; alt: string }) {
     <img
       src={src}
       alt={alt}
-      className="w-full aspect-square object-cover rounded-lg border border-slate-200"
+      className="w-full h-auto object-contain rounded-lg border border-slate-200"
     />
   );
 }

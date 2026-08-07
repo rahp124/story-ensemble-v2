@@ -1,6 +1,6 @@
 import { studyUsageDownloadBasename, buildStudyUsageExport } from '@/lib/studyUsageData';
 import { NodeType } from '@/rf-components';
-import { useStore } from '@/store';
+import { useStore, DEFAULT_DESIGNER_STORYBOARD_TITLE } from '@/store';
 import { StoryboardNodeData } from '@/types';
 import { Button, Input, Loader } from '@mantine/core';
 import { toJpeg } from 'html-to-image';
@@ -32,12 +32,17 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
   const node = useActiveStoryboardNode();
   const updateStoryboardTitle = useStore((s) => s.updateStoryboardTitle);
   const updateStoryboardCaption = useStore((s) => s.updateStoryboardCaption);
+  const generateAndSetDesignerStoryboardTitle = useStore(
+    (s) => s.generateAndSetDesignerStoryboardTitle
+  );
   const addStudyEvent = useStore((s) => s.addStudyEvent);
 
   const cardRef = useRef<HTMLDivElement>(null);
+  const didRequestTitleRef = useRef(false);
   const [title, setTitle] = useState('');
   const [expandCaptionsForCapture, setExpandCaptionsForCapture] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
 
   const storyboard = node?.data.storyboard;
 
@@ -46,6 +51,21 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
       setTitle(storyboard.title);
     }
   }, [storyboard?.title]);
+
+  useEffect(() => {
+    if (!node || !storyboard) return;
+
+    const needsGeneratedTitle =
+      !storyboard.title.trim() || storyboard.title === DEFAULT_DESIGNER_STORYBOARD_TITLE;
+    if (!needsGeneratedTitle || didRequestTitleRef.current) return;
+
+    didRequestTitleRef.current = true;
+    setIsGeneratingTitle(true);
+
+    void generateAndSetDesignerStoryboardTitle(node.id)
+      .catch((err) => console.error('[generateAndSetDesignerStoryboardTitle]', err))
+      .finally(() => setIsGeneratingTitle(false));
+  }, [node, storyboard, generateAndSetDesignerStoryboardTitle]);
 
   if (!node || !storyboard) {
     return (
@@ -169,6 +189,20 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
               <h2 className="text-center text-xl font-bold text-gray-900">
                 {title || 'Storyboard'}
               </h2>
+            ) : isGeneratingTitle ? (
+              <Input
+                value=""
+                disabled
+                placeholder="Generating title…"
+                size="lg"
+                rightSection={<Loader size="sm" />}
+                styles={{
+                  input: {
+                    textAlign: 'center',
+                    fontWeight: 'bold'
+                  }
+                }}
+              />
             ) : (
               <Input
                 value={title}

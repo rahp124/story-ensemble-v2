@@ -1,0 +1,27 @@
+picker:
+  eyebrow: Choose a storyboard
+  heading: Which storyboard most closely matches your experience?
+  continueButton: Continue with this storyboard
+
+response:
+  eyebrow: Reflect on this storyboard
+  title: Tell us about this storyboard
+  subtitle: PLACEHOLDER — replace with the final copy.
+  continueButton: Continue
+  continueDisabledHint: Please answer all required questions.
+  questions:
+    - id: designer_response_1
+      prompt: What made you pick this storyboard over the other two?
+      required: true
+      placeholder: 1-2 sentences justifying your choice
+
+    - id: designer_response_2
+      prompt: How do you relate to this scenario in the storyboard? In what ways is this storyboard similar to your experience?
+      required: true
+      placeholder: 1-2 sentences about similarities
+
+    - id: designer_response_3
+      prompt:  In what ways is this storyboard different from your experience?
+      required: true
+      placeholder: 1-2 sentences about differences
+
