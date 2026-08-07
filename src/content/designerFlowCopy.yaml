@@ -1,0 +1,21 @@
+picker:
+  eyebrow: Choose a storyboard
+  heading: Which storyboard most closely matches your experience?
+  continueButton: Continue with this storyboard
+
+response:
+  eyebrow: Reflect on this storyboard
+  title: Tell us about this storyboard
+  subtitle: PLACEHOLDER — replace with the final copy.
+  continueButton: Continue
+  continueDisabledHint: Please answer all required questions.
+  questions:
+    - id: designer_response_1
+      prompt: PLACEHOLDER — first open-response question.
+      required: true
+      placeholder: Share your thoughts.
+
+    - id: designer_response_2
+      prompt: PLACEHOLDER — second open-response question.
+      required: true
+      placeholder: Share your thoughts.

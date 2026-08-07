@@ -33,7 +33,7 @@ function sanitizeForFirestore(value: unknown): unknown {
 
 export async function uploadStudyUsageData(
   exportData: StudyUsageExport,
-  embedImageDataUrl: string
+  embedImageDataUrl?: string
 ): Promise<{ docId: string }> {
   const docId = studyUsageDownloadBasename(exportData);
 
@@ -43,12 +43,15 @@ export async function uploadStudyUsageData(
     createdAt: serverTimestamp()
   }) as Record<string, unknown>;
 
-  // Reserve space for the "image" key overhead in JSON ("image":"...").
-  const baseBytes = new Blob([JSON.stringify({ ...basePayload, image: '' })]).size;
-  const budget = Math.floor(FIRESTORE_DOC_LIMIT_BYTES * DOC_SIZE_SAFETY_MARGIN) - baseBytes;
-  const image = await compressJpegDataUrl(embedImageDataUrl, budget);
-
-  const payload = { ...basePayload, image };
+  let payload = basePayload;
+  if (embedImageDataUrl) {
+    // Reserve space for the "image" key overhead in JSON ("image":"...").
+    const baseBytes = new Blob([JSON.stringify({ ...basePayload, image: '' })]).size;
+    const budget =
+      Math.floor(FIRESTORE_DOC_LIMIT_BYTES * DOC_SIZE_SAFETY_MARGIN) - baseBytes;
+    const image = await compressJpegDataUrl(embedImageDataUrl, budget);
+    payload = { ...basePayload, image };
+  }
 
   const approxBytes = new Blob([JSON.stringify(payload)]).size;
   if (approxBytes > FIRESTORE_DOC_LIMIT_BYTES * DOC_SIZE_SAFETY_MARGIN) {

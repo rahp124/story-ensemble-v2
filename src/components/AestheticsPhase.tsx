@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import SketchRefinementForm from './SketchRefinementForm';
 import { AestheticUpdateComparisonModal } from './AestheticUpdateComparisonModal';
 import type { WizardPhaseTheme } from '@/lib/wizardPhaseTheme';
 import { panelCardBorderStyle, panelCardStyle } from '@/lib/wizardPhaseTheme';
@@ -11,158 +10,12 @@ export type SceneAesthetics = {
   custom?: string;
 };
 
-export type SceneSketchRefinement = {
-  actors?: string;
-  setting?: string;
-  userGoal?: string;
-  obstacle?: string;
-  frameChange?: string;
-  carryForward?: string;
-  emotionState?: string;
-};
-
 export type AestheticPreviewResult = { image: string; caption: string };
 
 export type AestheticComparisonChoice = 'original' | 'updated';
 
 interface AestheticsPhaseProps {
   sceneIndex: number;
-  aesthetics: SceneAesthetics;
-  content?: Record<string, string | undefined>;
-  onContentChange?: (field: string, value: string) => void;
-  sketchRefinement?: SceneSketchRefinement;
-  onChange?: (field: keyof SceneAesthetics | keyof SceneSketchRefinement, value: string) => void;
-  onPreview?: (aesthetics: SceneAesthetics | SceneSketchRefinement) => void | Promise<AestheticPreviewResult | void>;
-  onPreviewChoice?: (
-    choice: AestheticComparisonChoice,
-    aesthetics: SceneAesthetics,
-    preview: AestheticPreviewResult
-  ) => void;
-  onContinue?: (aesthetics: SceneAesthetics | SceneSketchRefinement) => void;
-  isGenerating: boolean;
-  isLastScene: boolean;
-  phaseTheme?: WizardPhaseTheme;
-  mode?: 'sketch' | 'aesthetic';
-  continueLabel?: string;
-  currentImage?: string;
-  currentCaption?: string;
-  title?: string;
-  subtitle?: string;
-}
-
-export function AestheticsPhase({
-  sceneIndex,
-  aesthetics,
-  content,
-  onContentChange,
-  sketchRefinement,
-  onChange,
-  onPreview,
-  onPreviewChoice,
-  onContinue,
-  isGenerating,
-  isLastScene,
-  phaseTheme = 'aesthetics',
-  mode,
-  continueLabel,
-  currentImage,
-  currentCaption,
-  title,
-  subtitle,
-}: AestheticsPhaseProps) {
-  if (mode === 'sketch') {
-    return (
-      <SketchRefinePhase
-        sceneIndex={sceneIndex}
-        phaseTheme={phaseTheme}
-        refinement={sketchRefinement || {}}
-        onChange={onChange as (field: keyof SceneSketchRefinement, value: string) => void}
-        onPreview={onPreview as (data: SceneSketchRefinement) => void}
-        onContinue={onContinue as (data: SceneSketchRefinement) => void}
-        isGenerating={isGenerating}
-        isLastScene={isLastScene}
-        content={content}
-        onContentChange={onContentChange}
-      />
-    );
-  }
-
-  return (
-    <AestheticPolishPhase
-      sceneIndex={sceneIndex}
-      phaseTheme={phaseTheme}
-      aesthetics={aesthetics}
-      onChange={onChange as (field: keyof SceneAesthetics, value: string) => void}
-      onPreview={onPreview as (aesthetics: SceneAesthetics) => Promise<AestheticPreviewResult | void>}
-      onPreviewChoice={onPreviewChoice}
-      onContinue={onContinue as (aesthetics: SceneAesthetics) => void}
-      isGenerating={isGenerating}
-      isLastScene={isLastScene}
-      content={content}
-      onContentChange={onContentChange}
-      continueLabel={continueLabel}
-      currentImage={currentImage}
-      currentCaption={currentCaption}
-      title={title}
-      subtitle={subtitle}
-    />
-  );
-}
-
-// ============================================================================
-// SKETCH REFINEMENT PHASE
-// ============================================================================
-
-interface SketchRefinePhaseProps {
-  sceneIndex: number;
-  phaseTheme: WizardPhaseTheme;
-  refinement: SceneSketchRefinement;
-  onChange: (field: keyof SceneSketchRefinement, value: string) => void;
-  onPreview: (data: SceneSketchRefinement) => void;
-  onContinue: (data: SceneSketchRefinement) => void;
-  isGenerating: boolean;
-  isLastScene: boolean;
-}
-
-function SketchRefinePhase({
-  sceneIndex: _sceneIndex,
-  phaseTheme,
-  refinement,
-  onChange,
-  onPreview,
-  onContinue,
-  isGenerating,
-  isLastScene,
-  content,
-  onContentChange,
-}: SketchRefinePhaseProps & { content?: Record<string,string|undefined>; onContentChange?: (field:string,value:string)=>void }) {
-  // Content is considered "locked" once the user has submitted generation answers
-  // (require one of the story-reflection fields: mindset or frustration).
-  const contentLocked = Boolean(content && (content.mindset || content.frustration));
-
-  return (
-    <SketchRefinementForm
-      phaseTheme={phaseTheme}
-      refinement={refinement}
-      onChange={onChange}
-      onPreview={onPreview}
-      onContinue={onContinue}
-      isGenerating={isGenerating}
-      isLastScene={isLastScene}
-      content={content}
-      onContentChange={onContentChange}
-      contentLocked={contentLocked}
-    />
-  );
-}
-
-// ============================================================================
-// AESTHETIC POLISH PHASE (original)
-// ============================================================================
-
-interface AestheticPolishPhaseProps {
-  sceneIndex: number;
-  phaseTheme: WizardPhaseTheme;
   aesthetics: SceneAesthetics;
   onChange: (field: keyof SceneAesthetics, value: string) => void;
   onPreview: (aesthetics: SceneAesthetics) => Promise<AestheticPreviewResult | void>;
@@ -174,6 +27,7 @@ interface AestheticPolishPhaseProps {
   onContinue: (aesthetics: SceneAesthetics) => void;
   isGenerating: boolean;
   isLastScene: boolean;
+  phaseTheme?: WizardPhaseTheme;
   continueLabel?: string;
   currentImage?: string;
   currentCaption?: string;
@@ -181,9 +35,8 @@ interface AestheticPolishPhaseProps {
   subtitle?: string;
 }
 
-function AestheticPolishPhase({
+export function AestheticsPhase({
   sceneIndex,
-  phaseTheme,
   aesthetics,
   onChange,
   onPreview,
@@ -191,14 +44,13 @@ function AestheticPolishPhase({
   onContinue,
   isGenerating,
   isLastScene,
+  phaseTheme = 'aesthetics',
   continueLabel,
   currentImage,
   currentCaption,
   title,
-  subtitle,
-  content: _content,
-  onContentChange: _onContentChange,
-}: AestheticPolishPhaseProps & { content?: Record<string,string|undefined>; onContentChange?: (field:string,value:string)=>void }) {
+  subtitle
+}: AestheticsPhaseProps) {
   const [comparison, setComparison] = useState<{
     original: AestheticPreviewResult;
     preview: AestheticPreviewResult;
