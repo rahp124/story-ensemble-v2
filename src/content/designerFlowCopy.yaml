@@ -18,7 +18,7 @@ response:
     - id: designer_response_2
       prompt: How do you relate to this scenario in the storyboard? In what ways is this storyboard similar to and different from your experience?
       required: true
-      placeholder: 1-2 sentences about similarities and differences
+      placeholder: Describe your experience
 
     - id: designer_response_3
       prompt:  How do the storyboard character's emotions compare to your own during your experience?
