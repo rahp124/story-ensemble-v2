@@ -8,6 +8,10 @@ import { PostStoryboardSurveyPage } from './PostStoryboardSurveyPage';
 
 type DesignerPhase = 'select' | 'respond' | 'survey';
 
+type DesignerFlowProps = {
+  onStartOver: () => void;
+};
+
 function StoryboardPreview({ storyboard }: { storyboard: DesignerStoryboard }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
@@ -20,7 +24,7 @@ function StoryboardPreview({ storyboard }: { storyboard: DesignerStoryboard }) {
   );
 }
 
-export function DesignerFlow() {
+export function DesignerFlow({ onStartOver }: DesignerFlowProps) {
   const hasCompletedOverview = useStore((s) => s.hasCompletedOverview);
   const selectedStoryboard = useStore((s) =>
     s.designerSelectedVariantId
@@ -62,26 +66,46 @@ export function DesignerFlow() {
     return <StudyOverviewPage />;
   }
 
+  const startOverButton = (
+    <div className="fixed top-6 left-6 z-[60] flex items-center gap-3">
+      <button
+        onClick={onStartOver}
+        className="bg-white border border-gray-200 shadow-lg px-6 py-3 rounded-xl font-bold text-gray-800 hover:bg-gray-50 transition-all flex items-center gap-2"
+      >
+        <span>✨</span> Start New Story
+      </button>
+    </div>
+  );
+
   if (phase === 'select' || !selectedStoryboard) {
     return (
-      <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto">
-        <DesignerVariantPicker onPick={handlePick} />
-      </div>
+      <>
+        <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto">
+          <DesignerVariantPicker onPick={handlePick} />
+        </div>
+        {startOverButton}
+      </>
     );
   }
 
   if (phase === 'respond') {
     return (
-      <DesignerStoryboardResponsePage
-        storyboardPreview={<StoryboardPreview storyboard={selectedStoryboard} />}
-        onComplete={() => setPhase('survey')}
-      />
+      <>
+        <DesignerStoryboardResponsePage
+          storyboardPreview={<StoryboardPreview storyboard={selectedStoryboard} />}
+          onComplete={() => setPhase('survey')}
+        />
+        {startOverButton}
+      </>
     );
   }
 
   return (
-    <PostStoryboardSurveyPage
-      storyboardPreview={<StoryboardPreview storyboard={selectedStoryboard} />}
-    />
+    <>
+      <PostStoryboardSurveyPage
+        storyboardPreview={<StoryboardPreview storyboard={selectedStoryboard} />}
+      />
+      {startOverButton}
+    </>
   );
 }

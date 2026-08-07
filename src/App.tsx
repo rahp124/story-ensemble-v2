@@ -91,7 +91,9 @@ export default function App() {
       {hasCompletedLanding && route === 'user' && (
         <UserFlow onStartOver={handleStartOver} />
       )}
-      {hasCompletedLanding && route === 'designer' && <DesignerFlow />}
+      {hasCompletedLanding && route === 'designer' && (
+        <DesignerFlow onStartOver={handleStartOver} />
+      )}
       {adminSetupOpen && <AdminSetup />}
       <ApiKeyModal />
     </div>
