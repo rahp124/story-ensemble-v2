@@ -1,29 +1,33 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { DESIGNER_FLOW_COPY } from '../content/designerFlowCopy';
-import type { DesignerResponseQuestion } from '@/types/designerResponseQuestionnaire';
-import type { FrameOutline } from '@/types';
+import type {
+  DesignerResponseFrameType,
+  DesignerResponseQuestion
+} from '@/types/designerResponseQuestionnaire';
+import { DESIGNER_RESPONSE_FRAME_TYPES } from '@/types/designerResponseQuestionnaire';
 
 type DesignerStoryboardResponsePageProps = {
   storyboardPreview: ReactNode;
-  frameIndex: number;
-  frameType: FrameOutline['frameType'];
+  stepIndex: number;
+  frameType: DesignerResponseFrameType;
   questions: DesignerResponseQuestion[];
   initialAnswers: Record<string, string>;
-  isLastFrame: boolean;
+  isLastStep: boolean;
   onContinue: (frameAnswers: Record<string, string>) => void;
 };
 
-function frameTypeLabel(frameType: FrameOutline['frameType']): string {
-  return frameType === 'Action' ? 'Action / Solution' : frameType;
+function frameTypeLabel(frameType: DesignerResponseFrameType): string {
+  if (frameType === 'Action') return 'Action / Solution';
+  return frameType;
 }
 
 export function DesignerStoryboardResponsePage({
   storyboardPreview,
-  frameIndex,
+  stepIndex,
   frameType,
   questions,
   initialAnswers,
-  isLastFrame,
+  isLastStep,
   onContinue
 }: DesignerStoryboardResponsePageProps) {
   const copy = DESIGNER_FLOW_COPY.response;
@@ -35,7 +39,7 @@ export function DesignerStoryboardResponsePage({
     setAnswers(
       Object.fromEntries(questions.map((q) => [q.id, initialAnswers[q.id] ?? '']))
     );
-  }, [frameIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [stepIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const canContinue = useMemo(
     () =>
@@ -51,7 +55,7 @@ export function DesignerStoryboardResponsePage({
     onContinue(answers);
   };
 
-  const continueLabel = isLastFrame ? copy.continueButton : 'Continue to next frame';
+  const continueLabel = isLastStep ? copy.continueButton : 'Continue to next frame';
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-blue-50">
@@ -68,7 +72,7 @@ export function DesignerStoryboardResponsePage({
               {copy.subtitle}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Frame {frameIndex + 1} of 4
+              Step {stepIndex + 1} of {DESIGNER_RESPONSE_FRAME_TYPES.length}
             </p>
           </div>
 

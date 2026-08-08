@@ -64,7 +64,9 @@ export default function App() {
       hasCompletedOverview: false,
       hasCompletedCharacterCreation: false,
       characterProfile: null,
-      designerSelectedVariantId: null
+      designerSelectedVariantId: null,
+      priorExperience: null,
+      experienceDescription: ''
     });
     navigate('home');
     setAccessStatus('anonymous');

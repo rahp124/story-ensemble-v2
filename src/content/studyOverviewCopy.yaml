@@ -13,8 +13,8 @@ intro:
   pre_paragraphs:
     - "Imagine your school is asking students to share their experiences with {{topic}}. They want to understand the issues that students face so they can work with designers to improve the student experience."
     - "In this study, you will answer some questions about your most recent experience with {{topic}}. Your responses will be used to create a visual storyboard that helps designers understand your experience and identify opportunities to improve."
-    - "The study takes approximately 30-45 minutes, followed by a 5-minute survey. You must create a storyboard and answer the survey at the end to receive full participation credit."
-    - "A design storyboard is a sequence of images that illustrates an experience. It is typically organized into four panels:"
+    # - "The study takes approximately 30-45 minutes, followed by a 5-minute survey. You must create a storyboard and answer the survey at the end to receive full participation credit."
+    - "A UX storyboard is a sequence of images with text captions that illustrates a user experience. It is typically organized into four panels:"
 
   steps:
     - "Context: the setup for the experience"
@@ -34,5 +34,10 @@ priorExperience:
     - value: no
       title: No, but I can imagine a realistic scenario
 
+experienceDescription:
+  label: Briefly describe your scenario
+  placeholder: Describe your experience's context, problem, action, and outcome.
+  requiredHint: Please describe your experience to continue.
+
 continueButton: Continue
-continueDisabledHint: Pick an answer to continue.
+continueDisabledHint: Pick an answer and describe your experience to continue.

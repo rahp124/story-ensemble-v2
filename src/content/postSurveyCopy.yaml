@@ -24,7 +24,7 @@ questions:
 
   - id: comprehensiveness_likert
     type: likert
-    prompt: To what extent did this task help you reflect on your experience?
+    prompt: To what extent did this task help you provide detailed reflection?
     required: true
     points: 7
     minLabel: Not at all
