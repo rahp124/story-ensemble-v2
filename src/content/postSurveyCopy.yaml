@@ -22,7 +22,7 @@ questions:
     required: true
     placeholder: 1-2 sentences.
 
-  - id: comprehensiveness_likert
+  - id: reflection_likert
     type: likert
     prompt: To what extent did this task help you provide detailed reflection?
     required: true
@@ -30,7 +30,7 @@ questions:
     minLabel: Not at all
     maxLabel: Completely
 
-  - id: comprehensiveness_open
+  - id: reflection_open
     type: open_response
     prompt: What makes you say that about your reflection?
     required: true
