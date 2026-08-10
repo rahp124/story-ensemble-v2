@@ -1,14 +1,31 @@
-import { getOpenAiKey } from '@/lib/envUtils';
 import { apiUrl } from '@/lib/apiBase';
-import OpenAI from 'openai';
 import { z } from 'zod';
 import zodToJsonSchema from 'zod-to-json-schema';
 
-const openai = new OpenAI({
-  apiKey: getOpenAiKey(),
-  dangerouslyAllowBrowser: true
-});
+type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const resp = await fetch(apiUrl(path), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(body)
+  });
+  if (!resp.ok) {
+    const errBody = (await resp.json().catch(() => ({}))) as { error?: string };
+    throw new Error(`Proxy error ${resp.status}: ${errBody.error ?? 'unknown'}`);
+  }
+  return resp.json() as Promise<T>;
+}
+
+async function chatCompletions(args: {
+  model: string;
+  messages: ChatMessage[];
+  response_format?: { type: 'json_object' };
+}): Promise<string | null> {
+  const { content } = await postJson<{ content: string | null }>('chat-completions', args);
+  return content;
+}
 async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
   const start = performance.now();
   const result = await fn();
@@ -52,25 +69,16 @@ export async function generateStructured<
   """
   `;
 
-  openai.apiKey = getOpenAiKey();
   const response = await timed('generateStructured (gpt-4o)', () =>
-    openai.chat.completions
-      .create({
-        model: 'gpt-4o-2024-05-13',
-        response_format: {
-          type: 'json_object'
-        },
-        messages: [
-          {
-            role: 'system',
-            content: systemContent
-          },
-          { role: 'user', content: prompt }
-        ]
-      })
-      .then((completion) => completion.choices[0].message.content)
+    chatCompletions({
+      model: 'gpt-4o-2024-05-13',
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: systemContent },
+        { role: 'user', content: prompt }
+      ]
+    })
   );
-
   const result = JSON.parse(response || '');
   const validatedResult = zodSchema.parse(result);
 
@@ -85,27 +93,23 @@ export async function generateStoryboardTitle(
   captions: string[],
   context = ''
 ): Promise<string> {
-  openai.apiKey = getOpenAiKey();
   const response = await timed('generateStoryboardTitle (gpt-4o-mini)', () =>
-    openai.chat.completions
-      .create({
-        model: 'gpt-4o-mini',
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content:
-              'Output JSON with a single key "title". Value must be a short, punchy storyboard title (3 to 7 words, Title Case, no quotes, no trailing punctuation) that captures the persona\'s journey from problem to resolution. No markdown, no extra keys.'
-          },
-          {
-            role: 'user',
-            content: `Generate a title for this 4-frame storyboard.\n\nUser answers:\n${JSON.stringify(answers, null, 2)}\n\nFrame captions in order:\n${captions.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n\n${context ? `Solution context: ${context}\n\n` : ''}Return JSON: { "title": "..." }`
-          }
-        ]
-      })
-      .then((c) => c.choices[0].message.content)
+    chatCompletions({
+      model: 'gpt-4o-mini',
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Output JSON with a single key "title". Value must be a short, punchy storyboard title (3 to 7 words, Title Case, no quotes, no trailing punctuation) that captures the persona\'s journey from problem to resolution. No markdown, no extra keys.'
+        },
+        {
+          role: 'user',
+          content: `Generate a title for this 4-frame storyboard.\n\nUser answers:\n${JSON.stringify(answers, null, 2)}\n\nFrame captions in order:\n${captions.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n\n${context ? `Solution context: ${context}\n\n` : ''}Return JSON: { "title": "..." }`
+        }
+      ]
+    })
   );
-
   return titleOnlySchema.parse(JSON.parse(response || '{}')).title;
 }
 
@@ -156,27 +160,23 @@ export async function generateImagePrompt(
     .filter(Boolean)
     .join('\n');
 
-  openai.apiKey = getOpenAiKey();
   const response = await timed(`generateImagePrompt frame ${frameIndex} (gpt-4o-mini)`, () =>
-    openai.chat.completions
-      .create({
-        model: 'gpt-4o-mini',
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content:
-              'Output JSON with a single key "imagePrompt". Value must be a visually specific, drawable scene description. No markdown, no extra keys. If current-scene visual adjustments are present, treat them as hard constraints and apply them explicitly in the prompt.'
-          },
-          {
-            role: 'user',
-            content: `Frame ${frameIndex + 1} of 4\n\nPacing: ${pacing}\n\nCurrent-scene visual adjustments (hard constraints):\n${overrideInstruction || 'none'}\n\nUser answers:\n${JSON.stringify(answers, null, 2)}\n\nReturn JSON: { "imagePrompt": "..." }`
-          }
-        ]
-      })
-      .then((c) => c.choices[0].message.content)
+    chatCompletions({
+      model: 'gpt-4o-mini',
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Output JSON with a single key "imagePrompt". Value must be a visually specific, drawable scene description. No markdown, no extra keys. If current-scene visual adjustments are present, treat them as hard constraints and apply them explicitly in the prompt.'
+        },
+        {
+          role: 'user',
+          content: `Frame ${frameIndex + 1} of 4\n\nPacing: ${pacing}\n\nCurrent-scene visual adjustments (hard constraints):\n${overrideInstruction || 'none'}\n\nUser answers:\n${JSON.stringify(answers, null, 2)}\n\nReturn JSON: { "imagePrompt": "..." }`
+        }
+      ]
+    })
   );
-
   return imagePromptOnlySchema.parse(JSON.parse(response || '{}')).imagePrompt;
 }
 
@@ -193,8 +193,6 @@ export async function generateImageWithOpenAI({
   referenceImage?: string;
   size?: '1024x1024' | '512x512';
 }): Promise<string> {
-  openai.apiKey = getOpenAiKey();
-
   let combinedPrompt = prompt;
   if (stylePreset) combinedPrompt += `, ${stylePreset} style`;
   if (negativePrompt) combinedPrompt += `. Avoid: ${negativePrompt}`;
@@ -202,18 +200,13 @@ export async function generateImageWithOpenAI({
   if (referenceImage) {
     try {
       const { b64_json } = await withRetry('generateImageWithOpenAI/edit', () =>
-        timed('generateImageWithOpenAI/edit (proxy → gpt-image-2)', async () => {
-          const resp = await fetch(apiUrl('generate-edit'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: referenceImage, prompt: combinedPrompt, size, apiKey: getOpenAiKey() })
-          });
-          if (!resp.ok) {
-            const body = await resp.json().catch(() => ({})) as { error?: string };
-            throw new Error(`Proxy error ${resp.status}: ${body.error ?? 'unknown'}`);
-          }
-          return resp.json() as Promise<{ b64_json: string }>;
-        })
+        timed('generateImageWithOpenAI/edit (proxy → gpt-image-1)', async () =>
+          postJson<{ b64_json: string }>('generate-edit', {
+            image: referenceImage,
+            prompt: combinedPrompt,
+            size
+          })
+        )
       );
       return `data:image/png;base64,${b64_json}`;
     } catch (err) {
@@ -221,24 +214,18 @@ export async function generateImageWithOpenAI({
     }
   }
 
-  const response = await withRetry('generateImageWithOpenAI/generate', () =>
+  const { b64_json } = await withRetry('generateImageWithOpenAI/generate', () =>
     timed('generateImageWithOpenAI/generate (gpt-image-1)', () =>
-      openai.images.generate({
-        model: 'gpt-image-1',
+      postJson<{ b64_json: string }>('generate-image', {
         prompt: combinedPrompt,
-        n: 1,
         size
       })
     )
   );
 
-  const first = response.data?.[0];
-  if (!first) throw new Error('OpenAI returned no image data');
-  if (first.b64_json) return `data:image/png;base64,${first.b64_json}`;
-  if (first.url) return first.url;
-  throw new Error('OpenAI returned image data with neither b64_json nor url');
+  if (!b64_json) throw new Error('OpenAI returned no image data');
+  return `data:image/png;base64,${b64_json}`;
 }
-
 // ─── Designer storyboard mode ─────────────────────────────────────────────────
 
 const designerCaptionSchema = z.object({ caption: z.string().min(1) });
