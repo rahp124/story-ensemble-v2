@@ -18,14 +18,14 @@ export const DESIGNER_FRAME_RESPONSE_QUESTIONS: Record<
 > = {
   Context: [
     {
-      id: 'designer_response_context_2',
+      id: 'designer_response_context',
       prompt:
         "How do you relate to this scenario's Context frame in the storyboard? In what ways is this similar to and different from your experience?",
       required: true,
       placeholder: 'Describe your experience'
     },
     {
-      id: 'designer_response_emotion_context',
+      id: 'designer_response_context_emotion',
       prompt: EMOTION_PROMPT,
       required: true,
       placeholder: 'A sentence about your emotions'
@@ -39,7 +39,7 @@ export const DESIGNER_FRAME_RESPONSE_QUESTIONS: Record<
       placeholder: '1-2 sentences'
     },
     {
-      id: 'designer_response_emotion_problem',
+      id: 'designer_response_problem_emotion',
       prompt: EMOTION_PROMPT,
       required: true,
       placeholder: 'A sentence about your emotions'
@@ -53,7 +53,7 @@ export const DESIGNER_FRAME_RESPONSE_QUESTIONS: Record<
       placeholder: '1-2 sentences'
     },
     {
-      id: 'designer_response_emotion_action',
+      id: 'designer_response_action_emotion',
       prompt: EMOTION_PROMPT,
       required: true,
       placeholder: 'A sentence about your emotions'
@@ -67,7 +67,7 @@ export const DESIGNER_FRAME_RESPONSE_QUESTIONS: Record<
       placeholder: '1-2 sentences'
     },
     {
-      id: 'designer_response_emotion_resolution',
+      id: 'designer_response_resolution_emotion',
       prompt: EMOTION_PROMPT,
       required: true,
       placeholder: 'A sentence about your emotions'
