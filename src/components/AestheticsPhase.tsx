@@ -94,7 +94,7 @@ export function AestheticsPhase({
           </h2>
           <p className="text-sm text-gray-700 mt-1">
             {subtitle ??
-              'Describe visual adjustments for this panel. Use Update Image to make any changes before continuing.'}
+              "Here's how we visualized your response! If visual adjustments are needed, use Update Image to make any changes before continuing."}
           </p>
         </div>
 

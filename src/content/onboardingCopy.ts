@@ -66,6 +66,11 @@ export type StudyOverviewCopy = {
     helper: string;
     options: PriorExperienceOption[];
   };
+  experienceDescription: {
+    label: string;
+    placeholder: string;
+    requiredHint: string;
+  };
   continueButton: string;
   continueDisabledHint: string;
 };

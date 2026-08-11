@@ -170,12 +170,60 @@ function clearFailedLogins(ip) {
   failedLogins.delete(ip);
 }
 
-async function readJsonBody(req) {
+async function readRawBody(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
-  const body = Buffer.concat(chunks).toString('utf8');
+  return Buffer.concat(chunks);
+}
+
+async function readJsonBody(req) {
+  const raw = await readRawBody(req);
+  const body = raw.toString('utf8');
   if (!body) return {};
   return JSON.parse(body);
+}
+
+function getOpenAiKey() {
+  return process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || '';
+}
+
+function getFalKey() {
+  return process.env.FAL_KEY || process.env.VITE_FAL_KEY || '';
+}
+
+function requireSession(req, res) {
+  const cookies = parseCookies(req);
+  const session = verifySessionCookieValue(cookies[COOKIE_NAME]);
+  if (!session) {
+    json(res, 401, { error: 'Not authenticated' });
+    return null;
+  }
+  return session;
+}
+
+function isAllowedFalHost(hostname) {
+  return (
+    hostname === 'fal.ai' ||
+    hostname === 'fal.run' ||
+    hostname.endsWith('.fal.ai') ||
+    hostname.endsWith('.fal.run')
+  );
+}
+
+const SKIP_PROXY_RESPONSE_HEADERS = new Set([
+  'content-length',
+  'content-encoding',
+  'transfer-encoding',
+  'connection'
+]);
+
+function forwardProxyResponseHeaders(upstreamHeaders) {
+  const out = {};
+  upstreamHeaders.forEach((value, key) => {
+    if (SKIP_PROXY_RESPONSE_HEADERS.has(key.toLowerCase())) return;
+    out[key] = value;
+  });
+  return out;
 }
 
 async function handleLogin(req, res) {
@@ -242,6 +290,8 @@ function handleLogout(_req, res) {
 }
 
 async function handleGenerateEdit(req, res) {
+  if (!requireSession(req, res)) return;
+
   let payload;
   try {
     payload = await readJsonBody(req);
@@ -249,11 +299,14 @@ async function handleGenerateEdit(req, res) {
     return json(res, 400, { error: 'Invalid JSON body' });
   }
 
+  const apiKey = getOpenAiKey();
+  if (!apiKey) {
+    return json(res, 500, { error: 'OPENAI_API_KEY is not configured.' });
+  }
+
   const startTime = Date.now();
   try {
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY || payload.apiKey
-    });
+    const openai = new OpenAI({ apiKey });
     const base64 = payload.image.includes(',')
       ? payload.image.split(',')[1]
       : payload.image;
@@ -286,6 +339,176 @@ async function handleGenerateEdit(req, res) {
   }
 }
 
+async function handleChatCompletions(req, res) {
+  if (!requireSession(req, res)) return;
+
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch {
+    return json(res, 400, { error: 'Invalid JSON body' });
+  }
+
+  const apiKey = getOpenAiKey();
+  if (!apiKey) {
+    return json(res, 500, { error: 'OPENAI_API_KEY is not configured.' });
+  }
+
+  const { model, messages, response_format } = payload;
+  if (typeof model !== 'string' || !Array.isArray(messages)) {
+    return json(res, 400, { error: 'model and messages are required' });
+  }
+
+  const startTime = Date.now();
+  try {
+    const openai = new OpenAI({ apiKey });
+    const completion = await openai.chat.completions.create({
+      model,
+      messages,
+      ...(response_format ? { response_format } : {})
+    });
+    const content = completion.choices[0]?.message?.content ?? null;
+    console.log(`[dev-server] chat.completions ok (${Date.now() - startTime}ms)`);
+    return json(res, 200, { content });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[dev-server] chat.completions failed (${Date.now() - startTime}ms):`,
+      message
+    );
+    return json(res, 500, { error: message });
+  }
+}
+
+async function handleGenerateImage(req, res) {
+  if (!requireSession(req, res)) return;
+
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch {
+    return json(res, 400, { error: 'Invalid JSON body' });
+  }
+
+  const apiKey = getOpenAiKey();
+  if (!apiKey) {
+    return json(res, 500, { error: 'OPENAI_API_KEY is not configured.' });
+  }
+
+  const prompt = typeof payload.prompt === 'string' ? payload.prompt : '';
+  if (!prompt) {
+    return json(res, 400, { error: 'prompt is required' });
+  }
+  const size = payload.size === '512x512' ? '512x512' : '1024x1024';
+
+  const startTime = Date.now();
+  try {
+    const openai = new OpenAI({ apiKey });
+    const response = await openai.images.generate({
+      model: 'gpt-image-1',
+      prompt,
+      n: 1,
+      size
+    });
+
+    const b64 = response.data?.[0]?.b64_json;
+    if (!b64) throw new Error('OpenAI returned no image data');
+    console.log(`[dev-server] images.generate ok (${Date.now() - startTime}ms)`);
+    return json(res, 200, { b64_json: b64 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[dev-server] images.generate failed (${Date.now() - startTime}ms):`,
+      message
+    );
+    return json(res, 500, { error: message });
+  }
+}
+
+async function handleFalProxy(req, res) {
+  if (!requireSession(req, res)) return;
+
+  const targetUrlRaw = req.headers['x-fal-target-url'];
+  const targetUrl =
+    typeof targetUrlRaw === 'string'
+      ? targetUrlRaw
+      : Array.isArray(targetUrlRaw)
+        ? targetUrlRaw[0]
+        : '';
+  if (!targetUrl) {
+    return json(res, 400, { error: 'Missing x-fal-target-url header' });
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(targetUrl);
+  } catch {
+    return json(res, 400, { error: 'Invalid target URL' });
+  }
+  if (!isAllowedFalHost(parsed.hostname)) {
+    return json(res, 412, { error: 'Target URL host is not allowed' });
+  }
+
+  const falKey = getFalKey();
+  if (!falKey) {
+    return json(res, 500, { error: 'FAL_KEY is not configured.' });
+  }
+
+  const method = req.method || 'GET';
+  if (method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+  if (!['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+    return json(res, 405, { error: 'Method not allowed' });
+  }
+
+  const forwardHeaders = {};
+  for (const [key, value] of Object.entries(req.headers)) {
+    const lower = key.toLowerCase();
+    if (
+      lower === 'host' ||
+      lower === 'connection' ||
+      lower === 'content-length' ||
+      lower === 'x-fal-target-url' ||
+      lower === 'cookie' ||
+      lower === 'authorization'
+    ) {
+      continue;
+    }
+    if (typeof value === 'string') forwardHeaders[key] = value;
+    else if (Array.isArray(value)) forwardHeaders[key] = value.join(', ');
+  }
+  forwardHeaders.authorization = `Key ${falKey}`;
+
+  const body =
+    method === 'GET' || method === 'HEAD' ? undefined : await readRawBody(req);
+
+  try {
+    const upstream = await fetch(targetUrl, {
+      method,
+      headers: forwardHeaders,
+      body: body && body.length > 0 ? body : undefined
+    });
+
+    res.writeHead(upstream.status, forwardProxyResponseHeaders(upstream.headers));
+    if (upstream.body) {
+      for await (const chunk of upstream.body) {
+        res.write(chunk);
+      }
+    }
+    res.end();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[dev-server] fal proxy failed:', message);
+    if (!res.headersSent) {
+      return json(res, 502, { error: message });
+    }
+    res.end();
+  }
+}
+
 const server = createServer(async (req, res) => {
   const url = req.url?.split('?')[0] || '';
 
@@ -301,6 +524,15 @@ const server = createServer(async (req, res) => {
     }
     if (url === '/api/generate-edit' && req.method === 'POST') {
       return await handleGenerateEdit(req, res);
+    }
+    if (url === '/api/chat-completions' && req.method === 'POST') {
+      return await handleChatCompletions(req, res);
+    }
+    if (url === '/api/generate-image' && req.method === 'POST') {
+      return await handleGenerateImage(req, res);
+    }
+    if (url === '/api/fal/proxy') {
+      return await handleFalProxy(req, res);
     }
 
     return json(res, 404, { error: 'Not found' });
@@ -318,10 +550,9 @@ server.timeout = 0;
 server.listen(PORT, () => {
   console.log(`[dev-server] listening on http://localhost:${PORT}`);
   console.log(
-    `[dev-server] OPENAI_API_KEY: ${
-      process.env.OPENAI_API_KEY ? 'set' : 'will use client-forwarded key'
-    }`
+    `[dev-server] OPENAI_API_KEY: ${getOpenAiKey() ? 'set' : 'MISSING'}`
   );
+  console.log(`[dev-server] FAL_KEY: ${getFalKey() ? 'set' : 'MISSING'}`);
   console.log(
     `[dev-server] ACCESS_ALLOWLIST: ${
       parseAllowlist().size

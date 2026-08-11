@@ -24,7 +24,7 @@ npm run dev:api    # API shim only on http://localhost:8080
 
 ### Subpath deploy (NGINX)
 
-1. Set production env (including `VITE_*` before build, plus server-only `ACCESS_ALLOWLIST`, `SESSION_SECRET`, `SESSION_COOKIE_SECURE=true`, `SESSION_COOKIE_PATH=/storyweaver`).
+1. Set production env: Firebase `VITE_*`, server-only `OPENAI_API_KEY`, `FAL_KEY`, `ACCESS_ALLOWLIST`, `SESSION_SECRET`, `SESSION_COOKIE_SECURE=true`, `SESSION_COOKIE_PATH=/storyweaver`. **Do not** set `VITE_OPENAI_API_KEY` or `VITE_FAL_KEY` on hosted builds.
 2. `npm ci && npm run build`
 3. Serve `dist/` at `https://variationweaver.ucsd.edu/storyweaver/`
 4. Run `node scripts/dev-server.mjs` on localhost (e.g. port 8080) and proxy:
@@ -36,7 +36,8 @@ location /storyweaver/api/ {
   proxy_set_header Host $host;
   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
   proxy_set_header X-Forwarded-Proto $scheme;
-  proxy_read_timeout 120s;
+  proxy_read_timeout 300s;
+  proxy_buffering off;
 }
 
 location /storyweaver/ {
@@ -47,21 +48,24 @@ location /storyweaver/ {
 
 ## Environment
 
-Create a local env file from `.env.template` and provide whichever providers you want to test:
+Create a local env file from `.env.template`:
 
 ```bash
-VITE_OPENAI_API_KEY=
-VITE_FAL_KEY=
-VITE_STABILITY_API_KEY=
+OPENAI_API_KEY=          # server-side; required for text + OpenAI images
+FAL_KEY=                 # server-side; fal proxy (recommended)
+VITE_STABILITY_API_KEY=  # optional; still browser-direct
 VITE_IMAGE_PROVIDER=auto
+VITE_FIREBASE_*=         # Firestore upload
+ACCESS_ALLOWLIST=...
+SESSION_SECRET=...
 ```
 
 Important notes:
 
-- `VITE_OPENAI_API_KEY` is used directly in the browser for text generation and some image generation paths.
-- Users can also enter API keys in the app; those keys are stored in `sessionStorage` only.
-- `VITE_IMAGE_PROVIDER=auto` chooses FAL first when available, then Stability, then OpenAI.
-- `api/generate-edit.ts` can use `OPENAI_API_KEY` on the server side, or an API key forwarded from the client for local development.
+- **Hosted:** OpenAI and fal run through the Node API shim (`/storyweaver/api/*`). Set `OPENAI_API_KEY` and `FAL_KEY` on the server process only — never `VITE_OPENAI_API_KEY` / `VITE_FAL_KEY` in the build env (they are compiled into public JS).
+- **Rotate keys** if they were ever deployed with `VITE_*` prefixes in a production build.
+- `VITE_IMAGE_PROVIDER=auto` prefers fal when no Stability key is set (server proxy).
+- Stability AI (optional) is still called from the browser when configured.
 
 ## Scripts
 
@@ -88,10 +92,13 @@ Browser (SPA, base /storyweaver/)
 
 Node API (scripts/dev-server.mjs :8080)
   ├── /api/login, /api/session, /api/logout   access gate
-  └── /api/generate-edit                      OpenAI image edit proxy
+  ├── /api/chat-completions                   OpenAI text proxy
+  ├── /api/generate-image                     OpenAI image generate proxy
+  ├── /api/generate-edit                      OpenAI image edit proxy
+  └── /api/fal/proxy                          fal.ai proxy
 
 Client AI (src/api/*)
-  └── OpenAI / FAL / Stability called from the browser for text + most images
+  └── OpenAI + fal via same-origin API; Stability still browser-direct when configured
 
 State (src/store.ts)
   └── Zustand + IndexedDB (graph, character, onboarding flags)
@@ -123,19 +130,22 @@ Export shape: [`src/lib/studyUsageData.ts`](src/lib/studyUsageData.ts) (`StudyUs
 | Route | Purpose |
 |---|---|
 | `POST /api/login` | Validate access ID, set `se_session` cookie |
-| `GET /api/session` | Return current session (401 if absent) |
+| `GET /api/session` | Return current session (401 if absent — expected before login) |
 | `POST /api/logout` | Clear session cookie |
-| `POST /api/generate-edit` | Proxy OpenAI image edit |
+| `POST /api/chat-completions` | Proxy OpenAI chat (session required) |
+| `POST /api/generate-image` | Proxy OpenAI `images.generate` (session required) |
+| `POST /api/generate-edit` | Proxy OpenAI image edit (session required) |
+| `ALL /api/fal/proxy` | Proxy fal.ai client requests (session required) |
 
-Client calls use [`src/lib/apiBase.ts`](src/lib/apiBase.ts) (`/storyweaver/api/...`).
+Client calls use [`src/lib/apiBase.ts`](src/lib/apiBase.ts) (`/storyweaver/api/...`) with `credentials: 'include'`.
 
 ### AI layer
 
-Most generation runs in the browser (`src/api/openai.ts`, `images.ts`, `fal.ts`, `stableDiffusion.ts`). Image edit with a reference photo goes through the server proxy. Provider selection: [`src/lib/envUtils.ts`](src/lib/envUtils.ts) (`resolveImageProvider()`).
+OpenAI text/images and fal image generation go through the Node proxy (session cookie required). Stability AI remains browser-direct when a key is configured. Provider selection: [`src/lib/envUtils.ts`](src/lib/envUtils.ts) (`resolveImageProvider()`).
 
 ## Production deploy (NGINX)
 
-1. Set all env vars (especially `VITE_*` before build).
+1. Set Firebase `VITE_*` and server env (`OPENAI_API_KEY`, `FAL_KEY`, `ACCESS_ALLOWLIST`, `SESSION_SECRET`, …). **Do not** bake OpenAI/fal keys into the Vite build.
 2. `npm ci && npm run build`
 3. Serve `dist/` at `/storyweaver/`
 4. Run the API process and proxy `/storyweaver/api/` to it:
@@ -157,7 +167,9 @@ location /storyweaver/ {
 }
 ```
 
-**Verify proxy:** `curl https://your.host/storyweaver/api/session` should return **401** JSON (`Not authenticated`), not **200** HTML.
+**Verify proxy:** `curl https://your.host/storyweaver/api/session` should return **401** JSON (`Not authenticated`), not **200** HTML. A 401 in the browser console before login is expected.
+
+**Verify no keys in bundle:** after `npm run build`, `grep -r "sk-" dist/` should find nothing.
 
 ## Key files
 

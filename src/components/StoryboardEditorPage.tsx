@@ -119,6 +119,7 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
       const exportData = buildStudyUsageExport(activeNode, state.studyEvents, {
         designTopic: state.designTopic,
         priorExperience: state.priorExperience,
+        experienceDescription: state.experienceDescription,
         accessId: state.accessId
       });
       downloadBasename = studyUsageDownloadBasename(exportData);

@@ -137,6 +137,8 @@ type RFState = {
   setDesignTopic: (topic: string) => void;
   priorExperience: 'yes' | 'no' | null;
   setPriorExperience: (v: 'yes' | 'no' | null) => void;
+  experienceDescription: string;
+  setExperienceDescription: (v: string) => void;
   hasCompletedLanding: boolean;
   setHasCompletedLanding: (v: boolean) => void;
   hasCompletedOverview: boolean;
@@ -642,6 +644,8 @@ const createStore: StateCreator<
     setDesignTopic: (topic) => set({ designTopic: topic }),
     priorExperience: null,
     setPriorExperience: (v) => set({ priorExperience: v }),
+    experienceDescription: '',
+    setExperienceDescription: (v) => set({ experienceDescription: v }),
     hasCompletedLanding: false,
     setHasCompletedLanding: (v) => set({ hasCompletedLanding: v }),
     hasCompletedOverview: false,

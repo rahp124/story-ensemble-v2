@@ -8,11 +8,11 @@ import {
   type AestheticPreviewResult
 } from './AestheticsPhase';
 import { DesignerContentPhase, type DesignerSceneAnswers } from './DesignerContentPhase';
-import { ReflectionPhase } from './ReflectionPhase';
 import { StudyProgressStepper } from './StudyProgressStepper';
 import { panelCardBorderStyle, panelCardStyle, type WizardPhaseTheme } from '@/lib/wizardPhaseTheme';
 import { generateDesignerSceneImage } from '@/api/images';
 import { logSystemPanelGeneration } from '@/lib/studyUsageData';
+import { splitDesignerPanelAnswers } from '@/types/designerQuestionnaire';
 import type { FrameOutline } from '@/types';
 
 type StoryboardFrame = {
@@ -23,7 +23,7 @@ type StoryboardFrame = {
 
 type WizardState = {
   sceneIndex: number;
-  phase: 'panel-generate' | 'aesthetics' | 'reflection';
+  phase: 'panel-generate' | 'aesthetics';
   scenes: { aesthetics: SceneAesthetics }[];
 };
 
@@ -69,7 +69,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
   const currentSceneFrame = storyboardFrames?.[sceneIndex];
 
   // Create a blank designer storyboard node up front so the per-panel
-  // Generation → Aesthetics → Reflection loop can begin immediately at scene 0.
+  // Generation → Aesthetics loop can begin immediately at scene 0.
   useEffect(() => {
     if (sbId !== null) return;
     useStore.setState({ nodes: [], edges: [] });
@@ -116,6 +116,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
   const onDesignerPanelGenerateFinalized = async (answers: DesignerSceneAnswers) => {
     if (!sbId || !designerFrame) return;
+    const { contentAnswers, reflectionAnswers } = splitDesignerPanelAnswers(answers);
     console.log(`[DesignerMode] panel generate frame ${sceneIndex} (${designerFrame.frameType})`);
     setIsGenerating(true);
     try {
@@ -126,7 +127,8 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         currentCaption: '',
         referenceImage: characterRef || undefined,
         frameType: designerFrame.frameType,
-        contentAnswers: answers,
+        contentAnswers,
+        reflectionAnswers,
         stage: 'content',
         createFromScratch: true,
         hasCharacterProfileReference: !!characterRef
@@ -135,13 +137,14 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
         initiator: 'user',
         type: 'DESIGNER_PANEL_GENERATE',
         count: 1,
-        data: { sceneIndex, frameType: designerFrame.frameType, answers }
+        data: { sceneIndex, frameType: designerFrame.frameType, answers: contentAnswers, reflectionAnswers }
       });
       applyDesignerSceneUpdate(sbId, sceneIndex, {
         stage: 'content',
         image,
         caption,
-        contentAnswers: answers
+        contentAnswers,
+        reflectionAnswers
       });
       logSystemPanelGeneration(addStudyEvent, {
         storyboardId: sbId,
@@ -169,32 +172,21 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
 
   const onDesignerPanelGenerateDebugSkip = (answers: DesignerSceneAnswers) => {
     if (!sbId || !designerFrame) return;
+    const { contentAnswers, reflectionAnswers } = splitDesignerPanelAnswers(answers);
     const characterRef = useStore.getState().characterProfile?.image?.trim() ?? '';
     applyDesignerSceneUpdate(sbId, sceneIndex, {
       stage: 'content',
       image: characterRef,
       caption: designerFrame.caption ?? '',
-      contentAnswers: answers
+      contentAnswers,
+      reflectionAnswers
     });
     setWizardState((prev) => ({ ...prev, phase: 'aesthetics' }));
   };
 
-  const onDesignerReflectionFinalized = (answers: DesignerSceneAnswers) => {
+  const advanceAfterAesthetics = () => {
     if (!sbId) return;
-    applyDesignerSceneUpdate(sbId, sceneIndex, {
-      stage: 'content',
-      reflectionAnswers: answers
-    });
-    addStudyEvent({
-      initiator: 'user',
-      type: 'DESIGNER_REFLECTION_COMPLETE',
-      count: 1,
-      data: { sceneIndex, answers }
-    });
 
-    // Reflection is the last step of the per-panel loop. After the final panel,
-    // finish the wizard (revealing the summary editor); otherwise restart the
-    // loop for the next panel at its Generation step.
     if (sceneIndex === 3) {
       addStudyEvent({
         initiator: 'user',
@@ -281,8 +273,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
       count: 1,
       data: { sceneIndex, aestheticNotes: aesthetics }
     });
-    // Accepting the aesthetics advances to the Reflection page for this panel.
-    setWizardState(prev => ({ ...prev, phase: 'reflection' }));
+    advanceAfterAesthetics();
   };
 
   // ─── Render ──────────────────────────────────────────────────────────────────
@@ -389,7 +380,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
             </div>
           )}
 
-          {/* RIGHT: GENERATION, AESTHETICS, OR REFLECTION PHASE */}
+          {/* RIGHT: GENERATION OR AESTHETICS PHASE */}
           <div className={showLeftImagePanel ? 'lg:col-span-7' : 'lg:col-span-12'}>
             {phase === 'panel-generate' && designerFrame ? (
               <DesignerContentPhase
@@ -398,19 +389,13 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                 rewordAsImagined={priorExperience === 'no'}
                 questionSet="generation"
                 phaseTheme="content"
-                initialContent={designerFrame.contentAnswers}
+                initialContent={{
+                  ...(designerFrame.contentAnswers ?? {}),
+                  ...(designerFrame.reflectionAnswers ?? {})
+                }}
                 isGenerating={isGenerating}
                 onContentFinalized={onDesignerPanelGenerateFinalized}
                 onDebugSkipGenerate={onDesignerPanelGenerateDebugSkip}
-              />
-            ) : phase === 'reflection' && designerFrame ? (
-              <ReflectionPhase
-                sceneIndex={sceneIndex}
-                frameType={designerFrame.frameType}
-                initialReflection={designerFrame.reflectionAnswers}
-                isLastScene={sceneIndex === 3}
-                phaseTheme="content"
-                onReflectionFinalized={onDesignerReflectionFinalized}
               />
             ) : (
               <AestheticsPhase
@@ -425,7 +410,7 @@ export function StoryWizard({ onComplete }: { onComplete: () => void }) {
                 onContinue={onDesignerAestheticContinue}
                 isGenerating={isPreviewGenerating}
                 isLastScene={sceneIndex === 3}
-                continueLabel="Looks good to me!"
+                continueLabel={sceneIndex === 3 ? 'Finish & Reveal Full Story' : 'Looks good to me!'}
               />
             )}
           </div>

@@ -1,30 +1,3 @@
-import OpenAI from 'openai';
-
-export function getOpenAiKey() {
-  if (import.meta.env['VITE_OPENAI_API_KEY']) {
-    return import.meta.env['VITE_OPENAI_API_KEY'];
-  }
-
-  return sessionStorage.getItem('openaiKey') ?? '';
-}
-export function setOpenAiKey(key: string) {
-  sessionStorage.setItem('openaiKey', key);
-}
-
-export async function validateOpenAiKey(key: string) {
-  try {
-    const openai = new OpenAI({
-      apiKey: key,
-      dangerouslyAllowBrowser: true
-    });
-    await openai.models.list();
-
-    return { error: false };
-  } catch {
-    return { error: true };
-  }
-}
-
 export function getStabilityAiKey() {
   if (import.meta.env['VITE_STABILITY_API_KEY']) {
     return import.meta.env['VITE_STABILITY_API_KEY'];
@@ -61,16 +34,13 @@ export async function validateStabilityAiKey(key: string) {
   }
 }
 
+/** Browser-visible fal key (legacy local dev only). Hosted uses server FAL_KEY via proxy. */
 export function getFalKey() {
   if (import.meta.env['VITE_FAL_KEY']) {
     return import.meta.env['VITE_FAL_KEY'];
   }
 
   return sessionStorage.getItem('falKey') ?? '';
-}
-
-export function setFalKey(key: string) {
-  sessionStorage.setItem('falKey', key);
 }
 
 export type ImageProvider = 'fal' | 'openai' | 'stability' | 'auto';
@@ -86,7 +56,7 @@ export function getImageProvider(): ImageProvider {
 export function resolveImageProvider(): 'fal' | 'openai' | 'stability' {
   const explicit = getImageProvider();
   if (explicit !== 'auto') return explicit;
-  if (getFalKey()) return 'fal';
   if (getStabilityAiKey()) return 'stability';
-  return 'openai';
+  // OpenAI and fal keys live on the server when proxied; prefer fal for image gen.
+  return 'fal';
 }

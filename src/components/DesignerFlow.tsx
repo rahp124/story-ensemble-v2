@@ -1,11 +1,17 @@
 import { useState } from 'react';
 import { useStore } from '../store';
 import type { DesignerStoryboard } from '@/data/designerStoryboards';
+import type { FrameOutline } from '@/types';
 import { StudyOverviewPage } from './StudyOverviewPage';
 import { DesignerVariantPicker } from './DesignerVariantPicker';
 import { DesignerStoryboardResponsePage } from './DesignerStoryboardResponsePage';
 import { PostStoryboardSurveyPage } from './PostStoryboardSurveyPage';
 import { EnlargeableStoryboardImage } from './EnlargeableStoryboardImage';
+import {
+  DESIGNER_FRAME_BOUNDS_PERCENT,
+  DESIGNER_RESPONSE_FRAME_TYPES,
+  getDesignerFrameResponseQuestions
+} from '@/types/designerResponseQuestionnaire';
 
 type DesignerPhase = 'select' | 'respond' | 'survey';
 
@@ -13,20 +19,46 @@ type DesignerFlowProps = {
   onStartOver: () => void;
 };
 
-function StoryboardPreview({ storyboard }: { storyboard: DesignerStoryboard }) {
+function StoryboardPreview({
+  storyboard,
+  highlightFrameType = null
+}: {
+  storyboard: DesignerStoryboard;
+  highlightFrameType?: FrameOutline['frameType'] | null;
+}) {
+  const bounds =
+    highlightFrameType != null
+      ? DESIGNER_FRAME_BOUNDS_PERCENT[highlightFrameType]
+      : null;
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-      <EnlargeableStoryboardImage
-        src={storyboard.image}
-        alt={storyboard.title}
-        imgClassName="w-full h-auto rounded-lg"
-      />
+      <div className="relative">
+        <EnlargeableStoryboardImage
+          src={storyboard.image}
+          alt={storyboard.title}
+          imgClassName="w-full h-auto rounded-lg"
+        />
+        {bounds && (
+          <div
+            aria-hidden
+            className="absolute border-2 border-blue-600 bg-blue-500/10 rounded-sm pointer-events-none"
+            style={{
+              left: `${bounds.left}%`,
+              top: `${bounds.top}%`,
+              width: `${bounds.width}%`,
+              height: `${bounds.height}%`
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
 
 export function DesignerFlow({ onStartOver }: DesignerFlowProps) {
   const hasCompletedOverview = useStore((s) => s.hasCompletedOverview);
+  const addStudyEvent = useStore((s) => s.addStudyEvent);
   const selectedStoryboard = useStore((s) =>
     s.designerSelectedVariantId
       ? s
@@ -36,6 +68,8 @@ export function DesignerFlow({ onStartOver }: DesignerFlowProps) {
   );
 
   const [phase, setPhase] = useState<DesignerPhase>('select');
+  const [respondFrameIndex, setRespondFrameIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
   const handlePick = ({ storyboardId }: { storyboardId: string }) => {
     const state = useStore.getState();
@@ -60,7 +94,27 @@ export function DesignerFlow({ onStartOver }: DesignerFlowProps) {
       data: { variantId: storyboardId, storyboardId: sbId }
     });
 
+    setRespondFrameIndex(0);
+    setAnswers({});
     setPhase('respond');
+  };
+
+  const handleFrameContinue = (frameAnswers: Record<string, string>) => {
+    const mergedAnswers = { ...answers, ...frameAnswers };
+    setAnswers(mergedAnswers);
+
+    if (respondFrameIndex === DESIGNER_RESPONSE_FRAME_TYPES.length - 1) {
+      addStudyEvent({
+        initiator: 'user',
+        type: 'DESIGNER_RESPONSES_SUBMITTED',
+        count: 1,
+        data: { answers: mergedAnswers }
+      });
+      setPhase('survey');
+      return;
+    }
+
+    setRespondFrameIndex((prev) => prev + 1);
   };
 
   if (!hasCompletedOverview) {
@@ -90,11 +144,24 @@ export function DesignerFlow({ onStartOver }: DesignerFlowProps) {
   }
 
   if (phase === 'respond') {
+    const frameType = DESIGNER_RESPONSE_FRAME_TYPES[respondFrameIndex];
+    const questions = getDesignerFrameResponseQuestions(frameType);
+
     return (
       <>
         <DesignerStoryboardResponsePage
-          storyboardPreview={<StoryboardPreview storyboard={selectedStoryboard} />}
-          onComplete={() => setPhase('survey')}
+          storyboardPreview={
+            <StoryboardPreview
+              storyboard={selectedStoryboard}
+              highlightFrameType={frameType}
+            />
+          }
+          stepIndex={respondFrameIndex}
+          frameType={frameType}
+          questions={questions}
+          initialAnswers={answers}
+          isLastStep={respondFrameIndex === DESIGNER_RESPONSE_FRAME_TYPES.length - 1}
+          onContinue={handleFrameContinue}
         />
         {startOverButton}
       </>

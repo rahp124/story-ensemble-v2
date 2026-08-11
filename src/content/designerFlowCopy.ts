@@ -1,13 +1,6 @@
 import { parse } from 'yaml';
 import designerFlowRaw from './designerFlowCopy.yaml?raw';
 
-export type DesignerResponseQuestion = {
-  id: string;
-  prompt: string;
-  required: boolean;
-  placeholder?: string;
-};
-
 export type DesignerFlowCopy = {
   picker: {
     eyebrow: string;
@@ -20,7 +13,6 @@ export type DesignerFlowCopy = {
     subtitle: string;
     continueButton: string;
     continueDisabledHint: string;
-    questions: DesignerResponseQuestion[];
   };
 };
 

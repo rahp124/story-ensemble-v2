@@ -15,6 +15,7 @@ export type StudyUsageExport = {
   storyboardTitle: string;
   designTopic: string | null;
   priorExperience: 'yes' | 'no' | null;
+  experienceDescription: string;
   accessId: string | null;
   flow: 'user' | 'designer';
   selectedVariantId: string | null;
@@ -56,6 +57,7 @@ export function buildStudyUsageExport(
   meta: {
     designTopic: string | null;
     priorExperience: 'yes' | 'no' | null;
+    experienceDescription?: string;
     accessId?: string | null;
     selectedVariantId?: string | null;
   }
@@ -68,6 +70,7 @@ export function buildStudyUsageExport(
     storyboardTitle: storyboard.title,
     designTopic: meta.designTopic,
     priorExperience: meta.priorExperience,
+    experienceDescription: meta.experienceDescription ?? '',
     accessId: meta.accessId ?? null,
     flow: meta.selectedVariantId ? 'designer' : 'user',
     selectedVariantId: meta.selectedVariantId ?? null,

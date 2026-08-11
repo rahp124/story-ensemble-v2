@@ -1,12 +1,10 @@
 import { fal } from '@fal-ai/client';
-import { getFalKey } from '@/lib/envUtils';
+import { apiUrl } from '@/lib/apiBase';
 
 let configured = false;
 function ensureConfigured() {
-  const key = getFalKey();
-  if (!key) throw new Error('VITE_FAL_KEY not configured');
   if (!configured) {
-    fal.config({ credentials: key });
+    fal.config({ proxyUrl: apiUrl('fal/proxy') });
     configured = true;
   }
 }

@@ -6,8 +6,10 @@ declare module '*.yaml?raw' {
 }
 
 interface ImportMetaEnv {
-  readonly VITE_OPENAI_API_KEY: string;
-  readonly VITE_STABILITY_API_KEY: string;
+  readonly VITE_OPENAI_API_KEY?: string;
+  readonly VITE_FAL_KEY?: string;
+  readonly VITE_STABILITY_API_KEY?: string;
+  readonly VITE_IMAGE_PROVIDER?: string;
   readonly VITE_FIREBASE_API_KEY: string;
   readonly VITE_FIREBASE_AUTH_DOMAIN: string;
   readonly VITE_FIREBASE_PROJECT_ID: string;

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { ApiKeyModal } from './components/ApiKeyModal';
 import { LoginPage } from './components/LoginPage';
 import { UserLandingPage } from './components/UserLandingPage';
 import { HomePage } from './components/HomePage';
@@ -64,7 +63,9 @@ export default function App() {
       hasCompletedOverview: false,
       hasCompletedCharacterCreation: false,
       characterProfile: null,
-      designerSelectedVariantId: null
+      designerSelectedVariantId: null,
+      priorExperience: null,
+      experienceDescription: ''
     });
     navigate('home');
     setAccessStatus('anonymous');
@@ -95,7 +96,6 @@ export default function App() {
         <DesignerFlow onStartOver={handleStartOver} />
       )}
       {adminSetupOpen && <AdminSetup />}
-      <ApiKeyModal />
     </div>
   );
 }

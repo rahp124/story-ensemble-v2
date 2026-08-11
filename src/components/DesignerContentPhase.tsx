@@ -6,7 +6,8 @@ import type { WizardPhaseTheme } from '@/lib/wizardPhaseTheme';
 import { panelCardBorderStyle, panelCardStyle } from '@/lib/wizardPhaseTheme';
 import {
   getDesignerContentOnlyQuestions,
-  getDesignerGenerationQuestions,
+  getDesignerPanelGenerateQuestions,
+  isDesignerReflectionQuestionId,
   rewordForImaginedExperience,
   type DesignerContentQuestion
 } from '@/types/designerQuestionnaire';
@@ -30,6 +31,9 @@ interface DesignerContentPhaseProps {
 }
 
 function questionLabel(q: DesignerContentQuestion, reword: boolean): string {
+  if (isDesignerReflectionQuestionId(q.id)) {
+    return q.text;
+  }
   return reword ? rewordForImaginedExperience(q.text) : q.text;
 }
 
@@ -38,7 +42,7 @@ function resolveQuestions(
   questionSet: QuestionSet
 ): DesignerContentQuestion[] {
   if (questionSet === 'generation') {
-    return getDesignerGenerationQuestions(frameType);
+    return getDesignerPanelGenerateQuestions(frameType);
   }
   return getDesignerContentOnlyQuestions(frameType);
 }
