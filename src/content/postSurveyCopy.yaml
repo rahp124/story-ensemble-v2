@@ -10,7 +10,7 @@ completionMessage: Your responses have been recorded. You can close this window.
 questions:
   - id: accuracy_likert
     type: likert
-    prompt: To what extent did your feedback capture your experience?
+    prompt: To what extent did your responses completely and accurately capture your experience?
     required: true
     points: 7
     minLabel: Not at all
@@ -24,7 +24,7 @@ questions:
 
   - id: reflection_likert
     type: likert
-    prompt: To what extent did this task help you provide detailed reflection?
+    prompt: To what extent did this task help you provide details of your experience?
     required: true
     points: 7
     minLabel: Not at all
