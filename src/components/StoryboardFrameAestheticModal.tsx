@@ -10,6 +10,7 @@ import {
   type SceneAesthetics
 } from './AestheticsPhase';
 import { DEFAULT_CONTENT_SUBTITLES } from './DesignerContentPhase';
+import { FRAME_LABEL } from './StoryboardPanelStrip';
 import { panelCardBorderStyle, panelCardStyle } from '@/lib/wizardPhaseTheme';
 import type { StoryboardNodeData } from '@/types';
 import { Node } from 'reactflow';
@@ -132,7 +133,11 @@ export function StoryboardFrameAestheticModal({
   };
 
   const frameTypeLabel =
-    frame?.frameType === 'Action' ? 'Action / Solution' : frame?.frameType;
+    frame?.frameType === 'Action'
+      ? 'Action / Solution'
+      : frame?.frameType
+        ? FRAME_LABEL[frame.frameType]
+        : undefined;
   const contentTitle =
     frameIndex !== null && frameTypeLabel
       ? `Scene ${frameIndex + 1} — ${frameTypeLabel}`

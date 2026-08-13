@@ -6,7 +6,7 @@ export const FRAME_LABEL: Record<FrameOutline['frameType'], string> = {
   Context: 'Context',
   Problem: 'Problem',
   Action: 'Action',
-  Resolution: 'Resolution'
+  Resolution: 'Outcome'
 };
 
 export type StoryboardPanelFrame = {

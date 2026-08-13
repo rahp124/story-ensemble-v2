@@ -11,6 +11,7 @@ import {
   rewordForImaginedExperience,
   type DesignerContentQuestion
 } from '@/types/designerQuestionnaire';
+import { FRAME_LABEL } from './StoryboardPanelStrip';
 
 export type DesignerSceneAnswers = Record<string, string>;
 
@@ -129,7 +130,7 @@ export function DesignerContentPhase({
     >
       <div className="mb-6">
         <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
-          Scene {sceneIndex + 1} — {frameType === 'Action' ? 'Action / Solution' : frameType}
+          Scene {sceneIndex + 1} — {frameType === 'Action' ? 'Action / Solution' : FRAME_LABEL[frameType]}
         </h2>
         <p className="text-sm text-gray-700 mt-1">
           {subtitle ?? defaultContentSubtitle}

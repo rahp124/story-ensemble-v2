@@ -6,7 +6,13 @@ import {
 import { PriorExperienceOption } from './onboarding/PriorExperienceOption';
 import { ENABLE_ADMIN_SETUP } from '@/lib/featureFlags';
 
-export function StudyOverviewPage() {
+type StudyOverviewPageProps = {
+  showExperienceDescription?: boolean;
+};
+
+export function StudyOverviewPage({
+  showExperienceDescription = true
+}: StudyOverviewPageProps) {
   const designTopic = useStore((s) => s.designTopic);
   const priorExperience = useStore((s) => s.priorExperience);
   const setPriorExperience = useStore((s) => s.setPriorExperience);
@@ -19,7 +25,8 @@ export function StudyOverviewPage() {
   const topicLabel =
     designTopic?.trim() || copy.topic.defaultTopic;
   const canContinue =
-    priorExperience !== null && experienceDescription.trim().length > 0;
+    priorExperience !== null &&
+    (!showExperienceDescription || experienceDescription.trim().length > 0);
 
   const handleContinue = () => {
     if (!canContinue) return;
@@ -78,7 +85,7 @@ export function StudyOverviewPage() {
           <div className="mt-5">
             <img
               src={`${import.meta.env.BASE_URL}storyboards/example/example_storyboard_1.jpg`}
-              alt="Example storyboard with context, problem, action, and resolution panels"
+              alt="Example storyboard with context, problem, action, and outcome panels"
               className="w-full rounded-2xl ring-1 ring-slate-200/60"
             />
           </div>
@@ -127,25 +134,27 @@ export function StudyOverviewPage() {
             </div>
           </fieldset>
 
-          <div className="mt-6">
-            <label
-              htmlFor="study-overview-experience-description"
-              className="block text-base font-semibold text-slate-900 mb-2"
-            >
-              {copy.experienceDescription.label}
-              <span className="text-blue-600 ml-1" aria-hidden>
-                *
-              </span>
-            </label>
-            <textarea
-              id="study-overview-experience-description"
-              value={experienceDescription}
-              onChange={(e) => setExperienceDescription(e.target.value)}
-              placeholder={copy.experienceDescription.placeholder}
-              rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-y text-sm"
-            />
-          </div>
+          {showExperienceDescription && (
+            <div className="mt-6">
+              <label
+                htmlFor="study-overview-experience-description"
+                className="block text-base font-semibold text-slate-900 mb-2"
+              >
+                {copy.experienceDescription.label}
+                <span className="text-blue-600 ml-1" aria-hidden>
+                  *
+                </span>
+              </label>
+              <textarea
+                id="study-overview-experience-description"
+                value={experienceDescription}
+                onChange={(e) => setExperienceDescription(e.target.value)}
+                placeholder={copy.experienceDescription.placeholder}
+                rows={4}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-y text-sm"
+              />
+            </div>
+          )}
 
           <button
             type="button"
@@ -158,7 +167,9 @@ export function StudyOverviewPage() {
           {!canContinue && (
             <p className="mt-3 text-center text-xs text-slate-500">
               {priorExperience === null
-                ? copy.continueDisabledHint
+                ? showExperienceDescription
+                  ? copy.continueDisabledHint
+                  : copy.continueDisabledHintAnswerOnly
                 : copy.experienceDescription.requiredHint}
             </p>
           )}

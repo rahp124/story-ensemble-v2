@@ -62,7 +62,7 @@ export const DESIGNER_FRAME_RESPONSE_QUESTIONS: Record<
   Resolution: [
     {
       id: 'designer_response_resolution',
-      prompt: "How does this storyboard's Resolution frame compare to your experience?",
+      prompt: "How does this storyboard's Outcome frame compare to your experience?",
       required: true,
       placeholder: '1-2 sentences'
     },
