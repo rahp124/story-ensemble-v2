@@ -29,7 +29,7 @@ export const DESIGNER_CONTENT_QUESTIONS: Record<DesignerQuestionFrameType, Desig
     // { id: 'act-alternatives',  text: 'How well would this solution address your problem? What alternatives would you consider for addressing the problem?', phase: 'content' }
   ],
   Resolution: [
-    { id: 'res-after',         text: 'What happened immediately after your Actions?', phase: 'generation' },
+    { id: 'res-after',         text: 'What happened immediately after your Action?', phase: 'generation' },
     // { id: 'res-avoid',         text: 'What do you need in order to avoid the problem in the future?', phase: 'generation' },
     // { id: 'res-signal',       text: '[Reflection] How did you know this was a good or bad experience?', phase: 'generation' },    
     // { id: 'res-realism',       text: 'What stands out in this image as realistic and unrealistic from your experience?', phase: 'content' },    
@@ -96,8 +96,10 @@ export function rewordForImaginedExperience(text: string): string {
   return text
     .replace(/your last experience/gi, 'this situation')
     .replace(/hat did you/gi, 'hat would you')
+    .replace(/Did you eventually/gi, 'Would you')
     .replace(/hat was/gi, 'hat would be')
     .replace(/hat made it/gi, 'hat would make it')
     .replace(/ow did know/gi, 'ow would you know')
-    .replace(/something that made this/gi, 'something that would make this');    
+    .replace(/something that made this/gi, 'something that would make this')
+    .replace(/hat happened/gi, 'hat would happen');    
 }
