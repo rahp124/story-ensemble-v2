@@ -19,8 +19,8 @@ intro:
   steps:
     - "Context: the setup for the experience"
     - "Problem: the challenge or issue"
-    - "Solution/Action: how the situation was addressed"
-    - "Resolution: the outcome"
+    - "Action/Solution: how the situation was addressed"
+    - "Outcome/Resolution: what happened as a result"
 
   post_paragraphs:
     - "Before you begin, take a moment to recall the most recent time you experienced an issue related to {{topic}}. Try to remember the events in as much detail as possible. If you have not experienced this yourself, imagine a realistic situation in which you encounter this topic."
@@ -41,3 +41,4 @@ experienceDescription:
 
 continueButton: Continue
 continueDisabledHint: Pick an answer and describe your experience to continue.
+continueDisabledHintAnswerOnly: Pick an answer to continue.

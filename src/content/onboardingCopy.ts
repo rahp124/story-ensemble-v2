@@ -73,6 +73,7 @@ export type StudyOverviewCopy = {
   };
   continueButton: string;
   continueDisabledHint: string;
+  continueDisabledHintAnswerOnly: string;
 };
 
 export type CharacterCreationCopy = {

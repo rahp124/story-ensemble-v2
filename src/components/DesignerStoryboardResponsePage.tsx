@@ -5,6 +5,7 @@ import type {
   DesignerResponseQuestion
 } from '@/types/designerResponseQuestionnaire';
 import { DESIGNER_RESPONSE_FRAME_TYPES } from '@/types/designerResponseQuestionnaire';
+import { FRAME_LABEL } from './StoryboardPanelStrip';
 
 type DesignerStoryboardResponsePageProps = {
   storyboardPreview: ReactNode;
@@ -18,7 +19,7 @@ type DesignerStoryboardResponsePageProps = {
 
 function frameTypeLabel(frameType: DesignerResponseFrameType): string {
   if (frameType === 'Action') return 'Action / Solution';
-  return frameType;
+  return FRAME_LABEL[frameType];
 }
 
 export function DesignerStoryboardResponsePage({
