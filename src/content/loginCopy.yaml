@@ -4,7 +4,7 @@ header:
   subtitle: Use the access ID provided by the study team to continue.
 accessId:
   label: Access ID
-  placeholder: e.g. pilot01
+  placeholder: e.g. p123
 submitButton: Continue
 submitDisabledHint: Enter your access ID to continue.
 errors:
