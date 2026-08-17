@@ -7,26 +7,23 @@ import { PriorExperienceOption } from './onboarding/PriorExperienceOption';
 import { ENABLE_ADMIN_SETUP } from '@/lib/featureFlags';
 
 type StudyOverviewPageProps = {
-  showExperienceDescription?: boolean;
+  flow?: 'user' | 'designer';
 };
 
 export function StudyOverviewPage({
-  showExperienceDescription = true
+  flow = 'user'
 }: StudyOverviewPageProps) {
   const designTopic = useStore((s) => s.designTopic);
   const priorExperience = useStore((s) => s.priorExperience);
   const setPriorExperience = useStore((s) => s.setPriorExperience);
-  const experienceDescription = useStore((s) => s.experienceDescription);
-  const setExperienceDescription = useStore((s) => s.setExperienceDescription);
   const setHasCompletedOverview = useStore((s) => s.setHasCompletedOverview);
   const setAdminSetupOpen = useStore((s) => s.setAdminSetupOpen);
 
   const copy = STUDY_OVERVIEW_COPY;
   const topicLabel =
     designTopic?.trim() || copy.topic.defaultTopic;
-  const canContinue =
-    priorExperience !== null &&
-    (!showExperienceDescription || experienceDescription.trim().length > 0);
+  const canContinue = priorExperience !== null;
+  const postParagraphs = copy.intro.post_paragraphs[flow];
 
   const handleContinue = () => {
     if (!canContinue) return;
@@ -35,8 +32,7 @@ export function StudyOverviewPage({
       type: 'STUDY_OVERVIEW_COMPLETE',
       count: 1,
       data: {
-        priorExperience,
-        experienceDescription: experienceDescription.trim()
+        priorExperience
       }
     });
     setHasCompletedOverview(true);
@@ -84,14 +80,14 @@ export function StudyOverviewPage({
 
           <div className="mt-5">
             <img
-              src={`${import.meta.env.BASE_URL}storyboards/example/example_storyboard_1.jpg`}
+              src={`${import.meta.env.BASE_URL}storyboards/example/example_storyboard.jpg`}
               alt="Example storyboard with context, problem, action, and outcome panels"
               className="w-full rounded-2xl ring-1 ring-slate-200/60"
             />
           </div>
 
           <div className="mt-10 space-y-3">
-            {copy.intro.post_paragraphs.map((paragraph) => (
+            {postParagraphs.map((paragraph) => (
               <p
                 key={paragraph}
                 className="leading-relaxed"
@@ -134,28 +130,6 @@ export function StudyOverviewPage({
             </div>
           </fieldset>
 
-          {showExperienceDescription && (
-            <div className="mt-6">
-              <label
-                htmlFor="study-overview-experience-description"
-                className="block text-base font-semibold text-slate-900 mb-2"
-              >
-                {copy.experienceDescription.label}
-                <span className="text-blue-600 ml-1" aria-hidden>
-                  *
-                </span>
-              </label>
-              <textarea
-                id="study-overview-experience-description"
-                value={experienceDescription}
-                onChange={(e) => setExperienceDescription(e.target.value)}
-                placeholder={copy.experienceDescription.placeholder}
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-y text-sm"
-              />
-            </div>
-          )}
-
           <button
             type="button"
             onClick={handleContinue}
@@ -166,11 +140,7 @@ export function StudyOverviewPage({
           </button>
           {!canContinue && (
             <p className="mt-3 text-center text-xs text-slate-500">
-              {priorExperience === null
-                ? showExperienceDescription
-                  ? copy.continueDisabledHint
-                  : copy.continueDisabledHintAnswerOnly
-                : copy.experienceDescription.requiredHint}
+              {copy.continueDisabledHint}
             </p>
           )}
 

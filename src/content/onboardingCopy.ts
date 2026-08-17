@@ -53,7 +53,10 @@ export type StudyOverviewCopy = {
   };
   intro: {
     pre_paragraphs: string[];
-    post_paragraphs: string[];
+    post_paragraphs: {
+      user: string[];
+      designer: string[];
+    };
     steps: string[];
   };
   topic: {
@@ -66,14 +69,8 @@ export type StudyOverviewCopy = {
     helper: string;
     options: PriorExperienceOption[];
   };
-  experienceDescription: {
-    label: string;
-    placeholder: string;
-    requiredHint: string;
-  };
   continueButton: string;
   continueDisabledHint: string;
-  continueDisabledHintAnswerOnly: string;
 };
 
 export type CharacterCreationCopy = {
