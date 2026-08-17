@@ -49,10 +49,10 @@ function resolveQuestions(
 }
 
 export const DEFAULT_CONTENT_SUBTITLES: Record<FrameOutline['frameType'], string> = {
-  Context: 'Set the scene...',
-  Problem: 'What went wrong...',
-  Action: 'What you tried...',
-  Resolution: 'What happened as a result...',
+  Context: 'Set the scene. These responses will be used to create the first storyboard panel.',
+  Problem: 'What went wrong? These responses will be used to create the Problem storyboard panel.',
+  Action: 'What you tried. These responses will be used to create the Action storyboard panel.',
+  Resolution: 'What happened as a result. These responses will be used to create the final storyboard panel.',
 };
 
 export function DesignerContentPhase({

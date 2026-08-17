@@ -11,10 +11,10 @@ topic:
 
 intro:
   pre_paragraphs:
-    - "Imagine your school is asking students to share their experiences with {{topic}}. They want to understand the issues that students face so they can work with designers to improve the student experience."
-    - "In this study, you will answer some questions about your most recent experience with {{topic}}. Your responses will be used to create a visual storyboard that helps designers understand your experience and identify opportunities to improve."
+    - "Imagine your school is asking students like you to share their experiences with {{topic}}. They want to understand the issues that students face so they can work with designers to improve the student experience."
+    # - "In this study, you will answer some questions about your experience with {{topic}}. Your responses will be used to create a visual storyboard that helps designers understand your experience and identify opportunities to improve."
     # - "The study takes approximately 30-45 minutes, followed by a 5-minute survey. You must create a storyboard and answer the survey at the end to receive full participation credit."
-    - "A UX storyboard is a sequence of images with text captions that illustrates a user experience. It is typically organized into four panels:"
+    - "In this study, you will answer some questions about your experience with {{topic}}. These questions will involve a visual UX storyboard. A UX storyboard is a sequence of images with text captions that illustrates a user experience. It is a tool that helps designers understand your experience and identify opportunities to improve. Below is an example storyboard with a different scenario. It is typically organized into four panels:"
 
   steps:
     - "Context: the setup for the experience"
@@ -23,7 +23,10 @@ intro:
     - "Outcome/Resolution: what happened as a result"
 
   post_paragraphs:
-    - "Before you begin, take a moment to recall the most recent time you experienced an issue related to {{topic}}. Try to remember the events in as much detail as possible. If you have not experienced this yourself, imagine a realistic situation in which you encounter this topic."
+    user:
+      - "Before you begin, take a moment to recall the most recent time you experienced an issue related to {{topic}}. Try to remember the events in as much detail as possible. If you have not experienced this yourself, imagine a realistic situation in which you encounter this topic."
+    designer:
+      - "Before you begin, take a moment to recall your experience with {{topic}}. Next, you will pick the storyboard that you relate to most and answer questions about each of its four panels."
 
 priorExperience:
   legend: "Have you had a previous experience with {{topic}} ({{descriptor}})? "
@@ -34,11 +37,5 @@ priorExperience:
     - value: no
       title: No, but I can imagine a realistic scenario
 
-experienceDescription:
-  label: Briefly describe your scenario
-  placeholder: Describe your experience's context, problem, action, and outcome.
-  requiredHint: Please describe your experience to continue.
-
 continueButton: Continue
-continueDisabledHint: Pick an answer and describe your experience to continue.
-continueDisabledHintAnswerOnly: Pick an answer to continue.
+continueDisabledHint: Pick an answer to continue.

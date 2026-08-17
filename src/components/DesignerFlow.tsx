@@ -4,7 +4,6 @@ import type { DesignerStoryboard } from '@/data/designerStoryboards';
 import type { FrameOutline } from '@/types';
 import { StudyOverviewPage } from './StudyOverviewPage';
 import { DesignerVariantPicker } from './DesignerVariantPicker';
-import { DesignerScenarioDescriptionPage } from './DesignerScenarioDescriptionPage';
 import { DesignerStoryboardResponsePage } from './DesignerStoryboardResponsePage';
 import { PostStoryboardSurveyPage } from './PostStoryboardSurveyPage';
 import { EnlargeableStoryboardImage } from './EnlargeableStoryboardImage';
@@ -14,7 +13,7 @@ import {
   getDesignerFrameResponseQuestions
 } from '@/types/designerResponseQuestionnaire';
 
-type DesignerPhase = 'select' | 'describe' | 'respond' | 'survey';
+type DesignerPhase = 'select' | 'respond' | 'survey';
 
 type DesignerFlowProps = {
   onStartOver: () => void;
@@ -60,8 +59,6 @@ function StoryboardPreview({
 export function DesignerFlow({ onStartOver }: DesignerFlowProps) {
   const hasCompletedOverview = useStore((s) => s.hasCompletedOverview);
   const addStudyEvent = useStore((s) => s.addStudyEvent);
-  const experienceDescription = useStore((s) => s.experienceDescription);
-  const setExperienceDescription = useStore((s) => s.setExperienceDescription);
   const selectedStoryboard = useStore((s) =>
     s.designerSelectedVariantId
       ? s
@@ -99,7 +96,7 @@ export function DesignerFlow({ onStartOver }: DesignerFlowProps) {
 
     setRespondFrameIndex(0);
     setAnswers({});
-    setPhase('describe');
+    setPhase('respond');
   };
 
   const handleFrameContinue = (frameAnswers: Record<string, string>) => {
@@ -120,19 +117,8 @@ export function DesignerFlow({ onStartOver }: DesignerFlowProps) {
     setRespondFrameIndex((prev) => prev + 1);
   };
 
-  const handleDescribeContinue = (description: string) => {
-    setExperienceDescription(description);
-    addStudyEvent({
-      initiator: 'user',
-      type: 'DESIGNER_SCENARIO_DESCRIBED',
-      count: 1,
-      data: { experienceDescription: description }
-    });
-    setPhase('respond');
-  };
-
   if (!hasCompletedOverview) {
-    return <StudyOverviewPage showExperienceDescription={false} />;
+    return <StudyOverviewPage flow="designer" />;
   }
 
   const startOverButton = (
@@ -152,19 +138,6 @@ export function DesignerFlow({ onStartOver }: DesignerFlowProps) {
         <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto">
           <DesignerVariantPicker onPick={handlePick} />
         </div>
-        {startOverButton}
-      </>
-    );
-  }
-
-  if (phase === 'describe') {
-    return (
-      <>
-        <DesignerScenarioDescriptionPage
-          storyboardPreview={<StoryboardPreview storyboard={selectedStoryboard} />}
-          initialDescription={experienceDescription}
-          onContinue={handleDescribeContinue}
-        />
         {startOverButton}
       </>
     );
