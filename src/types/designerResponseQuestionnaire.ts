@@ -20,7 +20,7 @@ export const DESIGNER_FRAME_RESPONSE_QUESTIONS: Record<
     {
       id: 'designer_response_context',
       prompt:
-        "How do you relate to what this character is doing in this storyboard's Context, and how do you relate to the goals they want to accomplish?",
+        "How do you relate to what this character is doing in this storyboard's Context, and how do you relate to what they want to accomplish?",
       required: true,
       placeholder: '1-2 sentences'
     },
@@ -48,7 +48,7 @@ export const DESIGNER_FRAME_RESPONSE_QUESTIONS: Record<
   Action: [
     {
       id: 'designer_response_action',
-      prompt: "How do you relate to what the character tried to do in response to their Problem in this storyboard?",
+      prompt: "How do you relate to what the character tries to do in response to their Problem in this storyboard?",
       required: true,
       placeholder: '1-2 sentences'
     },
@@ -62,7 +62,7 @@ export const DESIGNER_FRAME_RESPONSE_QUESTIONS: Record<
   Resolution: [
     {
       id: 'designer_response_resolution',
-      prompt: "How do you relate to what happened immediately after the Action in this storyboard?",
+      prompt: "How do you relate to what happens immediately after the Action in this storyboard?",
       required: true,
       placeholder: '1-2 sentences'
     },

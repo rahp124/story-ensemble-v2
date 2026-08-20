@@ -97,10 +97,12 @@ export function rewordForImaginedExperience(text: string): string {
   return text
     .replace(/your last experience/gi, 'this situation')
     .replace(/hat did you/gi, 'hat would you')
+    .replace(/hat were you doing/gi, 'hat would you do')
     .replace(/Did you eventually/gi, 'Would you')
     .replace(/hat was/gi, 'hat would be')
     .replace(/hat made it/gi, 'hat would make it')
     .replace(/ow did know/gi, 'ow would you know')
     .replace(/something that made this/gi, 'something that would make this')
-    .replace(/hat happened/gi, 'hat would happen');    
+    .replace(/hat happened/gi, 'hat would happen')
+    .replace(/hat were the specific difficulties you encountered/gi, 'hat specific difficulties would you encounter');    
 }
