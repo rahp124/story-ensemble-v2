@@ -17,12 +17,13 @@ export const DESIGNER_CONTENT_QUESTIONS: Record<DesignerQuestionFrameType, Desig
     // { id: 'ctx-familiarity',   text: 'How familiar does this visualized image feel to your experience? What stands out as similar and different from your experience?', phase: 'content' }
   ],
   Problem: [
-    { id: 'prob-frustrating',  text: 'What made it difficult for you to accomplish what you wanted?', phase: 'generation' },
+    { id: 'prob-frustrating',  text: 'What were the specific difficulties you encountered in this situation? ', phase: 'generation' },
     // { id: 'prob-difficult',    text: '[Cause] What caused that problem?', phase: 'generation' },
     // { id: 'prob-familiarity',  text: 'How familiar does this visualized image feel to your experience? What stands out as similar and different from your experience?', phase: 'content' }
   ],
   Action: [
-    { id: 'act-attempt',       text: 'When the Problem felt most difficult, what did you try to do? Did you eventually push through an issue, step away, ask for help, or something else?', phase: 'generation' },
+    { id: 'act-attempt',       text: 'When the Problem felt most difficult, what did you try to do?', phase: 'generation' },
+    // Did you eventually push through an issue, step away, ask for help, or something else?
     // { id: 'act-solution',      text: '[Solution] Was there something that made this situation better for you?', phase: 'generation' },    
     // { id: 'act-trust',         text: 'Who or what information would you trust most to help you with this? What makes you trust them?', phase: 'generation' },
     // { id: 'act-realism',       text: 'How realistic does this visualized image feel to your experience?', phase: 'content' },
@@ -96,10 +97,12 @@ export function rewordForImaginedExperience(text: string): string {
   return text
     .replace(/your last experience/gi, 'this situation')
     .replace(/hat did you/gi, 'hat would you')
+    .replace(/hat were you doing/gi, 'hat would you do')
     .replace(/Did you eventually/gi, 'Would you')
     .replace(/hat was/gi, 'hat would be')
     .replace(/hat made it/gi, 'hat would make it')
     .replace(/ow did know/gi, 'ow would you know')
     .replace(/something that made this/gi, 'something that would make this')
-    .replace(/hat happened/gi, 'hat would happen');    
+    .replace(/hat happened/gi, 'hat would happen')
+    .replace(/hat were the specific difficulties you encountered/gi, 'hat specific difficulties would you encounter');    
 }

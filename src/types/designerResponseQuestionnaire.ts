@@ -20,9 +20,9 @@ export const DESIGNER_FRAME_RESPONSE_QUESTIONS: Record<
     {
       id: 'designer_response_context',
       prompt:
-        "How do you relate to this scenario's Context frame in the storyboard? In what ways is this similar to and different from your experience?",
+        "How do you relate to what this character is doing in this storyboard's Context, and how do you relate to what they want to accomplish?",
       required: true,
-      placeholder: 'Describe your experience'
+      placeholder: '1-2 sentences'
     },
     {
       id: 'designer_response_context_emotion',
@@ -34,7 +34,7 @@ export const DESIGNER_FRAME_RESPONSE_QUESTIONS: Record<
   Problem: [
     {
       id: 'designer_response_problem',
-      prompt: "How does this storyboard's Problem frame compare to your experience?",
+      prompt: "How do you relate to the specific difficulties depicted in this situation?",
       required: true,
       placeholder: '1-2 sentences'
     },
@@ -48,7 +48,7 @@ export const DESIGNER_FRAME_RESPONSE_QUESTIONS: Record<
   Action: [
     {
       id: 'designer_response_action',
-      prompt: "How does this storyboard's Action frame compare to your experience?",
+      prompt: "How do you relate to what the character tries to do in response to their Problem in this storyboard?",
       required: true,
       placeholder: '1-2 sentences'
     },
@@ -62,7 +62,7 @@ export const DESIGNER_FRAME_RESPONSE_QUESTIONS: Record<
   Resolution: [
     {
       id: 'designer_response_resolution',
-      prompt: "How does this storyboard's Outcome frame compare to your experience?",
+      prompt: "How do you relate to what happens immediately after the Action in this storyboard?",
       required: true,
       placeholder: '1-2 sentences'
     },
