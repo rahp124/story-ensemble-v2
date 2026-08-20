@@ -31,6 +31,10 @@ export function PostStoryboardSurveyPage({
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Empty when the storyboard could not be captured; the survey and log upload
+  // still proceed without it.
+  const capturedImage = artifact?.imageDataUrl?.trim() ? artifact.imageDataUrl : null;
+
   const canSubmit = useMemo(
     () =>
       copy.questions.every((question) => {
@@ -45,9 +49,9 @@ export function PostStoryboardSurveyPage({
   };
 
   const handleDownloadStoryboard = () => {
-    if (!artifact) return;
+    if (!artifact || !capturedImage) return;
     const a = document.createElement('a');
-    a.setAttribute('href', artifact.imageDataUrl);
+    a.setAttribute('href', capturedImage);
     a.setAttribute('download', artifact.filename);
     document.body.appendChild(a);
     a.click();
@@ -112,22 +116,23 @@ export function PostStoryboardSurveyPage({
           {!submitted && (
             <>
               <div className="mt-8">
-                {storyboardPreview ?? (
-                  <>
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                      <img
-                        src={artifact?.imageDataUrl}
-                        alt="Your completed storyboard"
-                        className="w-full h-auto"
-                      />
-                    </div>
-                    <div className="mt-4 flex justify-center">
-                      <Button variant="default" onClick={handleDownloadStoryboard}>
-                        {copy.downloadStoryboardButton}
-                      </Button>
-                    </div>
-                  </>
-                )}
+                {storyboardPreview ??
+                  (capturedImage && (
+                    <>
+                      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                        <img
+                          src={capturedImage}
+                          alt="Your completed storyboard"
+                          className="w-full h-auto"
+                        />
+                      </div>
+                      <div className="mt-4 flex justify-center">
+                        <Button variant="default" onClick={handleDownloadStoryboard}>
+                          {copy.downloadStoryboardButton}
+                        </Button>
+                      </div>
+                    </>
+                  ))}
               </div>
 
               <div className="mt-10 space-y-8">

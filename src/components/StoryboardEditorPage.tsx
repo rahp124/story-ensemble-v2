@@ -3,11 +3,11 @@ import { NodeType } from '@/rf-components';
 import { useStore, DEFAULT_DESIGNER_STORYBOARD_TITLE } from '@/store';
 import { StoryboardNodeData } from '@/types';
 import { Button, Input, Loader } from '@mantine/core';
-import { toJpeg } from 'html-to-image';
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Node } from 'reactflow';
-import { StoryboardPanelStrip } from './StoryboardPanelStrip';
+import { captureStoryboardCard } from '@/lib/captureStoryboardCard';
+import { FRAME_LABEL, StoryboardPanelStrip } from './StoryboardPanelStrip';
 
 export type StoryboardFinalizeArtifact = {
   imageDataUrl: string;
@@ -75,6 +75,10 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
     );
   }
 
+  const missingImageFrames = storyboard.outline.flatMap((frame, index) =>
+    frame.image?.trim() ? [] : [{ index, frameType: frame.frameType }]
+  );
+
   const handleTitleBlur = () => {
     if (title !== storyboard.title) {
       addStudyEvent({
@@ -109,6 +113,18 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
       data: {}
     });
 
+    if (missingImageFrames.length > 0) {
+      addStudyEvent({
+        initiator: 'system',
+        type: 'STORYBOARD_MISSING_FRAME_IMAGES',
+        count: 1,
+        data: {
+          frameIndices: missingImageFrames.map((frame) => frame.index),
+          frameTypes: missingImageFrames.map((frame) => frame.frameType)
+        }
+      });
+    }
+
     const state = useStore.getState();
     const storyboards = state.nodes.filter(
       (n): n is Node<StoryboardNodeData> => n.type === NodeType.Storyboard
@@ -126,7 +142,6 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
     }
 
     flushSync(() => setExpandCaptionsForCapture(true));
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
     const captureFilter = (domNode: HTMLElement | Node) => {
       if (
@@ -138,32 +153,47 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
       return true;
     };
 
-    try {
-      const image = await toJpeg(cardRef.current, {
-        backgroundColor: 'white',
-        pixelRatio: 2,
-        filter: captureFilter
-      });
+    let image = '';
+    let blankPanels: number[] = [];
+    let attempts = 0;
 
-      const filename = `${downloadBasename}.jpg`;
+    try {
+      const capture = await captureStoryboardCard(cardRef.current, captureFilter);
+      image = capture.dataUrl;
+      blankPanels = capture.blankPanels;
+      attempts = capture.attempts;
+    } catch (err) {
+      console.error('[storyboard finalize]', err);
+    } finally {
+      setExpandCaptionsForCapture(false);
+    }
+
+    // The study log is the artifact that matters, so submit it either way and
+    // record that the attached image is degraded.
+    if (!image || blankPanels.length > 0) {
+      addStudyEvent({
+        initiator: 'system',
+        type: 'STORYBOARD_CAPTURE_DEGRADED',
+        count: 1,
+        data: { captured: !!image, blankFrameIndices: blankPanels, attempts }
+      });
+    }
+
+    const filename = `${downloadBasename}.jpg`;
+    if (image) {
       const a = document.createElement('a');
       a.setAttribute('href', image);
       a.setAttribute('download', filename);
       document.body.appendChild(a);
       a.click();
       a.remove();
-
-      onFinalizeComplete({
-        imageDataUrl: image,
-        embedImageDataUrl: image,
-        filename
-      });
-    } catch (err) {
-      console.error('[storyboard finalize]', err);
-      setIsFinalizing(false);
-    } finally {
-      setExpandCaptionsForCapture(false);
     }
+
+    onFinalizeComplete({
+      imageDataUrl: image,
+      embedImageDataUrl: image,
+      filename
+    });
   }
 
   return (
@@ -234,7 +264,7 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
           />
         </div>
 
-        <div className="hide-in-screenshot mt-6 flex justify-center">
+        <div className="hide-in-screenshot mt-6 flex flex-col items-center gap-3">
           <Button size="md" onClick={finalizeStoryboard} disabled={isFinalizing}>
             {isFinalizing ? (
               <span className="inline-flex items-center gap-2">
@@ -245,6 +275,15 @@ export function StoryboardEditorPage({ onFinalizeComplete }: StoryboardEditorPag
               'Finalize and Submit'
             )}
           </Button>
+          {missingImageFrames.length > 0 && (
+            <p className="text-sm text-amber-600">
+              Heads up: no image for{' '}
+              {missingImageFrames
+                .map((frame) => FRAME_LABEL[frame.frameType])
+                .join(', ')}
+              . You can still submit.
+            </p>
+          )}
         </div>
       </div>
     </div>
