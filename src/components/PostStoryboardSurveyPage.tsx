@@ -10,6 +10,10 @@ import {
 } from '@/lib/studyUsageData';
 import { uploadStudyUsageData } from '@/lib/studyDataUpload';
 import { POST_SURVEY_COPY } from '@/content/postSurveyCopy';
+import {
+  canSubmitQuestions,
+  QuestionField
+} from '@/components/QuestionField';
 import type { StoryboardFinalizeArtifact } from './StoryboardEditorPage';
 
 type PostStoryboardSurveyPageProps = {
@@ -36,11 +40,7 @@ export function PostStoryboardSurveyPage({
   const capturedImage = artifact?.imageDataUrl?.trim() ? artifact.imageDataUrl : null;
 
   const canSubmit = useMemo(
-    () =>
-      copy.questions.every((question) => {
-        if (!question.required) return true;
-        return answers[question.id]?.trim().length > 0;
-      }),
+    () => canSubmitQuestions(copy.questions, answers),
     [answers, copy.questions]
   );
 
@@ -137,76 +137,13 @@ export function PostStoryboardSurveyPage({
 
               <div className="mt-10 space-y-8">
                 {copy.questions.map((question) => (
-                  <div key={question.id}>
-                    <label
-                      htmlFor={
-                        question.type === 'open_response'
-                          ? `survey-${question.id}`
-                          : undefined
-                      }
-                      className="block text-base font-semibold text-slate-900 mb-3"
-                    >
-                      {question.prompt}
-                      {question.required && (
-                        <span className="text-blue-600 ml-1" aria-hidden>
-                          *
-                        </span>
-                      )}
-                    </label>
-
-                    {question.type === 'likert' ? (
-                      <fieldset>
-                        <legend className="sr-only">{question.prompt}</legend>
-                        <div className="flex items-center gap-3 sm:gap-4">
-                          <span className="text-xs font-medium text-slate-500 w-20 shrink-0 text-right">
-                            {question.minLabel}
-                          </span>
-                          <div className="flex flex-1 items-center justify-between">
-                            {Array.from({ length: question.points }, (_, i) => {
-                              const value = String(i);
-                              const selected = answers[question.id] === value;
-                              return (
-                                <label
-                                  key={value}
-                                  className="flex flex-col items-center gap-1 cursor-pointer"
-                                >
-                                  <input
-                                    type="radio"
-                                    name={`survey-${question.id}`}
-                                    value={value}
-                                    checked={selected}
-                                    onChange={() => handleChange(question.id, value)}
-                                    className="sr-only"
-                                  />
-                                  <span
-                                    className={`h-8 w-8 rounded-full border-2 flex items-center justify-center text-sm font-semibold transition-colors ${
-                                      selected
-                                        ? 'border-blue-600 bg-blue-600 text-white'
-                                        : 'border-gray-300 bg-white text-gray-500 hover:border-blue-400'
-                                    }`}
-                                  >
-                                    {value}
-                                  </span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                          <span className="text-xs font-medium text-slate-500 w-20 shrink-0">
-                            {question.maxLabel}
-                          </span>
-                        </div>
-                      </fieldset>
-                    ) : (
-                      <textarea
-                        id={`survey-${question.id}`}
-                        value={answers[question.id]}
-                        onChange={(e) => handleChange(question.id, e.target.value)}
-                        placeholder={question.placeholder}
-                        rows={4}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-y text-sm"
-                      />
-                    )}
-                  </div>
+                  <QuestionField
+                    key={question.id}
+                    question={question}
+                    value={answers[question.id]}
+                    onChange={(value) => handleChange(question.id, value)}
+                    idPrefix="survey"
+                  />
                 ))}
               </div>
 

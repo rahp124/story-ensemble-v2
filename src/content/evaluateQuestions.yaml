@@ -1,0 +1,63 @@
+itemFields:
+  user:
+    - gen_context_content
+    - gen_context_reflect
+    - gen_problem_content
+    - gen_problem_reflect
+    - gen_action_content
+    - gen_action_reflect
+    - gen_resolution_content
+    - gen_resolution_reflect
+  designer:
+    - des_context
+    - des_context_emo
+    - des_problem
+    - des_problem_emo
+    - des_action
+    - des_action_emo
+    - des_resolution
+    - des_resolution_emo
+
+perItem:
+  - id: clarity_likert
+    type: likert
+    prompt: How clearly does this storyboard communicate the participant's experience?
+    required: true
+    points: 7
+    minLabel: Not at all clear
+    maxLabel: Completely clear
+
+  - id: authenticity_likert
+    type: likert
+    prompt: How authentic or believable do the responses feel relative to the storyboard?
+    required: true
+    points: 7
+    minLabel: Not at all
+    maxLabel: Completely
+
+  - id: per_item_open
+    type: open_response
+    prompt: What stands out to you about this storyboard and its responses?
+    required: true
+    placeholder: 1-3 sentences.
+
+summary:
+  - id: comparison_open
+    type: open_response
+    prompt: What differences do you notice between the user-led and designer-led storyboards overall?
+    required: true
+    placeholder: A few sentences.
+
+  - id: preference_open
+    type: open_response
+    prompt: Which approach do you think better captures participants' experiences, and why?
+    required: true
+    placeholder: A few sentences.
+
+  - id: overall_likert
+    type: likert
+    prompt: Overall, how confident are you in your evaluations across all items?
+    required: true
+    points: 7
+    minLabel: Not at all confident
+    maxLabel: Completely confident

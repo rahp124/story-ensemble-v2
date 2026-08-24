@@ -4,6 +4,7 @@ import { UserLandingPage } from './components/UserLandingPage';
 import { HomePage } from './components/HomePage';
 import { UserFlow } from './components/UserFlow';
 import { DesignerFlow } from './components/DesignerFlow';
+import { EvaluateFlow } from './components/EvaluateFlow';
 import { AdminSetup } from './components/AdminSetup';
 import { useStore } from './store';
 import { fetchSession, logout } from './lib/accessSession';
@@ -85,14 +86,17 @@ export default function App() {
 
   return (
     <div className="h-[100vh] w-[100vw]">
-      {!hasCompletedLanding && (
+      {route === 'evaluate' && <EvaluateFlow />}
+      {route !== 'evaluate' && !hasCompletedLanding && (
         <UserLandingPage onComplete={() => { /* store flip drives re-render */ }} />
       )}
-      {hasCompletedLanding && route === 'home' && <HomePage />}
-      {hasCompletedLanding && route === 'user' && (
+      {route !== 'evaluate' && hasCompletedLanding && route === 'home' && (
+        <HomePage />
+      )}
+      {route !== 'evaluate' && hasCompletedLanding && route === 'user' && (
         <UserFlow onStartOver={handleStartOver} />
       )}
-      {hasCompletedLanding && route === 'designer' && (
+      {route !== 'evaluate' && hasCompletedLanding && route === 'designer' && (
         <DesignerFlow onStartOver={handleStartOver} />
       )}
       {adminSetupOpen && <AdminSetup />}
