@@ -23,3 +23,4 @@ summary:
   downloadButton: Download responses
   submitDisabledHint: Please answer all required questions before downloading.
   expandRowHint: Click a row to view full details
+  previewNotesLabel: "Your notes:"

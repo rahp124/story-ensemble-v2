@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader } from '@mantine/core';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { useStore } from '@/store';
 import {
   EVALUATE_QUESTIONS
@@ -43,6 +44,7 @@ export function EvaluateFlow() {
 
   const [phase, setPhase] = useState<EvaluatePhase>('intro');
   const [itemIndex, setItemIndex] = useState(0);
+  const [maxItemIndex, setMaxItemIndex] = useState(0);
   const [itemAnswers, setItemAnswers] = useState<
     Record<string, Record<string, string>>
   >({});
@@ -69,6 +71,7 @@ export function EvaluateFlow() {
         let order: string[];
         let restoredPhase: EvaluatePhase = 'intro';
         let restoredIndex = 0;
+        let restoredMaxIndex = 0;
         let restoredItemAnswers: Record<string, Record<string, string>> = {};
         let restoredSummaryAnswers = summaryEmpty();
 
@@ -76,6 +79,8 @@ export function EvaluateFlow() {
           order = draft.itemOrder;
           restoredPhase = draft.phase;
           restoredIndex = draft.itemIndex;
+          restoredMaxIndex =
+            draft.maxItemIndex ?? draft.itemIndex;
           restoredItemAnswers = draft.itemAnswers ?? {};
           restoredSummaryAnswers = {
             ...summaryEmpty(),
@@ -95,6 +100,7 @@ export function EvaluateFlow() {
         setOrderedItems(ordered);
         setPhase(restoredPhase);
         setItemIndex(restoredIndex);
+        setMaxItemIndex(restoredMaxIndex);
         setItemAnswers(restoredItemAnswers);
         setSummaryAnswers(restoredSummaryAnswers);
       } catch (err) {
@@ -114,6 +120,7 @@ export function EvaluateFlow() {
     (
       nextPhase: EvaluatePhase,
       nextIndex: number,
+      nextMaxIndex: number,
       nextItemAnswers: Record<string, Record<string, string>>,
       nextSummaryAnswers: Record<string, string>
     ) => {
@@ -121,6 +128,7 @@ export function EvaluateFlow() {
       saveEvaluateProgress(accessId, {
         phase: nextPhase,
         itemIndex: nextIndex,
+        maxItemIndex: nextMaxIndex,
         itemOrder,
         itemAnswers: nextItemAnswers,
         summaryAnswers: nextSummaryAnswers
@@ -131,7 +139,8 @@ export function EvaluateFlow() {
 
   const handleBegin = () => {
     setPhase('items');
-    persist('items', 0, itemAnswers, summaryAnswers);
+    setMaxItemIndex(0);
+    persist('items', 0, 0, itemAnswers, summaryAnswers);
   };
 
   const currentItem = orderedItems[itemIndex] ?? null;
@@ -148,7 +157,7 @@ export function EvaluateFlow() {
     if (!currentItem) return;
     const next = { ...itemAnswers, [currentItem.id]: answers };
     setItemAnswers(next);
-    persist(phase, itemIndex, next, summaryAnswers);
+    persist(phase, itemIndex, maxItemIndex, next, summaryAnswers);
   };
 
   const handleContinue = () => {
@@ -156,11 +165,13 @@ export function EvaluateFlow() {
     const isLast = itemIndex >= orderedItems.length - 1;
     if (isLast) {
       setPhase('summary');
-      persist('summary', itemIndex, itemAnswers, summaryAnswers);
+      persist('summary', itemIndex, maxItemIndex, itemAnswers, summaryAnswers);
     } else {
       const nextIndex = itemIndex + 1;
+      const nextMaxIndex = Math.max(maxItemIndex, nextIndex);
       setItemIndex(nextIndex);
-      persist('items', nextIndex, itemAnswers, summaryAnswers);
+      setMaxItemIndex(nextMaxIndex);
+      persist('items', nextIndex, nextMaxIndex, itemAnswers, summaryAnswers);
     }
   };
 
@@ -168,12 +179,30 @@ export function EvaluateFlow() {
     if (itemIndex <= 0) return;
     const nextIndex = itemIndex - 1;
     setItemIndex(nextIndex);
-    persist('items', nextIndex, itemAnswers, summaryAnswers);
+    persist('items', nextIndex, maxItemIndex, itemAnswers, summaryAnswers);
   };
+
+  const handleGoToItem = (index: number) => {
+    if (index < 0 || index > maxItemIndex || index === itemIndex) return;
+    setItemIndex(index);
+    persist('items', index, maxItemIndex, itemAnswers, summaryAnswers);
+  };
+
+  useHotkeys(
+    'pageup',
+    (e) => {
+      e.preventDefault();
+      if (phase !== 'items') return;
+      setPhase('summary');
+      persist('summary', itemIndex, maxItemIndex, itemAnswers, summaryAnswers);
+    },
+    { preventDefault: true, enableOnFormTags: true },
+    [phase, itemIndex, maxItemIndex, itemAnswers, summaryAnswers, persist]
+  );
 
   const handleSummaryAnswersChange = (answers: Record<string, string>) => {
     setSummaryAnswers(answers);
-    persist('summary', itemIndex, itemAnswers, answers);
+    persist('summary', itemIndex, maxItemIndex, itemAnswers, answers);
   };
 
   const handleDownload = () => {
@@ -218,12 +247,14 @@ export function EvaluateFlow() {
       <EvaluateItemPage
         item={currentItem}
         itemIndex={itemIndex}
+        maxItemIndex={maxItemIndex}
         totalItems={orderedItems.length}
         answers={currentAnswers}
         onAnswersChange={handleItemAnswersChange}
         onContinue={handleContinue}
         onBack={handleBack}
         canGoBack={itemIndex > 0}
+        onGoToItem={handleGoToItem}
       />
     );
   }

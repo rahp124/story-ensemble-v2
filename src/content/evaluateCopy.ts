@@ -47,10 +47,12 @@ export type EvaluateCopy = {
     downloadButton: string;
     submitDisabledHint: string;
     expandRowHint: string;
+    previewNotesLabel: string;
   };
 };
 
 export type EvaluateQuestions = {
+  summaryPreviewQuestionId: string;
   itemFields: {
     user: string[];
     designer: string[];

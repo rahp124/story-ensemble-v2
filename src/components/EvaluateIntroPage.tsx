@@ -9,8 +9,8 @@ export function EvaluateIntroPage({ onBegin }: EvaluateIntroPageProps) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      <div className="min-h-full flex items-center justify-center p-4 py-10 sm:py-14">
-        <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-xl ring-1 ring-slate-200/60 p-6 sm:p-10 md:p-14">
+      <div className="min-h-full flex items-center justify-center px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="relative w-full max-w-5xl bg-white rounded-3xl shadow-xl ring-1 ring-slate-200/60 p-4 sm:p-6 lg:p-8">
           <div className="text-center">
             <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-blue-600">
               {copy.eyebrow}

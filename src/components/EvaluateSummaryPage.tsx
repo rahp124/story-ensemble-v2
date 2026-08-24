@@ -62,48 +62,58 @@ function buildSummaryRows(
 function SummaryRowCard({
   item,
   answers,
+  notesLabel,
   onExpand
 }: {
   item: EvaluateItem | null;
   answers: Record<string, string> | null;
+  notesLabel: string;
   onExpand: () => void;
 }) {
   if (!item) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-200 p-4 text-sm text-slate-400">
-        No data
+      <div className="rounded-xl border border-dashed border-slate-200 p-4 text-sm text-slate-400 flex">
+        <div className="w-3/4 shrink-0 flex items-center justify-center border-r border-slate-100 pr-4">
+          No data
+        </div>
+        <div className="w-1/4 min-w-0 pl-2">
+          <p className="text-xs font-semibold text-slate-700">{notesLabel}</p>
+        </div>
       </div>
     );
   }
 
-  const firstAnswer = answers
-    ? Object.values(answers).find((v) => v.trim()) ?? ''
-    : '';
+  const previewQuestionId = EVALUATE_QUESTIONS.summaryPreviewQuestionId;
+  const previewText = answers?.[previewQuestionId]?.trim() ?? '';
 
   return (
     <button
       type="button"
       onClick={onExpand}
-      className="w-full text-left rounded-xl border border-slate-200 bg-white p-3 hover:border-blue-300 hover:shadow-sm transition-all"
+      className="w-full text-left overflow-hidden rounded-xl border border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all flex"
     >
-      <div className="flex gap-3">
+      <div className="w-3/4 shrink-0 overflow-hidden">
         {item.imageSrc ? (
           <img
             src={item.imageSrc}
-            alt=""
-            className="w-16 h-16 object-cover rounded-lg shrink-0 border border-slate-100"
+            alt="Storyboard preview"
+            className="w-full h-auto block"
           />
         ) : (
-          <div className="w-16 h-16 rounded-lg bg-slate-100 shrink-0" />
+          <div className="aspect-video bg-slate-100 flex items-center justify-center text-sm text-slate-400">
+            No image
+          </div>
         )}
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold text-slate-500">{item.accessId}</p>
-          {firstAnswer ? (
-            <p className="mt-1 text-xs text-slate-600 line-clamp-2">{firstAnswer}</p>
-          ) : (
-            <p className="mt-1 text-xs text-slate-400 italic">No answers yet</p>
-          )}
-        </div>
+      </div>
+      <div className="w-1/4 min-w-0 flex flex-col border-l border-slate-100 px-2 py-2">
+        <p className="text-xs font-semibold text-slate-700 shrink-0">
+          {notesLabel}
+        </p>
+        {previewText ? (
+          <p className="mt-1 text-xs text-slate-600 line-clamp-6 leading-relaxed">
+            {previewText}
+          </p>
+        ) : null}
       </div>
     </button>
   );
@@ -131,7 +141,7 @@ function ExpandedRowModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={`${item.accessId} — ${side === 'user' ? 'User-led' : 'Designer-led'}`}
+      title={side === 'user' ? 'User-led storyboard' : 'Designer-led storyboard'}
       size="lg"
       centered
     >
@@ -203,8 +213,8 @@ export function EvaluateSummaryPage({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      <div className="min-h-full flex items-start justify-center p-4 py-10 sm:py-14">
-        <div className="relative w-full max-w-6xl bg-white rounded-3xl shadow-xl ring-1 ring-slate-200/60 p-6 sm:p-10 md:p-14">
+      <div className="min-h-full flex items-start justify-center px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="relative w-full max-w-none bg-white rounded-3xl shadow-xl ring-1 ring-slate-200/60 p-4 sm:p-6 lg:p-8">
           <div className="text-center">
             <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-blue-600">
               {copy.eyebrow}
@@ -229,6 +239,7 @@ export function EvaluateSummaryPage({
                     key={`user-${row.accessId}`}
                     item={row.userItem}
                     answers={row.userAnswers}
+                    notesLabel={copy.previewNotesLabel}
                     onExpand={() =>
                       setExpanded({ accessId: row.accessId, side: 'user' })
                     }
@@ -246,6 +257,7 @@ export function EvaluateSummaryPage({
                     key={`designer-${row.accessId}`}
                     item={row.designerItem}
                     answers={row.designerAnswers}
+                    notesLabel={copy.previewNotesLabel}
                     onExpand={() =>
                       setExpanded({ accessId: row.accessId, side: 'designer' })
                     }

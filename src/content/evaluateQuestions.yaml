@@ -1,3 +1,5 @@
+summaryPreviewQuestionId: per_item_open
+
 itemFields:
   user:
     - gen_context_content
@@ -23,7 +25,7 @@ perItem:
     type: likert
     prompt: How clearly does this storyboard communicate the participant's experience?
     required: true
-    points: 7
+    points: 4
     minLabel: Not at all clear
     maxLabel: Completely clear
 
@@ -31,7 +33,7 @@ perItem:
     type: likert
     prompt: How authentic or believable do the responses feel relative to the storyboard?
     required: true
-    points: 7
+    points: 4
     minLabel: Not at all
     maxLabel: Completely
 
@@ -58,6 +60,6 @@ summary:
     type: likert
     prompt: Overall, how confident are you in your evaluations across all items?
     required: true
-    points: 7
+    points: 4
     minLabel: Not at all confident
     maxLabel: Completely confident
