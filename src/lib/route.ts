@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 
-export type Route = 'home' | 'user' | 'designer';
+export type Route = 'home' | 'user' | 'designer' | 'evaluate';
 
 function parseHash(hash: string): Route {
   const path = hash.replace(/^#\/?/, '').replace(/\/$/, '');
   if (path === 'user') return 'user';
   if (path === 'designer') return 'designer';
+  if (path === 'evaluate') return 'evaluate';
   return 'home';
 }
 
