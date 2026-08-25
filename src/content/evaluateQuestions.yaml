@@ -21,45 +21,60 @@ itemFields:
     - des_resolution_emo
 
 perItem:
-  - id: clarity_likert
+  - id: specificity_likert
     type: likert
-    prompt: How clearly does this storyboard communicate the participant's experience?
+    prompt: "[Specificity] To what extent is this user's input detailed and specific?"
     required: true
-    points: 4
-    minLabel: Not at all clear
-    maxLabel: Completely clear
+    points: 7
+    minLabel: Not at all
+    maxLabel: Completely
 
-  - id: authenticity_likert
+  - id: originality_likert
     type: likert
-    prompt: How authentic or believable do the responses feel relative to the storyboard?
+    prompt: "[Originality] To what extent is this user's input novel and surprising?"
     required: true
-    points: 4
+    points: 7
+    minLabel: Not at all
+    maxLabel: Completely
+
+  - id: actionability_likert
+    type: likert
+    prompt: "[Actionability] To what extent is this user's input actionable for informing a design process?"
+    required: true
+    points: 7
     minLabel: Not at all
     maxLabel: Completely
 
   - id: per_item_open
     type: open_response
-    prompt: What stands out to you about this storyboard and its responses?
-    required: true
-    placeholder: 1-3 sentences.
+    prompt: Any notes/justifications for your evaluations?
+    required: false
+    placeholder: Optional
 
 summary:
-  - id: comparison_open
+  - id: diversity_open
     type: open_response
-    prompt: What differences do you notice between the user-led and designer-led storyboards overall?
-    required: true
-    placeholder: A few sentences.
+    prompt: "[Diversity] How do the conditions' responses compare in terms of diversity of user stories?"
+    required: false
+    placeholder: 1-2 sentences.
 
-  - id: preference_open
+  - id: comprehensibility_open
     type: open_response
-    prompt: Which approach do you think better captures participants' experiences, and why?
-    required: true
-    placeholder: A few sentences.
+    prompt: "[Comprehensibility] Which condition gave you a better understanding of the users and their experiences?"
+    required: false
+    placeholder: 1-2 sentences.
 
-  - id: overall_likert
-    type: likert
-    prompt: Overall, how confident are you in your evaluations across all items?
-    required: true
-    points: 4
-    minLabel: Not at all confident
-    maxLabel: Completely confident
+  - id: general_open
+    type: open_response
+    prompt: "[Overall] What differences do you notice between the user-led and designer-led storyboards in general?"
+    required: false
+    placeholder: 1-2 sentences.
+
+
+  # - id: overall_likert
+  #   type: likert
+  #   prompt: Overall, how confident are you in your evaluations across all items?
+  #   required: true
+  #   points: 7
+  #   minLabel: Not at all confident
+  #   maxLabel: Completely confident

@@ -3,7 +3,7 @@ intro:
   title: Storyboard Evaluation
   paragraphs:
     - You will review a series of storyboards and participant responses. Each item shows one storyboard image and the text responses associated with it.
-    - You will answer a short set of questions for each item, then compare all items side-by-side at the end.
+    - You will answer a short set of questions for each response, then compare all items holistically at the end.
     - Your progress is saved automatically. You can leave and return later using the same access ID.
   beginButton: Begin evaluation
 
@@ -15,12 +15,12 @@ item:
   progressLabel: Item {{current}} of {{total}}
 
 summary:
-  eyebrow: Summary
-  title: Compare all storyboards
-  subtitle: Review the user-led and designer-led storyboards side by side, then answer the final questions below.
-  userColumnTitle: User-led
-  designerColumnTitle: Designer-led
-  downloadButton: Download responses
+  eyebrow: Review
+  title: Compare storyboard conditions
+  subtitle: "User feedback was collected through two conditions: users creating their own storyboards and users reflecting on example storyboards. Review the user responses from both conditions and answer the final questions below."
+  userColumnTitle: User-created
+  designerColumnTitle: Example-led
+  downloadButton: Submit
   submitDisabledHint: Please answer all required questions before downloading.
   expandRowHint: Click a row to view full details
   previewNotesLabel: "Your notes:"
