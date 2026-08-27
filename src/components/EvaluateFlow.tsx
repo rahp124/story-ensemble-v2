@@ -13,6 +13,7 @@ import {
   buildEvaluateExport,
   downloadEvaluateExport
 } from '@/lib/evaluateExport';
+import { uploadEvaluateResults } from '@/lib/studyDataUpload';
 import {
   clearEvaluateProgress,
   loadEvaluateProgress,
@@ -23,6 +24,7 @@ import { canSubmitQuestions, emptyAnswersForQuestions } from '@/components/Quest
 import { EvaluateIntroPage } from './EvaluateIntroPage';
 import { EvaluatePairPage } from './EvaluatePairPage';
 import { EvaluateSummaryPage } from './EvaluateSummaryPage';
+import { EvaluateCompletionPage } from './EvaluateCompletionPage';
 
 const perItemEmpty = () =>
   emptyAnswersForQuestions(EVALUATE_QUESTIONS.perItem);
@@ -46,6 +48,7 @@ export function EvaluateFlow() {
   const [summaryAnswers, setSummaryAnswers] = useState<Record<string, string>>(
     () => summaryEmpty()
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!accessId) return;
@@ -71,7 +74,8 @@ export function EvaluateFlow() {
 
         if (draft?.pairOrder?.length === pairs.length) {
           order = draft.pairOrder;
-          restoredPhase = draft.phase;
+          restoredPhase =
+            draft.phase === 'complete' ? 'intro' : draft.phase;
           restoredIndex = draft.pairIndex;
           restoredPairAnswers = draft.pairAnswers ?? {};
           restoredSummaryAnswers = {
@@ -197,8 +201,9 @@ export function EvaluateFlow() {
     persist('summary', pairIndex, pairAnswers, answers);
   };
 
-  const handleDownload = () => {
-    if (!accessId) return;
+  const handleSubmit = async () => {
+    if (!accessId || isSubmitting) return;
+
     const exportData = buildEvaluateExport(
       accessId,
       allPairs,
@@ -206,8 +211,34 @@ export function EvaluateFlow() {
       pairAnswers,
       summaryAnswers
     );
+
+    setIsSubmitting(true);
+
+    try {
+      await uploadEvaluateResults(exportData);
+    } catch (err) {
+      console.error('[evaluation results upload]', err);
+    }
+
     downloadEvaluateExport(exportData);
     clearEvaluateProgress(accessId);
+    setIsSubmitting(false);
+    setPhase('complete');
+  };
+
+  const handleStartOver = () => {
+    if (!accessId) return;
+
+    clearEvaluateProgress(accessId);
+
+    const shuffled = seededShuffle(allPairs, accessId);
+    const order = shuffled.map((p) => p.accessId);
+    setPairOrder(order);
+    setOrderedPairs(shuffled);
+    setPairIndex(0);
+    setPairAnswers({});
+    setSummaryAnswers(summaryEmpty());
+    setPhase('intro');
   };
 
   if (loading) {
@@ -258,9 +289,14 @@ export function EvaluateFlow() {
         pairAnswers={pairAnswers}
         summaryAnswers={summaryAnswers}
         onSummaryAnswersChange={handleSummaryAnswersChange}
-        onDownload={handleDownload}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
       />
     );
+  }
+
+  if (phase === 'complete') {
+    return <EvaluateCompletionPage onStartOver={handleStartOver} />;
   }
 
   return null;

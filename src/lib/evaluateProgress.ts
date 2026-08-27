@@ -1,4 +1,4 @@
-export type EvaluatePhase = 'intro' | 'items' | 'summary';
+export type EvaluatePhase = 'intro' | 'items' | 'summary' | 'complete';
 
 export type EvaluateProgressDraft = {
   phase: EvaluatePhase;

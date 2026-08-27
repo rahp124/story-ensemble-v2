@@ -26,5 +26,11 @@ summary:
   downloadButton: Submit
   submitDisabledHint: Please answer all required questions before downloading.
   expandRowHint: Click a row to view full details
-  previewNotesLabel: "Your notes:"
+  previewNotesLabel: Your Notes
   emptyPairsHint: No completed pairs to compare yet.
+
+completion:
+  eyebrow: Evaluation Study
+  completionTitle: Thank you for your participation!
+  completionMessage: Your responses have been recorded. You can close this window.
+  startOverButton: Start over
