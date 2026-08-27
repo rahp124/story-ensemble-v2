@@ -23,33 +23,33 @@ itemFields:
 perItem:
   - id: per_item_open
     type: open_response
-    prompt: "What differences do you notice between the user-led and designer-led responses? You may consider specificity, originality, and actionability of the responses from a design perspective."
-    required: true
-    placeholder: A couple sentences is sufficient.
+    prompt: "Do you notice any specific differences below with the user-led and designer-led data, especially in terms of the specificity of detail or emotional disclosure, from the perspective of understanding users? Write down your notes here."
+    required: false
+    placeholder: Optional
 
   - id: per_item_value_likert
     type: likert
     prompt: "Which condition's response is more valuable for informing a design process?"
     required: true
     points: 6
-    minLabel: "{{leftCondition}} much more valuable"
-    maxLabel: "{{rightCondition}} much more valuable"
+    minLabel: "{{leftCondition}} (left side) is much more valuable"
+    maxLabel: "{{rightCondition}} (right side) is much more valuable"
 
 summary:
   - id: diversity_open
     type: open_response
     prompt: "[Diversity] How do the conditions' responses compare in terms of diversity of user stories?"
-    required: false
+    required: true
     placeholder: 1-2 sentences.
 
   - id: comprehensibility_open
     type: open_response
     prompt: "[Comprehensibility] Which condition gave you a better understanding of the users and their experiences?"
-    required: false
+    required: true
     placeholder: 1-2 sentences.
 
   - id: general_open
     type: open_response
     prompt: "[Overall] Do you have any preference between user-led and designer-led responses in general?"
-    required: false
+    required: true
     placeholder: 1-2 sentences.

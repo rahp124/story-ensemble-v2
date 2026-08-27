@@ -132,8 +132,11 @@ export function buildEvaluateExport(
   };
 }
 
-export function downloadEvaluateExport(exportData: EvaluateExport): void {
+export function evaluateExportBasename(exportData: EvaluateExport): string {
   const datePart = exportData.exportedAt.slice(0, 10);
-  const basename = `evaluation_${exportData.evaluatorAccessId}_${datePart}`;
-  downloadObjectAsJson(exportData, basename);
+  return `${datePart}_${exportData.evaluatorAccessId}_evaluation`;
+}
+
+export function downloadEvaluateExport(exportData: EvaluateExport): void {
+  downloadObjectAsJson(exportData, evaluateExportBasename(exportData));
 }

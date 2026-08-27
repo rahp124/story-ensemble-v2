@@ -2,6 +2,10 @@ import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { compressJpegDataUrl } from '@/lib/compressImage';
 import {
+  evaluateExportBasename,
+  type EvaluateExport
+} from '@/lib/evaluateExport';
+import {
   studyUsageDownloadBasename,
   type StudyUsageExport
 } from '@/lib/studyUsageData';
@@ -61,6 +65,28 @@ export async function uploadStudyUsageData(
   }
 
   await setDoc(doc(getDb(), 'studyUsage', docId), payload);
+
+  return { docId };
+}
+
+export async function uploadEvaluateResults(
+  exportData: EvaluateExport
+): Promise<{ docId: string }> {
+  const docId = evaluateExportBasename(exportData);
+
+  const payload = sanitizeForFirestore({
+    ...exportData,
+    createdAt: serverTimestamp()
+  }) as Record<string, unknown>;
+
+  const approxBytes = new Blob([JSON.stringify(payload)]).size;
+  if (approxBytes > FIRESTORE_DOC_LIMIT_BYTES * DOC_SIZE_SAFETY_MARGIN) {
+    throw new Error(
+      `Evaluation results document is too large for Firestore (${approxBytes} bytes, limit ${FIRESTORE_DOC_LIMIT_BYTES}).`
+    );
+  }
+
+  await setDoc(doc(getDb(), 'evaluationResults', docId), payload);
 
   return { docId };
 }

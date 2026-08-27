@@ -15,7 +15,8 @@ type EvaluateSummaryPageProps = {
   pairAnswers: Record<string, Record<string, string>>;
   summaryAnswers: Record<string, string>;
   onSummaryAnswersChange: (answers: Record<string, string>) => void;
-  onDownload: () => void;
+  onSubmit: () => void;
+  isSubmitting?: boolean;
 };
 
 function getColumnItems(pair: EvaluatePair): {
@@ -52,7 +53,7 @@ function PairSummaryRow({
   notesLabel: string;
   onExpand: () => void;
 }) {
-  const { leftItem, rightItem } = getColumnItems(pair);
+  const { leftItem, rightItem, leftLabel, rightLabel } = getColumnItems(pair);
   const previewQuestionId = EVALUATE_QUESTIONS.summaryPreviewQuestionId;
   const previewText = answers[previewQuestionId]?.trim() ?? '';
 
@@ -60,43 +61,53 @@ function PairSummaryRow({
     <button
       type="button"
       onClick={onExpand}
-      className="w-full text-left overflow-hidden rounded-xl border border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all flex"
+      className="w-full text-left overflow-hidden rounded-xl border border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all flex flex-col"
     >
-      <div className="w-[37%] shrink-0 overflow-hidden border-r border-slate-100">
-        {leftItem.imageSrc ? (
-          <img
-            src={leftItem.imageSrc}
-            alt="Left storyboard preview"
-            className="w-full h-auto block"
-          />
-        ) : (
-          <div className="aspect-video bg-slate-100 flex items-center justify-center text-sm text-slate-400">
-            No image
-          </div>
-        )}
-      </div>
-      <div className="w-[37%] shrink-0 overflow-hidden border-r border-slate-100">
-        {rightItem.imageSrc ? (
-          <img
-            src={rightItem.imageSrc}
-            alt="Right storyboard preview"
-            className="w-full h-auto block"
-          />
-        ) : (
-          <div className="aspect-video bg-slate-100 flex items-center justify-center text-sm text-slate-400">
-            No image
-          </div>
-        )}
-      </div>
-      <div className="w-[26%] min-w-0 flex flex-col px-2 py-2">
-        <p className="text-xs font-semibold text-slate-700 shrink-0">
+      <div className="flex shrink-0 border-b border-slate-100 bg-slate-50/80">
+        <div className="w-[37%] shrink-0 px-2 py-1.5 text-center text-[10px] font-semibold text-slate-600 border-r border-slate-100">
+          {leftLabel}
+        </div>
+        <div className="w-[37%] shrink-0 px-2 py-1.5 text-center text-[10px] font-semibold text-slate-600 border-r border-slate-100">
+          {rightLabel}
+        </div>
+        <div className="w-[26%] min-w-0 px-2 py-1.5 text-center text-[10px] font-semibold text-slate-600">
           {notesLabel}
-        </p>
-        {previewText ? (
-          <p className="mt-1 text-xs text-slate-600 line-clamp-6 leading-relaxed">
-            {previewText}
-          </p>
-        ) : null}
+        </div>
+      </div>
+      <div className="flex min-h-0">
+        <div className="w-[37%] shrink-0 overflow-hidden border-r border-slate-100">
+          {leftItem.imageSrc ? (
+            <img
+              src={leftItem.imageSrc}
+              alt="Left storyboard preview"
+              className="w-full h-auto block"
+            />
+          ) : (
+            <div className="aspect-video bg-slate-100 flex items-center justify-center text-sm text-slate-400">
+              No image
+            </div>
+          )}
+        </div>
+        <div className="w-[37%] shrink-0 overflow-hidden border-r border-slate-100">
+          {rightItem.imageSrc ? (
+            <img
+              src={rightItem.imageSrc}
+              alt="Right storyboard preview"
+              className="w-full h-auto block"
+            />
+          ) : (
+            <div className="aspect-video bg-slate-100 flex items-center justify-center text-sm text-slate-400">
+              No image
+            </div>
+          )}
+        </div>
+        <div className="w-[26%] min-w-0 flex flex-col px-2 py-2">
+          {previewText ? (
+            <p className="text-xs text-slate-600 line-clamp-6 leading-relaxed">
+              {previewText}
+            </p>
+          ) : null}
+        </div>
       </div>
     </button>
   );
@@ -121,16 +132,18 @@ function ExpandedPairModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title="Pair details"
       size="95%"
       centered
+      withCloseButton
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[leftItem, rightItem].map((item, index) => {
           const label = index === 0 ? leftLabel : rightLabel;
           return (
             <div key={item.id} className="space-y-3">
-              <p className="text-sm font-semibold text-slate-800">{label}</p>
+              <p className="text-sm font-semibold text-slate-800 text-center">
+                {label}
+              </p>
               {item.imageSrc && (
                 <img
                   src={item.imageSrc}
@@ -175,7 +188,8 @@ export function EvaluateSummaryPage({
   pairAnswers,
   summaryAnswers,
   onSummaryAnswersChange,
-  onDownload
+  onSubmit,
+  isSubmitting = false
 }: EvaluateSummaryPageProps) {
   const copy = EVALUATE_COPY.summary;
   const questions = EVALUATE_QUESTIONS.summary;
@@ -226,11 +240,11 @@ export function EvaluateSummaryPage({
 
               <button
                 type="button"
-                onClick={onDownload}
-                disabled={!canDownload}
+                onClick={onSubmit}
+                disabled={!canDownload || isSubmitting}
                 className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm shadow-md hover:bg-blue-700 hover:shadow-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none disabled:cursor-not-allowed transition-all"
               >
-                {copy.downloadButton}
+                {isSubmitting ? 'Submitting…' : copy.downloadButton}
               </button>
               {!canDownload && (
                 <p className="text-center text-[11px] text-slate-500">
@@ -240,10 +254,12 @@ export function EvaluateSummaryPage({
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 lg:px-8 py-3 space-y-2">
-            <p className="text-center text-xs text-slate-400 shrink-0">
-              {copy.expandRowHint}
-            </p>
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-3 space-y-2">
+            <div className="sticky top-0 z-10 shrink-0 bg-white border-b border-slate-100 py-2 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+              <p className="text-center text-xs text-slate-400">
+                {copy.expandRowHint}
+              </p>
+            </div>
             {pairs.length === 0 ? (
               <p className="text-center text-sm text-slate-500 py-6">
                 {copy.emptyPairsHint}

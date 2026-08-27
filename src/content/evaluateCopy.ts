@@ -50,6 +50,12 @@ export type EvaluateCopy = {
     previewNotesLabel: string;
     emptyPairsHint: string;
   };
+  completion: {
+    eyebrow: string;
+    completionTitle: string;
+    completionMessage: string;
+    startOverButton: string;
+  };
 };
 
 export type EvaluateQuestions = {
