@@ -2,11 +2,9 @@ export type EvaluatePhase = 'intro' | 'items' | 'summary';
 
 export type EvaluateProgressDraft = {
   phase: EvaluatePhase;
-  itemIndex: number;
-  /** Furthest item index reached via Continue; progress bar stays at this level when going back. */
-  maxItemIndex: number;
-  itemOrder: string[];
-  itemAnswers: Record<string, Record<string, string>>;
+  pairIndex: number;
+  pairOrder: string[];
+  pairAnswers: Record<string, Record<string, string>>;
   summaryAnswers: Record<string, string>;
 };
 
