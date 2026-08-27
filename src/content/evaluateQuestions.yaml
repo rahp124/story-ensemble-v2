@@ -21,35 +21,19 @@ itemFields:
     - des_resolution_emo
 
 perItem:
-  - id: specificity_likert
-    type: likert
-    prompt: "[Specificity] To what extent is this user's input detailed and specific?"
-    required: true
-    points: 7
-    minLabel: Not at all
-    maxLabel: Completely
-
-  - id: originality_likert
-    type: likert
-    prompt: "[Originality] To what extent is this user's input novel and surprising?"
-    required: true
-    points: 7
-    minLabel: Not at all
-    maxLabel: Completely
-
-  - id: actionability_likert
-    type: likert
-    prompt: "[Actionability] To what extent is this user's input actionable for informing a design process?"
-    required: true
-    points: 7
-    minLabel: Not at all
-    maxLabel: Completely
-
   - id: per_item_open
     type: open_response
-    prompt: Any notes/justifications for your evaluations?
-    required: false
-    placeholder: Optional
+    prompt: "What differences do you notice between the user-led and designer-led responses? You may consider specificity, originality, and actionability of the responses from a design perspective."
+    required: true
+    placeholder: A couple sentences is sufficient.
+
+  - id: per_item_value_likert
+    type: likert
+    prompt: "Which condition's response is more valuable for informing a design process?"
+    required: true
+    points: 6
+    minLabel: "{{leftCondition}} much more valuable"
+    maxLabel: "{{rightCondition}} much more valuable"
 
 summary:
   - id: diversity_open
@@ -66,15 +50,6 @@ summary:
 
   - id: general_open
     type: open_response
-    prompt: "[Overall] What differences do you notice between the user-led and designer-led storyboards in general?"
+    prompt: "[Overall] Do you have any preference between user-led and designer-led responses in general?"
     required: false
     placeholder: 1-2 sentences.
-
-
-  # - id: overall_likert
-  #   type: likert
-  #   prompt: Overall, how confident are you in your evaluations across all items?
-  #   required: true
-  #   points: 7
-  #   minLabel: Not at all confident
-  #   maxLabel: Completely confident

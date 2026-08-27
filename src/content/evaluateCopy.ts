@@ -33,10 +33,10 @@ export type EvaluateCopy = {
   };
   item: {
     eyebrow: string;
-    continueButton: string;
+    nextButton: string;
     backButton: string;
+    finishButton: string;
     continueDisabledHint: string;
-    progressLabel: string;
   };
   summary: {
     eyebrow: string;
@@ -48,6 +48,7 @@ export type EvaluateCopy = {
     submitDisabledHint: string;
     expandRowHint: string;
     previewNotesLabel: string;
+    emptyPairsHint: string;
   };
 };
 

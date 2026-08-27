@@ -2,14 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader } from '@mantine/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useStore } from '@/store';
+import { EVALUATE_QUESTIONS } from '@/content/evaluateCopy';
 import {
-  EVALUATE_QUESTIONS
-} from '@/content/evaluateCopy';
-import {
-  buildEvaluateItems,
+  buildEvaluatePairs,
   fetchEvaluateData,
   seededShuffle,
-  type EvaluateItem
+  type EvaluatePair
 } from '@/lib/evaluateData';
 import {
   buildEvaluateExport,
@@ -21,11 +19,9 @@ import {
   saveEvaluateProgress,
   type EvaluatePhase
 } from '@/lib/evaluateProgress';
-import {
-  emptyAnswersForQuestions
-} from '@/components/QuestionField';
+import { canSubmitQuestions, emptyAnswersForQuestions } from '@/components/QuestionField';
 import { EvaluateIntroPage } from './EvaluateIntroPage';
-import { EvaluateItemPage } from './EvaluateItemPage';
+import { EvaluatePairPage } from './EvaluatePairPage';
 import { EvaluateSummaryPage } from './EvaluateSummaryPage';
 
 const perItemEmpty = () =>
@@ -38,14 +34,13 @@ export function EvaluateFlow() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [allItems, setAllItems] = useState<EvaluateItem[]>([]);
-  const [orderedItems, setOrderedItems] = useState<EvaluateItem[]>([]);
-  const [itemOrder, setItemOrder] = useState<string[]>([]);
+  const [allPairs, setAllPairs] = useState<EvaluatePair[]>([]);
+  const [orderedPairs, setOrderedPairs] = useState<EvaluatePair[]>([]);
+  const [pairOrder, setPairOrder] = useState<string[]>([]);
 
   const [phase, setPhase] = useState<EvaluatePhase>('intro');
-  const [itemIndex, setItemIndex] = useState(0);
-  const [maxItemIndex, setMaxItemIndex] = useState(0);
-  const [itemAnswers, setItemAnswers] = useState<
+  const [pairIndex, setPairIndex] = useState(0);
+  const [pairAnswers, setPairAnswers] = useState<
     Record<string, Record<string, string>>
   >({});
   const [summaryAnswers, setSummaryAnswers] = useState<Record<string, string>>(
@@ -64,44 +59,40 @@ export function EvaluateFlow() {
         const { user, designer } = await fetchEvaluateData();
         if (cancelled) return;
 
-        const items = buildEvaluateItems(user, designer);
-        setAllItems(items);
+        const pairs = buildEvaluatePairs(user, designer, accessId);
+        setAllPairs(pairs);
 
         const draft = loadEvaluateProgress(accessId);
         let order: string[];
         let restoredPhase: EvaluatePhase = 'intro';
         let restoredIndex = 0;
-        let restoredMaxIndex = 0;
-        let restoredItemAnswers: Record<string, Record<string, string>> = {};
+        let restoredPairAnswers: Record<string, Record<string, string>> = {};
         let restoredSummaryAnswers = summaryEmpty();
 
-        if (draft?.itemOrder?.length === items.length) {
-          order = draft.itemOrder;
+        if (draft?.pairOrder?.length === pairs.length) {
+          order = draft.pairOrder;
           restoredPhase = draft.phase;
-          restoredIndex = draft.itemIndex;
-          restoredMaxIndex =
-            draft.maxItemIndex ?? draft.itemIndex;
-          restoredItemAnswers = draft.itemAnswers ?? {};
+          restoredIndex = draft.pairIndex;
+          restoredPairAnswers = draft.pairAnswers ?? {};
           restoredSummaryAnswers = {
             ...summaryEmpty(),
             ...draft.summaryAnswers
           };
         } else {
-          const shuffled = seededShuffle(items, accessId);
-          order = shuffled.map((i) => i.id);
+          const shuffled = seededShuffle(pairs, accessId);
+          order = shuffled.map((p) => p.accessId);
         }
 
-        const byId = new Map(items.map((i) => [i.id, i]));
+        const byAccess = new Map(pairs.map((p) => [p.accessId, p]));
         const ordered = order
-          .map((id) => byId.get(id))
-          .filter((i): i is EvaluateItem => i !== undefined);
+          .map((id) => byAccess.get(id))
+          .filter((p): p is EvaluatePair => p !== undefined);
 
-        setItemOrder(order);
-        setOrderedItems(ordered);
+        setPairOrder(order);
+        setOrderedPairs(ordered);
         setPhase(restoredPhase);
-        setItemIndex(restoredIndex);
-        setMaxItemIndex(restoredMaxIndex);
-        setItemAnswers(restoredItemAnswers);
+        setPairIndex(restoredIndex);
+        setPairAnswers(restoredPairAnswers);
         setSummaryAnswers(restoredSummaryAnswers);
       } catch (err) {
         if (cancelled) return;
@@ -120,98 +111,99 @@ export function EvaluateFlow() {
     (
       nextPhase: EvaluatePhase,
       nextIndex: number,
-      nextMaxIndex: number,
-      nextItemAnswers: Record<string, Record<string, string>>,
+      nextPairAnswers: Record<string, Record<string, string>>,
       nextSummaryAnswers: Record<string, string>
     ) => {
-      if (!accessId || itemOrder.length === 0) return;
+      if (!accessId || pairOrder.length === 0) return;
       saveEvaluateProgress(accessId, {
         phase: nextPhase,
-        itemIndex: nextIndex,
-        maxItemIndex: nextMaxIndex,
-        itemOrder,
-        itemAnswers: nextItemAnswers,
+        pairIndex: nextIndex,
+        pairOrder,
+        pairAnswers: nextPairAnswers,
         summaryAnswers: nextSummaryAnswers
       });
     },
-    [accessId, itemOrder]
+    [accessId, pairOrder]
   );
 
   const handleBegin = () => {
     setPhase('items');
-    setMaxItemIndex(0);
-    persist('items', 0, 0, itemAnswers, summaryAnswers);
+    persist('items', 0, pairAnswers, summaryAnswers);
   };
 
-  const currentItem = orderedItems[itemIndex] ?? null;
+  const currentPair = orderedPairs[pairIndex] ?? null;
 
   const currentAnswers = useMemo(() => {
-    if (!currentItem) return perItemEmpty();
+    if (!currentPair) return perItemEmpty();
     return {
       ...perItemEmpty(),
-      ...itemAnswers[currentItem.id]
+      ...pairAnswers[currentPair.accessId]
     };
-  }, [currentItem, itemAnswers]);
+  }, [currentPair, pairAnswers]);
 
-  const handleItemAnswersChange = (answers: Record<string, string>) => {
-    if (!currentItem) return;
-    const next = { ...itemAnswers, [currentItem.id]: answers };
-    setItemAnswers(next);
-    persist(phase, itemIndex, maxItemIndex, next, summaryAnswers);
+  const completedPairs = useMemo(
+    () =>
+      orderedPairs.filter((pair) =>
+        canSubmitQuestions(
+          EVALUATE_QUESTIONS.perItem,
+          pairAnswers[pair.accessId] ?? {}
+        )
+      ),
+    [orderedPairs, pairAnswers]
+  );
+
+  const canFinish = completedPairs.length > 0;
+
+  const handlePairAnswersChange = (answers: Record<string, string>) => {
+    if (!currentPair) return;
+    const next = { ...pairAnswers, [currentPair.accessId]: answers };
+    setPairAnswers(next);
+    persist(phase, pairIndex, next, summaryAnswers);
   };
 
-  const handleContinue = () => {
-    if (!currentItem) return;
-    const isLast = itemIndex >= orderedItems.length - 1;
-    if (isLast) {
-      setPhase('summary');
-      persist('summary', itemIndex, maxItemIndex, itemAnswers, summaryAnswers);
-    } else {
-      const nextIndex = itemIndex + 1;
-      const nextMaxIndex = Math.max(maxItemIndex, nextIndex);
-      setItemIndex(nextIndex);
-      setMaxItemIndex(nextMaxIndex);
-      persist('items', nextIndex, nextMaxIndex, itemAnswers, summaryAnswers);
-    }
+  const handleNext = () => {
+    if (!currentPair || pairIndex >= orderedPairs.length - 1) return;
+    const nextIndex = pairIndex + 1;
+    setPairIndex(nextIndex);
+    persist('items', nextIndex, pairAnswers, summaryAnswers);
   };
 
   const handleBack = () => {
-    if (itemIndex <= 0) return;
-    const nextIndex = itemIndex - 1;
-    setItemIndex(nextIndex);
-    persist('items', nextIndex, maxItemIndex, itemAnswers, summaryAnswers);
+    if (pairIndex <= 0) return;
+    const nextIndex = pairIndex - 1;
+    setPairIndex(nextIndex);
+    persist('items', nextIndex, pairAnswers, summaryAnswers);
   };
 
-  const handleGoToItem = (index: number) => {
-    if (index < 0 || index > maxItemIndex || index === itemIndex) return;
-    setItemIndex(index);
-    persist('items', index, maxItemIndex, itemAnswers, summaryAnswers);
-  };
+  const handleFinish = useCallback(() => {
+    if (completedPairs.length === 0) return;
+    setPhase('summary');
+    persist('summary', pairIndex, pairAnswers, summaryAnswers);
+  }, [completedPairs.length, pairIndex, pairAnswers, summaryAnswers, persist]);
 
   useHotkeys(
     'pageup',
     (e) => {
       e.preventDefault();
-      if (phase !== 'items') return;
-      setPhase('summary');
-      persist('summary', itemIndex, maxItemIndex, itemAnswers, summaryAnswers);
+      if (phase !== 'items' || completedPairs.length === 0) return;
+      handleFinish();
     },
     { preventDefault: true, enableOnFormTags: true },
-    [phase, itemIndex, maxItemIndex, itemAnswers, summaryAnswers, persist]
+    [phase, completedPairs.length, handleFinish]
   );
 
   const handleSummaryAnswersChange = (answers: Record<string, string>) => {
     setSummaryAnswers(answers);
-    persist('summary', itemIndex, maxItemIndex, itemAnswers, answers);
+    persist('summary', pairIndex, pairAnswers, answers);
   };
 
   const handleDownload = () => {
     if (!accessId) return;
     const exportData = buildEvaluateExport(
       accessId,
-      orderedItems,
-      itemOrder,
-      itemAnswers,
+      allPairs,
+      pairOrder,
+      pairAnswers,
       summaryAnswers
     );
     downloadEvaluateExport(exportData);
@@ -242,19 +234,19 @@ export function EvaluateFlow() {
     return <EvaluateIntroPage onBegin={handleBegin} />;
   }
 
-  if (phase === 'items' && currentItem) {
+  if (phase === 'items' && currentPair) {
     return (
-      <EvaluateItemPage
-        item={currentItem}
-        itemIndex={itemIndex}
-        maxItemIndex={maxItemIndex}
-        totalItems={orderedItems.length}
+      <EvaluatePairPage
+        pair={currentPair}
+        pairIndex={pairIndex}
+        totalPairs={orderedPairs.length}
         answers={currentAnswers}
-        onAnswersChange={handleItemAnswersChange}
-        onContinue={handleContinue}
+        onAnswersChange={handlePairAnswersChange}
+        onNext={handleNext}
         onBack={handleBack}
-        canGoBack={itemIndex > 0}
-        onGoToItem={handleGoToItem}
+        onFinish={handleFinish}
+        canGoBack={pairIndex > 0}
+        canFinish={canFinish}
       />
     );
   }
@@ -262,8 +254,8 @@ export function EvaluateFlow() {
   if (phase === 'summary') {
     return (
       <EvaluateSummaryPage
-        items={allItems}
-        itemAnswers={itemAnswers}
+        pairs={completedPairs}
+        pairAnswers={pairAnswers}
         summaryAnswers={summaryAnswers}
         onSummaryAnswersChange={handleSummaryAnswersChange}
         onDownload={handleDownload}

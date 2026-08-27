@@ -31,6 +31,13 @@ export type EvaluateItem = {
   metadata: Record<string, string>;
 };
 
+export type EvaluatePair = {
+  accessId: string;
+  userItem: EvaluateItem;
+  designerItem: EvaluateItem;
+  leftSource: EvaluateSource;
+};
+
 const DESIGNER_IMAGE_DIR = `${import.meta.env.BASE_URL}storyboards/designer_example/`;
 
 function resolveImageSrc(
@@ -151,26 +158,63 @@ export function buildEvaluateItems(
   return [...userItems, ...designerItems];
 }
 
-/** Deterministic seeded shuffle (Fisher-Yates). Same seed → same order. */
-export function seededShuffle<T>(items: T[], seed: string): T[] {
-  const arr = [...items];
+/** Deterministic seeded PRNG. Same seed → same sequence. */
+export function seededRandom(seed: string): () => number {
   let h = 0;
   for (let i = 0; i < seed.length; i++) {
     h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
   }
 
-  const random = () => {
+  return () => {
     h = Math.imul(h ^ (h >>> 16), 2246822507);
     h = Math.imul(h ^ (h >>> 13), 3266489909);
     h ^= h >>> 16;
     return (h >>> 0) / 4294967296;
   };
+}
+
+/** Deterministic seeded shuffle (Fisher-Yates). Same seed → same order. */
+export function seededShuffle<T>(items: T[], seed: string): T[] {
+  const arr = [...items];
+  const random = seededRandom(seed);
 
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+export function buildEvaluatePairs(
+  user: EvaluateViewJson,
+  designer: EvaluateViewJson,
+  evaluatorAccessId: string
+): EvaluatePair[] {
+  const items = buildEvaluateItems(user, designer);
+  const userByAccess = new Map<string, EvaluateItem>();
+  const designerByAccess = new Map<string, EvaluateItem>();
+
+  for (const item of items) {
+    if (item.source === 'user') {
+      userByAccess.set(item.accessId, item);
+    } else {
+      designerByAccess.set(item.accessId, item);
+    }
+  }
+
+  const accessIds = [...userByAccess.keys()].filter((id) =>
+    designerByAccess.has(id)
+  );
+
+  return accessIds.map((accessId) => ({
+    accessId,
+    userItem: userByAccess.get(accessId)!,
+    designerItem: designerByAccess.get(accessId)!,
+    leftSource:
+      seededRandom(`${evaluatorAccessId}:${accessId}`)() < 0.5
+        ? 'user'
+        : 'designer'
+  }));
 }
 
 export function prepareShuffledItems(
