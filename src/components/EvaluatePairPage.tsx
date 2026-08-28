@@ -5,7 +5,8 @@ import {
   interpolate,
   type EvaluateQuestion
 } from '@/content/evaluateCopy';
-import type { EvaluateItem, EvaluatePair } from '@/lib/evaluateData';
+import type { EvaluateItem, EvaluatePair, EvaluateSource } from '@/lib/evaluateData';
+import { getEvaluateConditionStyles } from '@/lib/evaluateConditionStyles';
 import {
   canSubmitQuestions,
   QuestionField
@@ -46,40 +47,54 @@ function interpolateQuestion(
 
 function ResponseColumn({
   label,
-  item
+  item,
+  source
 }: {
   label: string;
   item: EvaluateItem;
+  source: EvaluateSource;
 }) {
+  const styles = getEvaluateConditionStyles(source);
+
   return (
     <div className="flex flex-col min-h-0 min-w-0">
-      <span className="inline-flex self-start shrink-0 mb-2 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-        {label}
-      </span>
-      <div className="shrink-0 flex justify-center mb-2">
-        {item.imageSrc ? (
-          <EnlargeableStoryboardImage
-            src={item.imageSrc}
-            alt={`Storyboard for participant ${item.accessId}`}
-            imgClassName="max-h-[34vh] w-auto mx-auto object-contain rounded-lg border border-slate-200"
-          />
-        ) : (
-          <div className="h-32 w-full flex items-center justify-center rounded-lg border border-dashed border-slate-200 text-xs text-slate-400">
-            No image available
-          </div>
-        )}
+      <div className="flex justify-center shrink-0 mb-2">
+        <span
+          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${styles.badge}`}
+        >
+          {label}
+        </span>
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 space-y-2">
-        {item.fields.map((field) => (
-          <div key={field.key}>
-            <p className="text-[10px] font-semibold text-slate-800 leading-snug">
-              {field.label}
-            </p>
-            <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
-              {field.value || '—'}
-            </p>
-          </div>
-        ))}
+      <div
+        className={`flex flex-col flex-1 min-h-0 rounded-lg border overflow-hidden ${styles.border}`}
+      >
+        <div className="shrink-0 flex justify-center">
+          {item.imageSrc ? (
+            <EnlargeableStoryboardImage
+              src={item.imageSrc}
+              alt={`Storyboard for participant ${item.accessId}`}
+              imgClassName="max-h-[34vh] w-auto mx-auto object-contain"
+            />
+          ) : (
+            <div className="h-32 w-full flex items-center justify-center border-b border-dashed text-xs text-slate-400">
+              No image available
+            </div>
+          )}
+        </div>
+        <div
+          className={`flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-2 ${styles.panelBg}`}
+        >
+          {item.fields.map((field) => (
+            <div key={field.key}>
+              <p className="text-[10px] font-semibold text-slate-800 leading-snug">
+                {field.label}
+              </p>
+              <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
+                {field.value || '—'}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -127,6 +142,10 @@ export function EvaluatePairPage({
     pair.leftSource === 'user' ? pair.designerItem : pair.userItem;
   const leftLabel = interpolationVars.leftCondition;
   const rightLabel = interpolationVars.rightCondition;
+
+  const leftSource = pair.leftSource;
+  const rightSource: EvaluateSource =
+    pair.leftSource === 'user' ? 'designer' : 'user';
 
   const canNext = useMemo(
     () => canSubmitQuestions(questions, answers),
@@ -200,8 +219,16 @@ export function EvaluatePairPage({
 
       <div className="flex-1 min-h-0 px-4 sm:px-6 py-3">
         <div className="mx-auto max-w-7xl h-full grid grid-cols-2 gap-4 min-h-0">
-          <ResponseColumn label={leftLabel} item={leftItem} />
-          <ResponseColumn label={rightLabel} item={rightItem} />
+          <ResponseColumn
+            label={leftLabel}
+            item={leftItem}
+            source={leftSource}
+          />
+          <ResponseColumn
+            label={rightLabel}
+            item={rightItem}
+            source={rightSource}
+          />
         </div>
       </div>
     </div>
