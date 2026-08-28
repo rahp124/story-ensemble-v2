@@ -41,6 +41,10 @@ export type EvaluateCopy = {
     nextButton: string;
     backButton: string;
     finishButton: string;
+    finishConfirmTitle: string;
+    finishConfirmMessage: string;
+    finishConfirmButton: string;
+    finishCancelButton: string;
     continueDisabledHint: string;
   };
   summary: {

@@ -19,6 +19,10 @@ item:
   nextButton: Next
   backButton: Back
   finishButton: Finish
+  finishConfirmTitle: Finish evaluation?
+  finishConfirmMessage: Move to the summary comparison? Only pairs you have fully completed will be included.
+  finishConfirmButton: Continue to summary
+  finishCancelButton: Cancel
   continueDisabledHint: Please answer all required questions before continuing.
 
 summary:

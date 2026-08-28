@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader } from '@mantine/core';
+import { Loader, Modal } from '@mantine/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useStore } from '@/store';
-import { EVALUATE_QUESTIONS } from '@/content/evaluateCopy';
+import { EVALUATE_COPY, EVALUATE_QUESTIONS } from '@/content/evaluateCopy';
 import {
   buildEvaluatePairs,
   fetchEvaluateData,
@@ -59,6 +59,7 @@ export function EvaluateFlow() {
   );
   const [highlights, setHighlights] = useState<HighlightsByPair>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [finishConfirmOpen, setFinishConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!accessId) return;
@@ -261,15 +262,25 @@ export function EvaluateFlow() {
     persist
   ]);
 
+  const requestFinish = useCallback(() => {
+    if (completedPairs.length === 0) return;
+    setFinishConfirmOpen(true);
+  }, [completedPairs.length]);
+
+  const confirmFinish = () => {
+    setFinishConfirmOpen(false);
+    handleFinish();
+  };
+
   useHotkeys(
     'pageup',
     (e) => {
       e.preventDefault();
       if (phase !== 'items' || completedPairs.length === 0) return;
-      handleFinish();
+      requestFinish();
     },
     { preventDefault: true, enableOnFormTags: true },
-    [phase, completedPairs.length, handleFinish]
+    [phase, completedPairs.length, requestFinish]
   );
 
   const handleSummaryAnswersChange = (answers: Record<string, string>) => {
@@ -344,22 +355,53 @@ export function EvaluateFlow() {
   }
 
   if (phase === 'items' && currentPair) {
+    const itemCopy = EVALUATE_COPY.item;
+
     return (
-      <EvaluatePairPage
-        pair={currentPair}
-        pairIndex={pairIndex}
-        totalPairs={orderedPairs.length}
-        answers={currentAnswers}
-        pairHighlights={highlights[currentPair.accessId] ?? {}}
-        onAnswersChange={handlePairAnswersChange}
-        onAddHighlight={handleAddHighlight}
-        onRemoveHighlight={handleRemoveHighlight}
-        onNext={handleNext}
-        onBack={handleBack}
-        onFinish={handleFinish}
-        canGoBack={pairIndex > 0}
-        canFinish={canFinish}
-      />
+      <>
+        <EvaluatePairPage
+          pair={currentPair}
+          pairIndex={pairIndex}
+          totalPairs={orderedPairs.length}
+          answers={currentAnswers}
+          pairHighlights={highlights[currentPair.accessId] ?? {}}
+          onAnswersChange={handlePairAnswersChange}
+          onAddHighlight={handleAddHighlight}
+          onRemoveHighlight={handleRemoveHighlight}
+          onNext={handleNext}
+          onBack={handleBack}
+          onFinish={requestFinish}
+          canGoBack={pairIndex > 0}
+          canFinish={canFinish}
+        />
+
+        <Modal
+          opened={finishConfirmOpen}
+          onClose={() => setFinishConfirmOpen(false)}
+          title={itemCopy.finishConfirmTitle}
+          centered
+        >
+          <p className="text-sm text-slate-600 leading-relaxed">
+            {itemCopy.finishConfirmMessage}
+          </p>
+          <div className="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setFinishConfirmOpen(false)}
+              className="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors"
+            >
+              {itemCopy.finishCancelButton}
+            </button>
+            <button
+              type="button"
+              onClick={confirmFinish}
+              className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+            >
+              {itemCopy.finishConfirmButton}
+            </button>
+          </div>
+        </Modal>
+      </>
     );
   }
 
