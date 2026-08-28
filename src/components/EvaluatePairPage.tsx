@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   EVALUATE_COPY,
   EVALUATE_QUESTIONS,
@@ -8,17 +8,50 @@ import {
 import type { EvaluateItem, EvaluatePair, EvaluateSource } from '@/lib/evaluateData';
 import { getEvaluateConditionStyles } from '@/lib/evaluateConditionStyles';
 import {
+  appendToNotes,
+  formatHighlightSnippet,
+  getFieldHighlights,
+  type HighlightRange,
+  type PairHighlights
+} from '@/lib/evaluateHighlights';
+import {
   canSubmitQuestions,
   QuestionField
 } from '@/components/QuestionField';
 import { EnlargeableStoryboardImage } from '@/components/EnlargeableStoryboardImage';
+import { HighlightableText } from '@/components/HighlightableText';
+import { HighlightActionPopup } from '@/components/HighlightActionPopup';
+
+const NOTES_QUESTION_ID = EVALUATE_QUESTIONS.perItem.find(
+  (q) => q.type === 'open_response'
+)?.id;
+
+type PendingHighlight = {
+  source: EvaluateSource;
+  fieldKey: string;
+  range: HighlightRange;
+  text: string;
+  conditionLabel: string;
+  rect: DOMRect;
+};
 
 type EvaluatePairPageProps = {
   pair: EvaluatePair;
   pairIndex: number;
   totalPairs: number;
   answers: Record<string, string>;
+  pairHighlights: PairHighlights;
   onAnswersChange: (answers: Record<string, string>) => void;
+  onAddHighlight: (
+    source: EvaluateSource,
+    fieldKey: string,
+    range: HighlightRange
+  ) => void;
+  onRemoveHighlight: (
+    source: EvaluateSource,
+    fieldKey: string,
+    offset: number
+  ) => void;
   onNext: () => void;
   onBack: () => void;
   onFinish: () => void;
@@ -48,11 +81,28 @@ function interpolateQuestion(
 function ResponseColumn({
   label,
   item,
-  source
+  source,
+  pairHighlights,
+  onAddHighlight,
+  onHighlightAdded
 }: {
   label: string;
   item: EvaluateItem;
   source: EvaluateSource;
+  pairHighlights: PairHighlights;
+  onAddHighlight: (
+    source: EvaluateSource,
+    fieldKey: string,
+    range: HighlightRange
+  ) => void;
+  onHighlightAdded: (
+    source: EvaluateSource,
+    fieldKey: string,
+    range: HighlightRange,
+    selectedText: string,
+    rect: DOMRect,
+    conditionLabel: string
+  ) => void;
 }) {
   const styles = getEvaluateConditionStyles(source);
 
@@ -89,9 +139,31 @@ function ResponseColumn({
               <p className="text-[10px] font-semibold text-slate-800 leading-snug">
                 {field.label}
               </p>
-              <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
-                {field.value || '—'}
-              </p>
+              <HighlightableText
+                text={field.value}
+                ranges={getFieldHighlights(pairHighlights, source, field.key)}
+                onAdd={(range, selectedText, rect) => {
+                  onAddHighlight(source, field.key, range);
+                  onHighlightAdded(
+                    source,
+                    field.key,
+                    range,
+                    selectedText,
+                    rect,
+                    label
+                  );
+                }}
+                onActivate={(range, selectedText, rect) => {
+                  onHighlightAdded(
+                    source,
+                    field.key,
+                    range,
+                    selectedText,
+                    rect,
+                    label
+                  );
+                }}
+              />
             </div>
           ))}
         </div>
@@ -105,7 +177,10 @@ export function EvaluatePairPage({
   pairIndex,
   totalPairs,
   answers,
+  pairHighlights,
   onAnswersChange,
+  onAddHighlight,
+  onRemoveHighlight,
   onNext,
   onBack,
   onFinish,
@@ -116,6 +191,7 @@ export function EvaluatePairPage({
   const summaryCopy = EVALUATE_COPY.summary;
   const questions = EVALUATE_QUESTIONS.perItem;
   const isLast = pairIndex >= totalPairs - 1;
+  const [pending, setPending] = useState<PendingHighlight | null>(null);
 
   const interpolationVars = useMemo(
     () => ({
@@ -154,6 +230,39 @@ export function EvaluatePairPage({
 
   const handleChange = (id: string, value: string) => {
     onAnswersChange({ ...answers, [id]: value });
+  };
+
+  const handleHighlightAdded = (
+    source: EvaluateSource,
+    fieldKey: string,
+    range: HighlightRange,
+    selectedText: string,
+    rect: DOMRect,
+    conditionLabel: string
+  ) => {
+    setPending({
+      source,
+      fieldKey,
+      range,
+      text: selectedText,
+      conditionLabel,
+      rect
+    });
+  };
+
+  const handleCopyPending = () => {
+    if (!pending || !NOTES_QUESTION_ID) return;
+    const snippet = formatHighlightSnippet(pending.conditionLabel, pending.text);
+    const existing = answers[NOTES_QUESTION_ID] ?? '';
+    handleChange(
+      NOTES_QUESTION_ID,
+      appendToNotes(existing, snippet)
+    );
+  };
+
+  const handleRemovePending = () => {
+    if (!pending) return;
+    onRemoveHighlight(pending.source, pending.fieldKey, pending.range.start);
   };
 
   return (
@@ -223,14 +332,29 @@ export function EvaluatePairPage({
             label={leftLabel}
             item={leftItem}
             source={leftSource}
+            pairHighlights={pairHighlights}
+            onAddHighlight={onAddHighlight}
+            onHighlightAdded={handleHighlightAdded}
           />
           <ResponseColumn
             label={rightLabel}
             item={rightItem}
             source={rightSource}
+            pairHighlights={pairHighlights}
+            onAddHighlight={onAddHighlight}
+            onHighlightAdded={handleHighlightAdded}
           />
         </div>
       </div>
+
+      {pending && (
+        <HighlightActionPopup
+          rect={pending.rect}
+          onCopy={handleCopyPending}
+          onRemove={handleRemovePending}
+          onDismiss={() => setPending(null)}
+        />
+      )}
     </div>
   );
 }

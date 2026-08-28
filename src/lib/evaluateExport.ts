@@ -1,12 +1,26 @@
 import { EVALUATE_QUESTIONS } from '@/content/evaluateCopy';
 import type { EvaluatePair, EvaluateSource } from '@/lib/evaluateData';
 import { canSubmitQuestions } from '@/components/QuestionField';
+import {
+  highlightTexts,
+  type HighlightsByPair,
+  type ItemHighlights
+} from '@/lib/evaluateHighlights';
 import { downloadObjectAsJson } from '@/lib/utils';
+
+export type EvaluateExportHighlight = {
+  fieldKey: string;
+  label: string;
+  start: number;
+  end: number;
+  text: string;
+};
 
 export type EvaluateExportPairItem = {
   id: string;
   metadata: Record<string, string>;
   fields: Array<{ key: string; label: string; value: string }>;
+  highlights: EvaluateExportHighlight[];
 };
 
 export type EvaluateExportPair = {
@@ -72,12 +86,29 @@ function normalizePairAnswers(
 
 function toExportItem(
   id: string,
-  item: EvaluatePair['userItem']
+  item: EvaluatePair['userItem'],
+  itemHighlights: ItemHighlights | undefined
 ): EvaluateExportPairItem {
+  const highlights: EvaluateExportHighlight[] = [];
+
+  for (const field of item.fields) {
+    const ranges = itemHighlights?.[field.key] ?? [];
+    for (const entry of highlightTexts(field.value, ranges)) {
+      highlights.push({
+        fieldKey: field.key,
+        label: field.label,
+        start: entry.start,
+        end: entry.end,
+        text: entry.text
+      });
+    }
+  }
+
   return {
     id,
     metadata: item.metadata,
-    fields: item.fields
+    fields: item.fields,
+    highlights
   };
 }
 
@@ -86,7 +117,8 @@ export function buildEvaluateExport(
   orderedPairs: EvaluatePair[],
   pairOrder: string[],
   pairAnswers: Record<string, Record<string, string>>,
-  summaryAnswers: Record<string, string>
+  summaryAnswers: Record<string, string>,
+  highlights: HighlightsByPair
 ): EvaluateExport {
   const likertQuestion = EVALUATE_QUESTIONS.perItem.find(
     (q) => q.type === 'likert'
@@ -112,6 +144,7 @@ export function buildEvaluateExport(
       .filter((pair): pair is EvaluatePair => pair !== undefined)
       .map((pair) => {
         const answers = pairAnswers[pair.accessId] ?? {};
+        const pairHighlights = highlights[pair.accessId] ?? {};
         const leftCondition = conditionLabel(pair.leftSource);
         const rightCondition =
           pair.leftSource === 'user' ? DESIGNER_LED : USER_LED;
@@ -121,8 +154,16 @@ export function buildEvaluateExport(
           leftCondition,
           rightCondition,
           leftSource: pair.leftSource,
-          user: toExportItem(pair.userItem.id, pair.userItem),
-          designer: toExportItem(pair.designerItem.id, pair.designerItem),
+          user: toExportItem(
+            pair.userItem.id,
+            pair.userItem,
+            pairHighlights.user
+          ),
+          designer: toExportItem(
+            pair.designerItem.id,
+            pair.designerItem,
+            pairHighlights.designer
+          ),
           answers,
           normalizedAnswers: normalizePairAnswers(answers, pair.leftSource),
           completed: canSubmitQuestions(EVALUATE_QUESTIONS.perItem, answers)

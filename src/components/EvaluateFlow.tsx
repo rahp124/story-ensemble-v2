@@ -7,7 +7,8 @@ import {
   buildEvaluatePairs,
   fetchEvaluateData,
   seededShuffle,
-  type EvaluatePair
+  type EvaluatePair,
+  type EvaluateSource
 } from '@/lib/evaluateData';
 import {
   buildEvaluateExport,
@@ -20,6 +21,14 @@ import {
   saveEvaluateProgress,
   type EvaluatePhase
 } from '@/lib/evaluateProgress';
+import {
+  addRange,
+  removeRangeContaining,
+  type HighlightRange,
+  type HighlightsByPair,
+  type ItemHighlights,
+  type PairHighlights
+} from '@/lib/evaluateHighlights';
 import { canSubmitQuestions, emptyAnswersForQuestions } from '@/components/QuestionField';
 import { EvaluateIntroPage } from './EvaluateIntroPage';
 import { EvaluatePairPage } from './EvaluatePairPage';
@@ -48,6 +57,7 @@ export function EvaluateFlow() {
   const [summaryAnswers, setSummaryAnswers] = useState<Record<string, string>>(
     () => summaryEmpty()
   );
+  const [highlights, setHighlights] = useState<HighlightsByPair>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -71,6 +81,7 @@ export function EvaluateFlow() {
         let restoredIndex = 0;
         let restoredPairAnswers: Record<string, Record<string, string>> = {};
         let restoredSummaryAnswers = summaryEmpty();
+        let restoredHighlights: HighlightsByPair = {};
 
         if (draft?.pairOrder?.length === pairs.length) {
           order = draft.pairOrder;
@@ -82,6 +93,7 @@ export function EvaluateFlow() {
             ...summaryEmpty(),
             ...draft.summaryAnswers
           };
+          restoredHighlights = draft.highlights ?? {};
         } else {
           const shuffled = seededShuffle(pairs, accessId);
           order = shuffled.map((p) => p.accessId);
@@ -98,6 +110,7 @@ export function EvaluateFlow() {
         setPairIndex(restoredIndex);
         setPairAnswers(restoredPairAnswers);
         setSummaryAnswers(restoredSummaryAnswers);
+        setHighlights(restoredHighlights);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : String(err));
@@ -116,7 +129,8 @@ export function EvaluateFlow() {
       nextPhase: EvaluatePhase,
       nextIndex: number,
       nextPairAnswers: Record<string, Record<string, string>>,
-      nextSummaryAnswers: Record<string, string>
+      nextSummaryAnswers: Record<string, string>,
+      nextHighlights: HighlightsByPair
     ) => {
       if (!accessId || pairOrder.length === 0) return;
       saveEvaluateProgress(accessId, {
@@ -124,7 +138,8 @@ export function EvaluateFlow() {
         pairIndex: nextIndex,
         pairOrder,
         pairAnswers: nextPairAnswers,
-        summaryAnswers: nextSummaryAnswers
+        summaryAnswers: nextSummaryAnswers,
+        highlights: nextHighlights
       });
     },
     [accessId, pairOrder]
@@ -132,7 +147,7 @@ export function EvaluateFlow() {
 
   const handleBegin = () => {
     setPhase('items');
-    persist('items', 0, pairAnswers, summaryAnswers);
+    persist('items', 0, pairAnswers, summaryAnswers, highlights);
   };
 
   const currentPair = orderedPairs[pairIndex] ?? null;
@@ -162,28 +177,89 @@ export function EvaluateFlow() {
     if (!currentPair) return;
     const next = { ...pairAnswers, [currentPair.accessId]: answers };
     setPairAnswers(next);
-    persist(phase, pairIndex, next, summaryAnswers);
+    persist(phase, pairIndex, next, summaryAnswers, highlights);
   };
+
+  const updatePairHighlights = useCallback(
+    (
+      pairAccessId: string,
+      updater: (current: PairHighlights) => PairHighlights
+    ) => {
+      const current = highlights[pairAccessId] ?? {};
+      const nextPairHighlights = updater(current);
+      const nextHighlights = { ...highlights, [pairAccessId]: nextPairHighlights };
+      setHighlights(nextHighlights);
+      persist(phase, pairIndex, pairAnswers, summaryAnswers, nextHighlights);
+      return nextHighlights;
+    },
+    [highlights, persist, phase, pairIndex, pairAnswers, summaryAnswers]
+  );
+
+  const handleAddHighlight = useCallback(
+    (source: EvaluateSource, fieldKey: string, range: HighlightRange) => {
+      if (!currentPair) return;
+      updatePairHighlights(currentPair.accessId, (current) => {
+        const item =
+          source === 'user' ? currentPair.userItem : currentPair.designerItem;
+        const field = item.fields.find((f) => f.key === fieldKey);
+        const itemHighlights: ItemHighlights = {
+          ...(current[source] ?? {})
+        };
+        const textLength = field?.value.length ?? 0;
+        itemHighlights[fieldKey] = addRange(
+          itemHighlights[fieldKey] ?? [],
+          range,
+          textLength
+        );
+        return { ...current, [source]: itemHighlights };
+      });
+    },
+    [currentPair, updatePairHighlights]
+  );
+
+  const handleRemoveHighlight = useCallback(
+    (source: EvaluateSource, fieldKey: string, offset: number) => {
+      if (!currentPair) return;
+      updatePairHighlights(currentPair.accessId, (current) => {
+        const itemHighlights: ItemHighlights = {
+          ...(current[source] ?? {})
+        };
+        itemHighlights[fieldKey] = removeRangeContaining(
+          itemHighlights[fieldKey] ?? [],
+          offset
+        );
+        return { ...current, [source]: itemHighlights };
+      });
+    },
+    [currentPair, updatePairHighlights]
+  );
 
   const handleNext = () => {
     if (!currentPair || pairIndex >= orderedPairs.length - 1) return;
     const nextIndex = pairIndex + 1;
     setPairIndex(nextIndex);
-    persist('items', nextIndex, pairAnswers, summaryAnswers);
+    persist('items', nextIndex, pairAnswers, summaryAnswers, highlights);
   };
 
   const handleBack = () => {
     if (pairIndex <= 0) return;
     const nextIndex = pairIndex - 1;
     setPairIndex(nextIndex);
-    persist('items', nextIndex, pairAnswers, summaryAnswers);
+    persist('items', nextIndex, pairAnswers, summaryAnswers, highlights);
   };
 
   const handleFinish = useCallback(() => {
     if (completedPairs.length === 0) return;
     setPhase('summary');
-    persist('summary', pairIndex, pairAnswers, summaryAnswers);
-  }, [completedPairs.length, pairIndex, pairAnswers, summaryAnswers, persist]);
+    persist('summary', pairIndex, pairAnswers, summaryAnswers, highlights);
+  }, [
+    completedPairs.length,
+    pairIndex,
+    pairAnswers,
+    summaryAnswers,
+    highlights,
+    persist
+  ]);
 
   useHotkeys(
     'pageup',
@@ -198,7 +274,7 @@ export function EvaluateFlow() {
 
   const handleSummaryAnswersChange = (answers: Record<string, string>) => {
     setSummaryAnswers(answers);
-    persist('summary', pairIndex, pairAnswers, answers);
+    persist('summary', pairIndex, pairAnswers, answers, highlights);
   };
 
   const handleSubmit = async () => {
@@ -209,7 +285,8 @@ export function EvaluateFlow() {
       allPairs,
       pairOrder,
       pairAnswers,
-      summaryAnswers
+      summaryAnswers,
+      highlights
     );
 
     setIsSubmitting(true);
@@ -238,6 +315,7 @@ export function EvaluateFlow() {
     setPairIndex(0);
     setPairAnswers({});
     setSummaryAnswers(summaryEmpty());
+    setHighlights({});
     setPhase('intro');
   };
 
@@ -272,7 +350,10 @@ export function EvaluateFlow() {
         pairIndex={pairIndex}
         totalPairs={orderedPairs.length}
         answers={currentAnswers}
+        pairHighlights={highlights[currentPair.accessId] ?? {}}
         onAnswersChange={handlePairAnswersChange}
+        onAddHighlight={handleAddHighlight}
+        onRemoveHighlight={handleRemoveHighlight}
         onNext={handleNext}
         onBack={handleBack}
         onFinish={handleFinish}
@@ -287,6 +368,7 @@ export function EvaluateFlow() {
       <EvaluateSummaryPage
         pairs={completedPairs}
         pairAnswers={pairAnswers}
+        highlights={highlights}
         summaryAnswers={summaryAnswers}
         onSummaryAnswersChange={handleSummaryAnswersChange}
         onSubmit={handleSubmit}

@@ -29,6 +29,11 @@ export type EvaluateCopy = {
     eyebrow: string;
     title: string;
     paragraphs: string[];
+    figures: Array<{
+      label: string;
+      image: string;
+      alt: string;
+    }>;
     beginButton: string;
   };
   item: {

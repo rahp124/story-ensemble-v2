@@ -1,5 +1,7 @@
 import { EVALUATE_COPY } from '@/content/evaluateCopy';
 
+const EVALUATE_FIGURES_BASE = `${import.meta.env.BASE_URL}evaluate/figures/`;
+
 type EvaluateIntroPageProps = {
   onBegin: () => void;
 };
@@ -23,6 +25,21 @@ export function EvaluateIntroPage({ onBegin }: EvaluateIntroPageProps) {
           <div className="mt-8 space-y-4 text-slate-600 leading-relaxed">
             {copy.paragraphs.map((paragraph) => (
               <p key={paragraph.slice(0, 40)}>{paragraph}</p>
+            ))}
+          </div>
+
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            {copy.figures.map((figure) => (
+              <div
+                key={figure.image}
+                className="flex items-center justify-center h-[clamp(140px,22vh,220px)] rounded-xl border border-slate-200 bg-white p-2"
+              >
+                <img
+                  src={`${EVALUATE_FIGURES_BASE}${figure.image}`}
+                  alt={figure.alt}
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
             ))}
           </div>
 

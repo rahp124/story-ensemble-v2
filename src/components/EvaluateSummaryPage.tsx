@@ -7,13 +7,19 @@ import {
 import type { EvaluateItem, EvaluatePair, EvaluateSource } from '@/lib/evaluateData';
 import { getEvaluateConditionStyles } from '@/lib/evaluateConditionStyles';
 import {
+  getFieldHighlights,
+  type HighlightsByPair
+} from '@/lib/evaluateHighlights';
+import {
   canSubmitQuestions,
   QuestionField
 } from '@/components/QuestionField';
+import { HighlightableText } from '@/components/HighlightableText';
 
 type EvaluateSummaryPageProps = {
   pairs: EvaluatePair[];
   pairAnswers: Record<string, Record<string, string>>;
+  highlights: HighlightsByPair;
   summaryAnswers: Record<string, string>;
   onSummaryAnswersChange: (answers: Record<string, string>) => void;
   onSubmit: () => void;
@@ -146,11 +152,13 @@ function PairSummaryRow({
 function ExpandedPairModal({
   pair,
   answers,
+  pairHighlights,
   opened,
   onClose
 }: {
   pair: EvaluatePair | null;
   answers: Record<string, string>;
+  pairHighlights: HighlightsByPair[string] | undefined;
   opened: boolean;
   onClose: () => void;
 }) {
@@ -206,9 +214,16 @@ function ExpandedPairModal({
                       <p className="text-sm font-semibold text-slate-900">
                         {field.label}
                       </p>
-                      <p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">
-                        {field.value || '—'}
-                      </p>
+                      <HighlightableText
+                        text={field.value}
+                        ranges={getFieldHighlights(
+                          pairHighlights,
+                          source,
+                          field.key
+                        )}
+                        readOnly
+                        className="mt-1 text-sm text-slate-600 whitespace-pre-wrap"
+                      />
                     </div>
                   ))}
                 </div>
@@ -238,6 +253,7 @@ function ExpandedPairModal({
 export function EvaluateSummaryPage({
   pairs,
   pairAnswers,
+  highlights,
   summaryAnswers,
   onSummaryAnswersChange,
   onSubmit,
@@ -335,6 +351,9 @@ export function EvaluateSummaryPage({
         pair={expandedPair}
         answers={
           expandedPair ? pairAnswers[expandedPair.accessId] ?? {} : {}
+        }
+        pairHighlights={
+          expandedPair ? highlights[expandedPair.accessId] : undefined
         }
         opened={expandedAccessId !== null}
         onClose={() => setExpandedAccessId(null)}
