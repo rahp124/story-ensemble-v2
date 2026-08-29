@@ -13,9 +13,9 @@ const USER_STYLES: EvaluateConditionStyles = {
 };
 
 const DESIGNER_STYLES: EvaluateConditionStyles = {
-  badge: 'bg-fuchsia-100 text-fuchsia-800',
-  border: 'border-fuchsia-300',
-  panelBg: 'bg-fuchsia-50/60'
+  badge: 'bg-purple-100 text-purple-800',
+  border: 'border-purple-300',
+  panelBg: 'bg-purple-50/60'
 };
 
 export function getEvaluateConditionStyles(

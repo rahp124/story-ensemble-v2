@@ -107,9 +107,7 @@ function PairSummaryRow({
         </div>
       </div>
       <div className="flex min-h-0">
-        <div
-          className={`w-[37%] shrink-0 overflow-hidden border-r border-slate-100 border-2 ${leftStyles.border}`}
-        >
+        <div className="w-[37%] shrink-0 overflow-hidden border-r border-slate-100">
           {leftItem.imageSrc ? (
             <img
               src={leftItem.imageSrc}
@@ -122,9 +120,7 @@ function PairSummaryRow({
             </div>
           )}
         </div>
-        <div
-          className={`w-[37%] shrink-0 overflow-hidden border-r border-slate-100 border-2 ${rightStyles.border}`}
-        >
+        <div className="w-[37%] shrink-0 overflow-hidden border-r border-slate-100">
           {rightItem.imageSrc ? (
             <img
               src={rightItem.imageSrc}
