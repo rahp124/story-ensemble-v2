@@ -4,15 +4,22 @@ import {
   EVALUATE_COPY,
   EVALUATE_QUESTIONS
 } from '@/content/evaluateCopy';
-import type { EvaluateItem, EvaluatePair } from '@/lib/evaluateData';
+import type { EvaluateItem, EvaluatePair, EvaluateSource } from '@/lib/evaluateData';
+import { getEvaluateConditionStyles } from '@/lib/evaluateConditionStyles';
+import {
+  getFieldHighlights,
+  type HighlightsByPair
+} from '@/lib/evaluateHighlights';
 import {
   canSubmitQuestions,
   QuestionField
 } from '@/components/QuestionField';
+import { HighlightableText } from '@/components/HighlightableText';
 
 type EvaluateSummaryPageProps = {
   pairs: EvaluatePair[];
   pairAnswers: Record<string, Record<string, string>>;
+  highlights: HighlightsByPair;
   summaryAnswers: Record<string, string>;
   onSummaryAnswersChange: (answers: Record<string, string>) => void;
   onSubmit: () => void;
@@ -24,6 +31,8 @@ function getColumnItems(pair: EvaluatePair): {
   rightItem: EvaluateItem;
   leftLabel: string;
   rightLabel: string;
+  leftSource: EvaluateSource;
+  rightSource: EvaluateSource;
 } {
   const copy = EVALUATE_COPY.summary;
   const leftItem =
@@ -38,8 +47,18 @@ function getColumnItems(pair: EvaluatePair): {
     pair.leftSource === 'user'
       ? copy.designerColumnTitle
       : copy.userColumnTitle;
+  const leftSource = pair.leftSource;
+  const rightSource: EvaluateSource =
+    pair.leftSource === 'user' ? 'designer' : 'user';
 
-  return { leftItem, rightItem, leftLabel, rightLabel };
+  return {
+    leftItem,
+    rightItem,
+    leftLabel,
+    rightLabel,
+    leftSource,
+    rightSource
+  };
 }
 
 function PairSummaryRow({
@@ -53,7 +72,16 @@ function PairSummaryRow({
   notesLabel: string;
   onExpand: () => void;
 }) {
-  const { leftItem, rightItem, leftLabel, rightLabel } = getColumnItems(pair);
+  const {
+    leftItem,
+    rightItem,
+    leftLabel,
+    rightLabel,
+    leftSource,
+    rightSource
+  } = getColumnItems(pair);
+  const leftStyles = getEvaluateConditionStyles(leftSource);
+  const rightStyles = getEvaluateConditionStyles(rightSource);
   const previewQuestionId = EVALUATE_QUESTIONS.summaryPreviewQuestionId;
   const previewText = answers[previewQuestionId]?.trim() ?? '';
 
@@ -63,14 +91,18 @@ function PairSummaryRow({
       onClick={onExpand}
       className="w-full text-left overflow-hidden rounded-xl border border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all flex flex-col"
     >
-      <div className="flex shrink-0 border-b border-slate-100 bg-slate-50/80">
-        <div className="w-[37%] shrink-0 px-2 py-1.5 text-center text-[10px] font-semibold text-slate-600 border-r border-slate-100">
+      <div className="flex shrink-0 border-b border-slate-100">
+        <div
+          className={`w-[37%] shrink-0 px-2 py-1.5 text-center text-[10px] font-semibold border-r border-slate-100 ${leftStyles.badge}`}
+        >
           {leftLabel}
         </div>
-        <div className="w-[37%] shrink-0 px-2 py-1.5 text-center text-[10px] font-semibold text-slate-600 border-r border-slate-100">
+        <div
+          className={`w-[37%] shrink-0 px-2 py-1.5 text-center text-[10px] font-semibold border-r border-slate-100 ${rightStyles.badge}`}
+        >
           {rightLabel}
         </div>
-        <div className="w-[26%] min-w-0 px-2 py-1.5 text-center text-[10px] font-semibold text-slate-600">
+        <div className="w-[26%] min-w-0 px-2 py-1.5 text-center text-[10px] font-semibold text-slate-600 bg-slate-50/80">
           {notesLabel}
         </div>
       </div>
@@ -116,17 +148,31 @@ function PairSummaryRow({
 function ExpandedPairModal({
   pair,
   answers,
+  pairHighlights,
   opened,
   onClose
 }: {
   pair: EvaluatePair | null;
   answers: Record<string, string>;
+  pairHighlights: HighlightsByPair[string] | undefined;
   opened: boolean;
   onClose: () => void;
 }) {
   if (!pair) return null;
 
-  const { leftItem, rightItem, leftLabel, rightLabel } = getColumnItems(pair);
+  const {
+    leftItem,
+    rightItem,
+    leftLabel,
+    rightLabel,
+    leftSource,
+    rightSource
+  } = getColumnItems(pair);
+
+  const columns = [
+    { item: leftItem, label: leftLabel, source: leftSource },
+    { item: rightItem, label: rightLabel, source: rightSource }
+  ] as const;
 
   return (
     <Modal
@@ -137,30 +183,47 @@ function ExpandedPairModal({
       withCloseButton
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {[leftItem, rightItem].map((item, index) => {
-          const label = index === 0 ? leftLabel : rightLabel;
+        {columns.map(({ item, label, source }) => {
+          const styles = getEvaluateConditionStyles(source);
           return (
             <div key={item.id} className="space-y-3">
-              <p className="text-sm font-semibold text-slate-800 text-center">
-                {label}
-              </p>
-              {item.imageSrc && (
-                <img
-                  src={item.imageSrc}
-                  alt=""
-                  className="w-full h-auto rounded-lg border border-slate-200"
-                />
-              )}
-              {item.fields.map((field) => (
-                <div key={field.key}>
-                  <p className="text-sm font-semibold text-slate-900">
-                    {field.label}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">
-                    {field.value || '—'}
-                  </p>
+              <div className="flex justify-center">
+                <span
+                  className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${styles.badge}`}
+                >
+                  {label}
+                </span>
+              </div>
+              <div
+                className={`rounded-lg border-2 overflow-hidden ${styles.border}`}
+              >
+                {item.imageSrc && (
+                  <img
+                    src={item.imageSrc}
+                    alt=""
+                    className="w-full h-auto block"
+                  />
+                )}
+                <div className={`px-4 py-3 space-y-3 ${styles.panelBg}`}>
+                  {item.fields.map((field) => (
+                    <div key={field.key}>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {field.label}
+                      </p>
+                      <HighlightableText
+                        text={field.value}
+                        ranges={getFieldHighlights(
+                          pairHighlights,
+                          source,
+                          field.key
+                        )}
+                        readOnly
+                        className="mt-1 text-sm text-slate-600 whitespace-pre-wrap"
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           );
         })}
@@ -186,6 +249,7 @@ function ExpandedPairModal({
 export function EvaluateSummaryPage({
   pairs,
   pairAnswers,
+  highlights,
   summaryAnswers,
   onSummaryAnswersChange,
   onSubmit,
@@ -283,6 +347,9 @@ export function EvaluateSummaryPage({
         pair={expandedPair}
         answers={
           expandedPair ? pairAnswers[expandedPair.accessId] ?? {} : {}
+        }
+        pairHighlights={
+          expandedPair ? highlights[expandedPair.accessId] : undefined
         }
         opened={expandedAccessId !== null}
         onClose={() => setExpandedAccessId(null)}

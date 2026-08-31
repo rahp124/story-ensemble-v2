@@ -1,3 +1,5 @@
+import type { HighlightsByPair } from '@/lib/evaluateHighlights';
+
 export type EvaluatePhase = 'intro' | 'items' | 'summary' | 'complete';
 
 export type EvaluateProgressDraft = {
@@ -6,6 +8,7 @@ export type EvaluateProgressDraft = {
   pairOrder: string[];
   pairAnswers: Record<string, Record<string, string>>;
   summaryAnswers: Record<string, string>;
+  highlights?: HighlightsByPair;
 };
 
 const STORAGE_PREFIX = 'evaluate:';

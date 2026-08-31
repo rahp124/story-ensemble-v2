@@ -21,35 +21,35 @@ itemFields:
     - des_resolution_emo
 
 perItem:
-  - id: per_item_open
-    type: open_response
-    prompt: "Do you notice any specific differences below with the user-led and designer-led data, especially in terms of the specificity of detail or emotional disclosure, from the perspective of understanding users? Write down your notes here."
-    required: false
-    placeholder: Optional
-
   - id: per_item_value_likert
     type: likert
-    prompt: "Which condition's response is more valuable for informing a design process?"
+    prompt: "Which condition's response is more valuable for informing a design process of discovering user problems and needs?"
     required: true
     points: 6
     minLabel: "{{leftCondition}} (left side) is much more valuable"
     maxLabel: "{{rightCondition}} (right side) is much more valuable"
 
+  - id: per_item_open
+    type: open_response
+    prompt: "Use this space to note any valuable user inputs or specific differences between the user-led and designer-led data. You can also highlight to copy text here."
+    required: false
+    placeholder: Optional
+
 summary:
   - id: diversity_open
     type: open_response
     prompt: "[Diversity] How do the conditions' responses compare in terms of diversity of user stories?"
-    required: true
+    required: false
     placeholder: 1-2 sentences.
 
   - id: comprehensibility_open
     type: open_response
     prompt: "[Comprehensibility] Which condition gave you a better understanding of the users and their experiences?"
-    required: true
+    required: false
     placeholder: 1-2 sentences.
 
   - id: general_open
     type: open_response
     prompt: "[Overall] Do you have any preference between user-led and designer-led responses in general?"
-    required: true
+    required: false
     placeholder: 1-2 sentences.

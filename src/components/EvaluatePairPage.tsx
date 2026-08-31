@@ -1,23 +1,57 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   EVALUATE_COPY,
   EVALUATE_QUESTIONS,
   interpolate,
   type EvaluateQuestion
 } from '@/content/evaluateCopy';
-import type { EvaluateItem, EvaluatePair } from '@/lib/evaluateData';
+import type { EvaluateItem, EvaluatePair, EvaluateSource } from '@/lib/evaluateData';
+import { getEvaluateConditionStyles } from '@/lib/evaluateConditionStyles';
+import {
+  appendToNotes,
+  formatHighlightSnippet,
+  getFieldHighlights,
+  type HighlightRange,
+  type PairHighlights
+} from '@/lib/evaluateHighlights';
 import {
   canSubmitQuestions,
   QuestionField
 } from '@/components/QuestionField';
 import { EnlargeableStoryboardImage } from '@/components/EnlargeableStoryboardImage';
+import { HighlightableText } from '@/components/HighlightableText';
+import { HighlightActionPopup } from '@/components/HighlightActionPopup';
+
+const NOTES_QUESTION_ID = EVALUATE_QUESTIONS.perItem.find(
+  (q) => q.type === 'open_response'
+)?.id;
+
+type PendingHighlight = {
+  source: EvaluateSource;
+  fieldKey: string;
+  range: HighlightRange;
+  text: string;
+  conditionLabel: string;
+  rect: DOMRect;
+};
 
 type EvaluatePairPageProps = {
   pair: EvaluatePair;
   pairIndex: number;
   totalPairs: number;
   answers: Record<string, string>;
+  pairHighlights: PairHighlights;
   onAnswersChange: (answers: Record<string, string>) => void;
+  onAddHighlight: (
+    source: EvaluateSource,
+    fieldKey: string,
+    range: HighlightRange
+  ) => void;
+  onRemoveHighlight: (
+    source: EvaluateSource,
+    fieldKey: string,
+    offset: number
+  ) => void;
   onNext: () => void;
   onBack: () => void;
   onFinish: () => void;
@@ -46,40 +80,93 @@ function interpolateQuestion(
 
 function ResponseColumn({
   label,
-  item
+  item,
+  source,
+  pairHighlights,
+  onAddHighlight,
+  onHighlightAdded
 }: {
   label: string;
   item: EvaluateItem;
+  source: EvaluateSource;
+  pairHighlights: PairHighlights;
+  onAddHighlight: (
+    source: EvaluateSource,
+    fieldKey: string,
+    range: HighlightRange
+  ) => void;
+  onHighlightAdded: (
+    source: EvaluateSource,
+    fieldKey: string,
+    range: HighlightRange,
+    selectedText: string,
+    rect: DOMRect,
+    conditionLabel: string
+  ) => void;
 }) {
+  const styles = getEvaluateConditionStyles(source);
+
   return (
     <div className="flex flex-col min-h-0 min-w-0">
-      <span className="inline-flex self-start shrink-0 mb-2 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-        {label}
-      </span>
-      <div className="shrink-0 flex justify-center mb-2">
-        {item.imageSrc ? (
-          <EnlargeableStoryboardImage
-            src={item.imageSrc}
-            alt={`Storyboard for participant ${item.accessId}`}
-            imgClassName="max-h-[34vh] w-auto mx-auto object-contain rounded-lg border border-slate-200"
-          />
-        ) : (
-          <div className="h-32 w-full flex items-center justify-center rounded-lg border border-dashed border-slate-200 text-xs text-slate-400">
-            No image available
-          </div>
-        )}
+      <div className="flex justify-center shrink-0 mb-2">
+        <span
+          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${styles.badge}`}
+        >
+          {label}
+        </span>
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 space-y-2">
-        {item.fields.map((field) => (
-          <div key={field.key}>
-            <p className="text-[10px] font-semibold text-slate-800 leading-snug">
-              {field.label}
-            </p>
-            <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
-              {field.value || '—'}
-            </p>
-          </div>
-        ))}
+      <div
+        className={`flex flex-col flex-1 min-h-0 rounded-lg border overflow-hidden ${styles.border}`}
+      >
+        <div className="shrink-0 flex justify-center">
+          {item.imageSrc ? (
+            <EnlargeableStoryboardImage
+              src={item.imageSrc}
+              alt={`Storyboard for participant ${item.accessId}`}
+              imgClassName="max-h-[34vh] w-auto mx-auto object-contain"
+            />
+          ) : (
+            <div className="h-32 w-full flex items-center justify-center border-b border-dashed text-xs text-slate-400">
+              No image available
+            </div>
+          )}
+        </div>
+        <div
+          className={`flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-2 ${styles.panelBg}`}
+        >
+          {item.fields.map((field) => (
+            <div key={field.key}>
+              <p className="text-[10px] font-semibold text-slate-800 leading-snug">
+                {field.label}
+              </p>
+              <HighlightableText
+                text={field.value}
+                ranges={getFieldHighlights(pairHighlights, source, field.key)}
+                onAdd={(range, selectedText, rect) => {
+                  onAddHighlight(source, field.key, range);
+                  onHighlightAdded(
+                    source,
+                    field.key,
+                    range,
+                    selectedText,
+                    rect,
+                    label
+                  );
+                }}
+                onActivate={(range, selectedText, rect) => {
+                  onHighlightAdded(
+                    source,
+                    field.key,
+                    range,
+                    selectedText,
+                    rect,
+                    label
+                  );
+                }}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -90,7 +177,10 @@ export function EvaluatePairPage({
   pairIndex,
   totalPairs,
   answers,
+  pairHighlights,
   onAnswersChange,
+  onAddHighlight,
+  onRemoveHighlight,
   onNext,
   onBack,
   onFinish,
@@ -101,6 +191,7 @@ export function EvaluatePairPage({
   const summaryCopy = EVALUATE_COPY.summary;
   const questions = EVALUATE_QUESTIONS.perItem;
   const isLast = pairIndex >= totalPairs - 1;
+  const [pending, setPending] = useState<PendingHighlight | null>(null);
 
   const interpolationVars = useMemo(
     () => ({
@@ -128,6 +219,10 @@ export function EvaluatePairPage({
   const leftLabel = interpolationVars.leftCondition;
   const rightLabel = interpolationVars.rightCondition;
 
+  const leftSource = pair.leftSource;
+  const rightSource: EvaluateSource =
+    pair.leftSource === 'user' ? 'designer' : 'user';
+
   const canNext = useMemo(
     () => canSubmitQuestions(questions, answers),
     [answers, questions]
@@ -135,6 +230,39 @@ export function EvaluatePairPage({
 
   const handleChange = (id: string, value: string) => {
     onAnswersChange({ ...answers, [id]: value });
+  };
+
+  const handleHighlightAdded = (
+    source: EvaluateSource,
+    fieldKey: string,
+    range: HighlightRange,
+    selectedText: string,
+    rect: DOMRect,
+    conditionLabel: string
+  ) => {
+    setPending({
+      source,
+      fieldKey,
+      range,
+      text: selectedText,
+      conditionLabel,
+      rect
+    });
+  };
+
+  const handleCopyPending = () => {
+    if (!pending || !NOTES_QUESTION_ID) return;
+    const snippet = formatHighlightSnippet(pending.conditionLabel, pending.text);
+    const existing = answers[NOTES_QUESTION_ID] ?? '';
+    handleChange(
+      NOTES_QUESTION_ID,
+      appendToNotes(existing, snippet)
+    );
+  };
+
+  const handleRemovePending = () => {
+    if (!pending) return;
+    onRemoveHighlight(pending.source, pending.fieldKey, pending.range.start);
   };
 
   return (
@@ -200,10 +328,33 @@ export function EvaluatePairPage({
 
       <div className="flex-1 min-h-0 px-4 sm:px-6 py-3">
         <div className="mx-auto max-w-7xl h-full grid grid-cols-2 gap-4 min-h-0">
-          <ResponseColumn label={leftLabel} item={leftItem} />
-          <ResponseColumn label={rightLabel} item={rightItem} />
+          <ResponseColumn
+            label={leftLabel}
+            item={leftItem}
+            source={leftSource}
+            pairHighlights={pairHighlights}
+            onAddHighlight={onAddHighlight}
+            onHighlightAdded={handleHighlightAdded}
+          />
+          <ResponseColumn
+            label={rightLabel}
+            item={rightItem}
+            source={rightSource}
+            pairHighlights={pairHighlights}
+            onAddHighlight={onAddHighlight}
+            onHighlightAdded={handleHighlightAdded}
+          />
         </div>
       </div>
+
+      {pending && (
+        <HighlightActionPopup
+          rect={pending.rect}
+          onCopy={handleCopyPending}
+          onRemove={handleRemovePending}
+          onDismiss={() => setPending(null)}
+        />
+      )}
     </div>
   );
 }
