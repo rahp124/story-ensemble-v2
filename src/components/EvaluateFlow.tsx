@@ -6,7 +6,7 @@ import { EVALUATE_COPY, EVALUATE_QUESTIONS } from '@/content/evaluateCopy';
 import {
   buildEvaluatePairs,
   fetchEvaluateData,
-  seededShuffle,
+  orderEvaluatePairs,
   type EvaluatePair,
   type EvaluateSource
 } from '@/lib/evaluateData';
@@ -77,33 +77,28 @@ export function EvaluateFlow() {
         setAllPairs(pairs);
 
         const draft = loadEvaluateProgress(accessId);
-        let order: string[];
+        const ordered = orderEvaluatePairs(pairs, accessId);
+        const order = ordered.map((p) => p.accessId);
         let restoredPhase: EvaluatePhase = 'intro';
         let restoredIndex = 0;
         let restoredPairAnswers: Record<string, Record<string, string>> = {};
         let restoredSummaryAnswers = summaryEmpty();
         let restoredHighlights: HighlightsByPair = {};
 
-        if (draft?.pairOrder?.length === pairs.length) {
-          order = draft.pairOrder;
+        if (draft) {
           restoredPhase =
             draft.phase === 'complete' ? 'intro' : draft.phase;
-          restoredIndex = draft.pairIndex;
+          restoredIndex = Math.min(
+            Math.max(draft.pairIndex, 0),
+            pairs.length - 1
+          );
           restoredPairAnswers = draft.pairAnswers ?? {};
           restoredSummaryAnswers = {
             ...summaryEmpty(),
             ...draft.summaryAnswers
           };
           restoredHighlights = draft.highlights ?? {};
-        } else {
-          const shuffled = seededShuffle(pairs, accessId);
-          order = shuffled.map((p) => p.accessId);
         }
-
-        const byAccess = new Map(pairs.map((p) => [p.accessId, p]));
-        const ordered = order
-          .map((id) => byAccess.get(id))
-          .filter((p): p is EvaluatePair => p !== undefined);
 
         setPairOrder(order);
         setOrderedPairs(ordered);
@@ -319,10 +314,10 @@ export function EvaluateFlow() {
 
     clearEvaluateProgress(accessId);
 
-    const shuffled = seededShuffle(allPairs, accessId);
-    const order = shuffled.map((p) => p.accessId);
+    const ordered = orderEvaluatePairs(allPairs, accessId);
+    const order = ordered.map((p) => p.accessId);
     setPairOrder(order);
-    setOrderedPairs(shuffled);
+    setOrderedPairs(ordered);
     setPairIndex(0);
     setPairAnswers({});
     setSummaryAnswers(summaryEmpty());

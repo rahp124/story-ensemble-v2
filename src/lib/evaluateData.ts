@@ -185,6 +185,64 @@ export function seededShuffle<T>(items: T[], seed: string): T[] {
   return arr;
 }
 
+/** Fixed presentation order of evaluation pairs, rotated per evaluator. */
+export const EVALUATE_PAIR_ORDER = [
+  'u12chi',
+  'u24kay',
+  'u11els',
+  'u20sea',
+  'u14shy',
+  'u09sop',
+  'u21car',
+  'u24chr',
+  'u17lun',
+  'u18ari',
+  'u04fai',
+  'u07emb',
+  'u13nit',
+  'u02mar',
+  'u23lil',
+  'u10sav',
+  'u06dha',
+  'u16shr',
+  'u05zhe',
+  'u08nin',
+  'u19kyl',
+  'u01kay',
+  'u22var',
+  'u03tay'
+];
+
+const EVALUATOR_START_INDEX: Record<string, number> = {
+  e01: 8,
+  e02: 0,
+  e03: 16
+};
+
+export function orderEvaluatePairs(
+  pairs: EvaluatePair[],
+  evaluatorAccessId: string
+): EvaluatePair[] {
+  const start =
+    EVALUATOR_START_INDEX[evaluatorAccessId.slice(0, 3).toLowerCase()];
+  if (start === undefined) return seededShuffle(pairs, evaluatorAccessId);
+
+  const byAccess = new Map(pairs.map((p) => [p.accessId, p]));
+  const preset = EVALUATE_PAIR_ORDER.map((id) => byAccess.get(id)).filter(
+    (p): p is EvaluatePair => p !== undefined
+  );
+  const unlisted = pairs.filter(
+    (p) => !EVALUATE_PAIR_ORDER.includes(p.accessId)
+  );
+  const offset = start % preset.length;
+
+  return [
+    ...preset.slice(offset),
+    ...preset.slice(0, offset),
+    ...unlisted
+  ];
+}
+
 export function buildEvaluatePairs(
   user: EvaluateViewJson,
   designer: EvaluateViewJson,
