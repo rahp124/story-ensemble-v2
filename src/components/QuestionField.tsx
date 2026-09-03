@@ -93,7 +93,7 @@ export function QuestionField({
               onChange={(e) => onChange(e.target.value)}
               placeholder={question.placeholder}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none text-xs"
+              className="w-full min-h-[4.5rem] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-y text-xs"
             />
           </>
         )}
