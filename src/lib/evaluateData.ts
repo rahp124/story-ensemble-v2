@@ -216,7 +216,8 @@ export const EVALUATE_PAIR_ORDER = [
 const EVALUATOR_START_INDEX: Record<string, number> = {
   e01: 8,
   e02: 0,
-  e03: 16
+  e03: 16,
+  e04: 21,
 };
 
 export function orderEvaluatePairs(
